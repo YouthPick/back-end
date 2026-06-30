@@ -1,0 +1,49 @@
+# 로컬 개발용 인프라만 띄운다 (MySQL + Redis).
+# backend/front 는 컨테이너화하지 않고 각자 로컬(IDE)에서 실행한다.
+#
+# 사용법: docker-compose.yml 파일과 같은 레벨의 패키지로 가서 아래 명령어 실행.
+#   docker compose up -d      # .env 를 자동으로 읽어 MySQL/Redis 기동
+#   docker compose ps         # 상태 확인
+#   docker compose down       # 중지 (데이터는 볼륨에 보존)
+#   docker compose down -v    # 중지 + 데이터 볼륨 삭제(초기화)
+
+services:
+#  mysql:
+#    image: mysql:8.4
+#    container_name: youthpick-mysql
+#    environment:
+#      MYSQL_DATABASE: ${DB_NAME:-youthpick}
+#      MYSQL_USER: ${DB_USERNAME:-youthpick}
+#      MYSQL_PASSWORD: ${DB_PASSWORD:-youthpick}
+#      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+#      TZ: Asia/Seoul
+#    command:
+#      - --character-set-server=utf8mb4
+#      - --collation-server=utf8mb4_unicode_ci
+#    ports:
+#      - "${DB_PORT:-3306}:3306"
+#    volumes:
+#      - youthpick-mysql-data:/var/lib/mysql
+#    healthcheck:
+#      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-root}"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 10
+#      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: youthpick-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - youthpick-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+#  youthpick-mysql-data:
+  youthpick-redis-data:
