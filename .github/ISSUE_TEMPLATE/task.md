@@ -11,5 +11,5 @@
 ## 검증
 
 - [ ] 작은 범위 테스트 실행
-- [ ] `corepack pnpm run lint` 실행
-- [ ] `corepack pnpm run build` 실행
+- [ ] `./gradlew test` 실행
+- [ ] `./gradlew build` 실행
