@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
                 ))
                 .toList();
 
-        ErrorCode errorCode = ErrorCode.INVALID_INPUT_VALUE;
+        GlobalErrorCode errorCode = GlobalErrorCode.INVALID_INPUT_VALUE;
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(ErrorResponse.of(errorCode, details));
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
                 ))
                 .toList();
 
-        ErrorCode errorCode = ErrorCode.INVALID_INPUT_VALUE;
+        GlobalErrorCode errorCode = GlobalErrorCode.INVALID_INPUT_VALUE;
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(ErrorResponse.of(errorCode, details));
@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
     // 우리가 정의하는 비즈니스 에러
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustomException(CustomException exception) {
-        ErrorCode errorCode = exception.getErrorCode();
+        GlobalErrorCode errorCode = exception.getErrorCode();
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(ErrorResponse.of(errorCode));
@@ -64,7 +64,7 @@ public class GlobalExceptionHandler {
     // 개발자가 예상치 못한 에러
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception exception) {
-        ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+        GlobalErrorCode errorCode = GlobalErrorCode.INTERNAL_SERVER_ERROR;
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(ErrorResponse.of(errorCode));

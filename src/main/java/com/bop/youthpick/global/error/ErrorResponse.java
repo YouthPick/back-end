@@ -36,7 +36,7 @@ public record ErrorResponse(
         List<FieldErrorDetail> errors,
         LocalDateTime timestamp
 ) {
-    public static ErrorResponse of(ErrorCode errorCode) {
+    public static ErrorResponse of(GlobalErrorCode errorCode) {
         return new ErrorResponse(
                 errorCode.getStatus().value(),
                 errorCode.getCode(),
@@ -46,7 +46,7 @@ public record ErrorResponse(
         );
     }
 
-    public static ErrorResponse of(ErrorCode errorCode, List<FieldErrorDetail> errors) {
+    public static ErrorResponse of(GlobalErrorCode errorCode, List<FieldErrorDetail> errors) {
         return new ErrorResponse(
                 errorCode.getStatus().value(),
                 errorCode.getCode(),
