@@ -1,7 +1,6 @@
 package com.bop.youthpick.user.exception;
 
 import com.bop.youthpick.global.error.ErrorCode;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

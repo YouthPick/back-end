@@ -1,6 +1,7 @@
 package com.bop.youthpick.global.config;
 
-import com.bop.youthpick.global.error.GlobalErrorCode;
+import com.bop.youthpick.auth.exception.AuthErrorCode;
+import com.bop.youthpick.global.error.ErrorCode;
 import com.bop.youthpick.global.error.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +36,7 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
             HttpServletResponse response,
             AuthenticationException authException
     ) throws IOException {
-        GlobalErrorCode errorCode = GlobalErrorCode.UNAUTHORIZED;
+        ErrorCode errorCode = AuthErrorCode.UNAUTHORIZED;
         response.setStatus(errorCode.getStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
