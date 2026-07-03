@@ -182,11 +182,12 @@ Validation 실패는 `GlobalExceptionHandler`에서 `ErrorCode.INVALID_INPUT_VAL
 
 ## 7. 예외 처리 규칙
 
-공통 예외 처리는 `global.error` 패키지에 둔다. 예외 응답은 참고 레포(`SpringBootStudy`) 방식처럼 `ErrorCode` enum을 기준으로 생성한다.
+공통 예외 처리는 `global.error` 패키지에 둔다. 예외 응답은 참고 레포(`SpringBootStudy`) 방식처럼 도메인별 `ErrorCode` enum을 기준으로 생성한다.
+
+`ErrorCode`는 각 도메인의 `exception` 패키지에 두고, 도메인별 상태 코드와 사용자 메시지를 함께 관리한다. `global.error`는 공통 응답 생성과 전역 예외 처리만 담당한다.
 
 ```text
 global.error
-├── ErrorCode.java
 ├── CustomException.java
 ├── ConflictException.java
 ├── ResourceNotFoundException.java
@@ -194,10 +195,10 @@ global.error
 └── GlobalExceptionHandler.java
 ```
 
-`ErrorCode`는 HTTP 상태, 서비스 코드, 사용자 메시지를 함께 가진다.
+도메인별 `ErrorCode`는 HTTP 상태, 서비스 코드, 사용자 메시지를 함께 가진다.
 
 ```java
-public enum ErrorCode {
+public enum PolicyErrorCode {
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "입력 형태가 올바르지 않습니다."),
     POLICY_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "일치하는 정책이 존재하지 않습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S001", "서버 내부에 예기치 않은 오류가 발생했습니다.");
@@ -208,15 +209,26 @@ public enum ErrorCode {
 }
 ```
 
-- 비즈니스 예외는 `throw new CustomException(ErrorCode.X)` 또는 이를 상속한 구체 예외로 던진다.
-- 존재하지 않는 리소스는 `ResourceNotFoundException(ErrorCode.X_NOT_FOUND)`를 사용한다.
-- 상태 충돌, 중복 실행, 중복 등록 등은 `ConflictException(ErrorCode.X_CONFLICT)`를 사용한다.
+```text
+policy
+├── controller
+├── service
+├── repository
+├── dto
+└── exception
+    ├── PolicyErrorCode.java
+    └── PolicyException.java
+```
+
+- 비즈니스 예외는 `throw new CustomException(PolicyErrorCode.X)`처럼 해당 도메인의 `ErrorCode`를 사용하거나, 이를 상속한 구체 예외로 던진다.
+- 존재하지 않는 리소스는 `ResourceNotFoundException(PolicyErrorCode.X_NOT_FOUND)`를 사용한다.
+- 상태 충돌, 중복 실행, 중복 등록 등은 `ConflictException(PolicyErrorCode.X_CONFLICT)`를 사용한다.
 - Service에서 `throw new RuntimeException("...")` 형태로 비즈니스 예외를 직접 던지지 않는다.
 - Controller에서 `try-catch`로 에러 응답을 만들지 않는다.
 - 내부 예외 메시지, SQL, stack trace, secret 값을 응답에 노출하지 않는다.
 - validation field error는 `field`, `value`, `reason` detail을 포함한다.
 - 프론트가 사용자 메시지를 일관되게 매핑할 수 있도록 모든 예외 응답은 `code`를 필수로 포함한다.
-- 새 `ErrorCode`를 추가할 때는 코드 체계와 사용자 메시지를 함께 정의하고, 프론트에서 매핑해야 하는 코드인지 PR 본문에 명시한다.
+- 새 `ErrorCode`를 추가할 때는 도메인, 코드 체계, 사용자 메시지를 함께 정의하고, 프론트에서 매핑해야 하는 코드인지 PR 본문에 명시한다.
 - 같은 오류 상황에 HTTP status만 다르게 내려주거나, 같은 `code`에 서로 다른 의미를 부여하지 않는다.
 
 ## 8. Lombok 규칙
@@ -321,10 +333,8 @@ Compose에는 백엔드, DB, Redis 실행 기준을 둔다. Docker/Compose 관�
 
 ## 14. 테스트 규칙
 
-- 기능 변경 시 관련 작은 테스트를 먼저 실행하고, 마지막에 전체 테스트를 실행한다.
-- Controller validation은 MockMvc 테스트로 검증한다.
+- 기능 변경 시 관련 작은 Service 테스트를 먼저 실행하고, 마지막에 전체 테스트를 실행한다.
 - Service 비즈니스 규칙은 Service 테스트로 검증한다.
-- Repository/JPA 쿼리는 통합 테스트로 검증한다.
 - PR 전 최소 `./gradlew test`를 통과시킨다.
 
 ```bash
