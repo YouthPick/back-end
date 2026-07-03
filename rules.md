@@ -4,7 +4,7 @@
 
 ## 1. 작업 흐름
 
-- 기획 변경이나 구현 계획이 필요한 작업은 먼저 `docs` 레포에 계획 문서를 올리고, 관련 GitHub Issue를 만든 뒤 작업한다.
+- GitHub Issue를 만든 뒤 작업한다.
 - 백엔드 작업은 issue 번호가 포함된 브랜치에서 진행한다.
 - 구현 후에는 테스트를 직접 실행하고, PR에 실제 검증 결과를 적는다.
 - 단순 설명이나 스텁으로 끝내지 않는다. 동작하는 코드와 검증 결과를 남긴다.
@@ -15,7 +15,6 @@
 - Spring Boot 3.5.16 기준으로 작성한다.
 - Spring Web, Spring Data JPA, Spring Data Redis, Spring Security, Bean Validation을 프로젝트 기본 스택으로 본다.
 - Gradle Wrapper(`./gradlew`)를 사용한다.
-- 테스트 실행 시 로컬 JDK가 없으면 `/home/heeho3/.jdks/temurin-21`을 우선 사용한다.
 
 ```bash
 export JAVA_HOME=/home/heeho3/.jdks/temurin-21
