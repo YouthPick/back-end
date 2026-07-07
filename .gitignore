@@ -40,3 +40,7 @@ out/
 .env
 .env.*
 !.env.example
+
+### Claude Code local ###
+CLAUDE.local.md
+.claude/settings.local.json
