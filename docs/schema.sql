@@ -13,6 +13,10 @@
 --   soft delete: 유저 소유 데이터 전부 deleted_at 보유
 --         (로그·배치이력은 의도적으로 없음 — 이력은 삭제하지 않음,
 --          policies는 visibility가 그 역할)
+--   감사 컬럼: 유저 도메인 전 테이블 created_at+updated_at 통일
+--         (BaseEntity 상속과 1:1 대응. 예외 = 불변 데이터:
+--          regions/policy_regions 없음, 로그는 created_at만,
+--          batch_history는 자체 시각)
 --   ⚠️팀 결정 필요 표시는 [결정필요]로 검색
 -- ============================================================
 
@@ -30,6 +34,7 @@ CREATE TABLE users (
     nickname     VARCHAR(100) NULL,
     role         VARCHAR(20)  NOT NULL DEFAULT 'USER' COMMENT 'USER | ADMIN',
     created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at   DATETIME     NULL     COMMENT '회원탈퇴 soft delete',
     PRIMARY KEY (id),
     UNIQUE KEY uk_users_provider (provider, provider_id)
@@ -61,8 +66,9 @@ CREATE TABLE user_profiles (
     categories         VARCHAR(500) NULL     COMMENT '관심분야 콤마목록 (REC 분야 20점)',
     keywords           VARCHAR(700) NULL     COMMENT '관심키워드 콤마목록 (REC 키워드 10점)',
     status             VARCHAR(20)  NOT NULL DEFAULT 'COMPLETED',
-    deleted_at         DATETIME     NULL     COMMENT '프로필 삭제 soft delete',
+    created_at         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at         DATETIME     NULL     COMMENT '프로필 삭제 soft delete',
     PRIMARY KEY (id),
     UNIQUE KEY uk_user_profiles_user (user_id),
     CONSTRAINT fk_user_profiles_user   FOREIGN KEY (user_id)     REFERENCES users (id),
@@ -168,6 +174,7 @@ CREATE TABLE policy_applications (
     memo       TEXT        NULL,
     end_at     DATETIME    NULL COMMENT '마감일 (개인 설정)',
     created_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '상태 전환(관심→신청→완료) 추적',
     deleted_at DATETIME    NULL COMMENT '관리 해제 = soft delete. 재등록 시 행 재활성화(UNIQUE 충돌 방지)',
     PRIMARY KEY (id),
     UNIQUE KEY uk_policy_applications_user_policy (user_id, policy_id),
@@ -185,6 +192,7 @@ CREATE TABLE application_checklists (
     content        TEXT     NOT NULL COMMENT '체크 항목 내용',
     is_checked     BOOLEAN  NOT NULL DEFAULT FALSE,
     created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at     DATETIME NULL COMMENT 'soft delete',
     PRIMARY KEY (id),
     KEY idx_application_checklists_app (application_id),
@@ -244,6 +252,7 @@ CREATE TABLE attachments (
     file_url   VARCHAR(500) NOT NULL COMMENT '저장 경로/URL',
     file_size  BIGINT       NULL COMMENT 'byte',
     created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at DATETIME     NULL COMMENT 'soft delete',
     PRIMARY KEY (id),
     KEY idx_attachments_post (post_id),
