@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   check:
-    name: Format & Build
+    name: Format, Build & Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -43,6 +43,14 @@ jobs:
       - name: Format Check (spotless)
         run: ./gradlew spotlessCheck --no-daemon
 
-      # 컴파일/패키징 검증. 테스트는 CI에서 제외하므로 build 대신 assemble을 쓴다.
-      - name: Build (테스트 제외)
-        run: ./gradlew assemble --no-daemon
+      # 컴파일/패키징 + 테스트 검증. 테스트는 H2 in-memory(test 프로파일)로 외부 인프라 없이 돈다.
+      - name: Build & Test (H2)
+        run: ./gradlew build --no-daemon -x spotlessCheck
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: build/reports/tests/test
+          retention-days: 7
