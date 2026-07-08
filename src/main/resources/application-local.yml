@@ -3,6 +3,8 @@
 spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/youthpick?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul}
+    # 기본값 youthpick은 로컬 compose MySQL의 기본 계정(운영 자격증명 아님).
+    # docker-compose.yml의 fallback과 짝이며, .env로 계정을 바꿨다면 앱에도 같은 값을 env로 넘겨야 한다.
     username: ${DB_USERNAME:youthpick}
     password: ${DB_PASSWORD:youthpick}
     driver-class-name: com.mysql.cj.jdbc.Driver
