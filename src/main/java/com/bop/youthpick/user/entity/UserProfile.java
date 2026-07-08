@@ -60,4 +60,24 @@ public class UserProfile extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public static UserProfile create(
+            User user,
+            Region region,
+            Integer birthYear,
+            String employmentStatus,
+            String educationLevel,
+            String categories,
+            String keywords
+    ) {
+        UserProfile profile = new UserProfile();
+        profile.user = user;
+        profile.region = region;
+        profile.birthYear = birthYear;
+        profile.employmentStatus = employmentStatus;
+        profile.educationLevel = educationLevel;
+        profile.categories = categories;
+        profile.keywords = keywords;
+        return profile;
+    }
 }
