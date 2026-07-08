@@ -156,9 +156,9 @@ CREATE TABLE policy_applications (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '사용자별 정책 신청 진행관리 (관심~완료 전 단계, 즐겨찾기 통합)';
 
 -- ------------------------------------------------------------
--- 7. application_checklists — 신청관리 체크리스트
+-- 7. policy_application_checklists — 신청관리 체크리스트
 -- ------------------------------------------------------------
-CREATE TABLE application_checklists (
+CREATE TABLE policy_application_checklists (
     id             BIGINT   NOT NULL AUTO_INCREMENT,
     application_id BIGINT   NOT NULL COMMENT 'policy_applications FK',
     content        TEXT     NOT NULL COMMENT '체크 항목 내용',
@@ -167,8 +167,8 @@ CREATE TABLE application_checklists (
     updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at     DATETIME NULL COMMENT 'soft delete',
     PRIMARY KEY (id),
-    KEY idx_application_checklists_app (application_id),
-    CONSTRAINT fk_application_checklists_app FOREIGN KEY (application_id) REFERENCES policy_applications (id)
+    KEY idx_policy_application_checklists_app (application_id),
+    CONSTRAINT fk_policy_application_checklists_app FOREIGN KEY (application_id) REFERENCES policy_applications (id)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '신청관리별 준비 체크리스트';
 
 -- ------------------------------------------------------------
@@ -267,9 +267,9 @@ CREATE TABLE app_logs (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '앱 로그 (기한 지나면 삭제)';
 
 -- ------------------------------------------------------------
--- 13. search_logs — 검색 로그
+-- 13. search_histories — 검색 로그
 -- ------------------------------------------------------------
-CREATE TABLE search_logs (
+CREATE TABLE search_histories (
     id           BIGINT       NOT NULL AUTO_INCREMENT,
     user_id      BIGINT       NULL COMMENT '비로그인 NULL. FK 안 걺',
     query        VARCHAR(200) NOT NULL COMMENT '입력 원문',
@@ -277,5 +277,5 @@ CREATE TABLE search_logs (
     result_count INT          NOT NULL COMMENT '검색 결과 건수 (0 = 0건 검색)',
     created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    KEY idx_search_logs_created (created_at)
+    KEY idx_search_histories_created (created_at)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '검색 로그 (집계 후 원본 정리)';

@@ -20,8 +20,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  * userId는 연관관계 없이 값만 — 비로그인 검색은 NULL.
  */
 @Entity
-@Table(name = "search_logs",
-        indexes = @Index(name = "idx_search_logs_created", columnList = "created_at"))
+@Table(name = "search_histories",
+        indexes = @Index(name = "idx_search_histories_created", columnList = "created_at"))
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
