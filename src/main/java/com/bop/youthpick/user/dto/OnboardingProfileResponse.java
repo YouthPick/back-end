@@ -1,6 +1,8 @@
 package com.bop.youthpick.user.dto;
 
 import com.bop.youthpick.user.entity.UserProfile;
+import java.util.Arrays;
+import java.util.List;
 
 public record OnboardingProfileResponse(
         Long id,
@@ -9,8 +11,8 @@ public record OnboardingProfileResponse(
         String regionCode,
         String employmentStatus,
         String educationLevel,
-        String categories,
-        String keywords,
+        List<String> categories,
+        List<String> keywords,
         String status
 ) {
     public static OnboardingProfileResponse from(UserProfile profile) {
@@ -21,9 +23,16 @@ public record OnboardingProfileResponse(
                 profile.getRegion().getCode(),
                 profile.getEmploymentStatus(),
                 profile.getEducationLevel(),
-                profile.getCategories(),
-                profile.getKeywords(),
+                splitToList(profile.getCategories()),
+                splitToList(profile.getKeywords()),
                 profile.getStatus()
         );
+    }
+
+    private static List<String> splitToList(String commaSeparated) {
+        if (commaSeparated == null || commaSeparated.isBlank()) {
+            return List.of();
+        }
+        return Arrays.asList(commaSeparated.split(","));
     }
 }

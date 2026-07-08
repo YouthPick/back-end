@@ -17,6 +17,7 @@ import com.bop.youthpick.user.exception.UserError;
 import com.bop.youthpick.user.exception.UserException;
 import com.bop.youthpick.user.repository.UserProfileRepository;
 import com.bop.youthpick.user.repository.UserRepository;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,8 @@ class OnboardingServiceTest {
 
     private static final Long USER_ID = 1L;
     private static final OnboardingProfileRequest REQUEST = new OnboardingProfileRequest(
-            2000, "11110", "EMPLOYED", "UNIVERSITY", "취업,주거", "청년,공모전"
+            2000, "11110", "EMPLOYED", "UNIVERSITY",
+            List.of("취업", "주거"), List.of("청년", "공모전")
     );
 
     @BeforeEach
@@ -60,6 +62,8 @@ class OnboardingServiceTest {
 
         assertThat(result.getBirthYear()).isEqualTo(REQUEST.birthYear());
         assertThat(result.getEmploymentStatus()).isEqualTo(REQUEST.employmentStatus());
+        assertThat(result.getCategories()).isEqualTo("취업,주거");
+        assertThat(result.getKeywords()).isEqualTo("청년,공모전");
     }
 
     @Test

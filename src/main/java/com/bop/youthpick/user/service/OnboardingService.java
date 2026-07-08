@@ -11,6 +11,7 @@ import com.bop.youthpick.user.exception.UserError;
 import com.bop.youthpick.user.exception.UserException;
 import com.bop.youthpick.user.repository.UserProfileRepository;
 import com.bop.youthpick.user.repository.UserRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,10 +42,17 @@ public class OnboardingService {
                 request.birthYear(),
                 request.employmentStatus(),
                 request.educationLevel(),
-                request.categories(),
-                request.keywords()
+                joinToCommaString(request.categories()),
+                joinToCommaString(request.keywords())
         );
 
         return userProfileRepository.save(profile);
+    }
+
+    private String joinToCommaString(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+        return String.join(",", values);
     }
 }

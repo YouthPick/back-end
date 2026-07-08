@@ -12,7 +12,6 @@ import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.entity.UserProfile;
 import com.bop.youthpick.user.service.OnboardingService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -28,9 +27,6 @@ class OnboardingControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @MockitoBean
     private OnboardingService onboardingService;
 
@@ -40,8 +36,8 @@ class OnboardingControllerTest {
                 "regionCode": "11110",
                 "employmentStatus": "EMPLOYED",
                 "educationLevel": "UNIVERSITY",
-                "categories": "취업,주거",
-                "keywords": "청년,공모전"
+                "categories": ["취업", "주거"],
+                "keywords": ["청년", "공모전"]
             }
             """;
 
@@ -69,7 +65,9 @@ class OnboardingControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").value(10))
                 .andExpect(jsonPath("$.data.userId").value(1))
-                .andExpect(jsonPath("$.data.regionCode").value("11110"));
+                .andExpect(jsonPath("$.data.regionCode").value("11110"))
+                .andExpect(jsonPath("$.data.categories[0]").value("취업"))
+                .andExpect(jsonPath("$.data.categories[1]").value("주거"));
     }
 
     @Test
