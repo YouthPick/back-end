@@ -16,8 +16,8 @@ permissions:
   contents: read
 
 jobs:
-  format:
-    name: Format Check
+  check:
+    name: Format & Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -42,3 +42,7 @@ jobs:
       # google-java-format 기준으로 포맷 준수 여부만 검사한다. 위반 시 spotlessApply 안내와 함께 실패한다.
       - name: Format Check (spotless)
         run: ./gradlew spotlessCheck --no-daemon
+
+      # 컴파일/패키징 검증. 테스트는 CI에서 제외하므로 build 대신 assemble을 쓴다.
+      - name: Build (테스트 제외)
+        run: ./gradlew assemble --no-daemon
