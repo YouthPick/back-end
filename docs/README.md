@@ -1,22 +1,32 @@
 # YouthPick 문서 (docs)
 
-`youth-pick` 백엔드의 개발 규칙과 컨벤션 문서 모음이다. 코드/문서 작업 전에 관련 문서를 먼저 읽는다.
+`youth-pick` 백엔드의 문서 안내다. 코드/문서 작업 전에 관련 문서를 먼저 읽는다.
 
-## 문서 목록
+## 규칙 문서 위치
 
-| 문서 | 내용 |
-|------|------|
-| [`rules.md`](./rules.md) | 백엔드 구현 규칙 (패키지 구조, Controller/DTO/Validation, 예외 처리, Lombok, Entity/JPA, Service, Pageable, 인증/세션/Redis, Docker, 테스트) |
-| [`git-convention.md`](./git-convention.md) | Git 워크플로, 브랜치 전략/네이밍, 커밋 컨벤션, PR/리뷰/merge 규칙 |
-
-레포 루트에는 에이전트 진입점 문서가 있다.
+개발 규칙·컨벤션의 단일 출처(SSOT)는 [`.claude/rules/`](../.claude/rules)다. 주제별 파일로 나뉘어 있고, Claude Code 등 코딩 에이전트가 자동 로드한다. 전체 맵은 [`AGENTS.md`](../AGENTS.md#규칙-문서-맵)를 본다.
 
 | 문서 | 내용 |
 |------|------|
-| [`../CLAUDE.md`](../CLAUDE.md) | Claude Code 등 코딩 에이전트가 자동 로드하는 진입점. 비협상 규칙 요약 + 상세 문서 링크 |
-| [`../AGENTS.md`](../AGENTS.md) | 에이전트 필수 규칙 요약 (범용 에이전트 진입점) |
+| [`../.claude/rules/workflow.md`](../.claude/rules/workflow.md) | 작업 흐름, Git 브랜치/커밋/PR/리뷰/merge, 완료 전 검증 |
+| [`../.claude/rules/architecture.md`](../.claude/rules/architecture.md) | 패키지 구조, 계층 책임, 금지 구조 |
+| [`../.claude/rules/api-design.md`](../.claude/rules/api-design.md) | Controller, DTO, Validation, `ApiResponse`, Pageable |
+| [`../.claude/rules/error-handling.md`](../.claude/rules/error-handling.md) | `ErrorCode`/`CustomException`/`ErrorResponse`, 에러코드 접두어 체계 |
+| [`../.claude/rules/entity-jpa.md`](../.claude/rules/entity-jpa.md) | Entity/Repository/JPA |
+| [`../.claude/rules/service.md`](../.claude/rules/service.md) | Service 계층, 트랜잭션 |
+| [`../.claude/rules/lombok.md`](../.claude/rules/lombok.md) | Lombok 허용/금지 |
+| [`../.claude/rules/auth-security.md`](../.claude/rules/auth-security.md) | 인증/세션/Redis, secret 취급 |
+| [`../.claude/rules/testing.md`](../.claude/rules/testing.md) | 테스트 규칙 |
+| [`../.claude/rules/infra.md`](../.claude/rules/infra.md) | Docker/Compose, API 수동 검증 |
 
-`.github/` 에는 협업 템플릿이 있다.
+## 진입점 문서 (레포 루트)
+
+| 문서 | 내용 |
+|------|------|
+| [`../AGENTS.md`](../AGENTS.md) | 모든 에이전트/개발자 공통 진입점. 개요 · 검증 명령 · 비협상 규칙 요약 · 규칙 문서 맵 |
+| [`../CLAUDE.md`](../CLAUDE.md) | Claude Code 진입점. `AGENTS.md`를 import하고 Claude 전용 안내만 추가 |
+
+## 협업 템플릿 (`.github/`)
 
 | 파일 | 내용 |
 |------|------|
@@ -25,14 +35,12 @@
 
 ## 문서 컨벤션
 
-새 문서를 추가하거나 기존 문서를 고칠 때 아래를 따른다.
-
-- **위치**: 에이전트가 자동으로 읽어야 하는 진입점(`CLAUDE.md`, `AGENTS.md`)만 레포 루트에 둔다. 그 외 상세 규칙·설계·컨벤션 문서는 모두 `docs/` 아래에 둔다.
-- **파일명**: 소문자 + 하이픈(`kebab-case`), 확장자 `.md`. 예: `git-convention.md`, `api-spec.md`.
+- **위치**: 규칙·컨벤션은 `.claude/rules/`(주제별 1파일). 에이전트 진입점(`CLAUDE.md`, `AGENTS.md`)은 레포 루트. 설계·명세 등 그 외 문서는 `docs/` 아래.
+- **파일명**: 소문자 + 하이픈(`kebab-case`), 확장자 `.md`.
 - **언어**: 본문은 한국어. 코드 식별자/명령/예약어는 원문 그대로.
-- **단일 출처(SSOT)**: 같은 규칙을 여러 문서에 복붙하지 않는다. 상세 내용은 한 문서에 두고 나머지는 링크한다. (예: Git 규칙 원본은 `git-convention.md`, `CLAUDE.md`/`AGENTS.md`는 요약 + 링크)
-- **링크**: 문서 간 참조는 상대경로 링크를 사용해 최신 위치를 가리키게 한다.
-- **갱신**: 규칙을 바꾸면 이 목록과 관련 진입점(`CLAUDE.md`/`AGENTS.md`)의 링크·요약도 함께 갱신한다.
+- **단일 출처(SSOT)**: 같은 규칙을 여러 문서에 복붙하지 않는다. 상세는 한 문서에 두고 나머지는 링크한다.
+- **갱신**: 규칙을 바꾸면 `AGENTS.md`의 요약·규칙 문서 맵과 이 목록도 함께 갱신한다.
+- **경로 스코프**: `.claude/rules/` 파일은 필요하면 YAML frontmatter의 `paths`(glob)로 적용 범위를 제한한다. `paths`가 없으면 항상 로드된다.
 
 ## 앞으로 추가하면 좋은 문서 (제안)
 
