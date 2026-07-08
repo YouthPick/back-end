@@ -20,14 +20,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 정책 기반 게시판 글. policy가 NULL이면 자유글.
- * 정책 행을 재활용하지 않고 FK로 참조만 — 정책(배치가 주인)과
- * 게시글(유저가 주인)은 수명이 다르므로.
- */
+/** 정책 기반 게시판 글. policy가 NULL이면 자유글. 정책 행을 재활용하지 않고 FK로 참조만 — 정책(배치가 주인)과 게시글(유저가 주인)은 수명이 다르므로. */
 @Entity
-@Table(name = "posts",
-        indexes = @Index(name = "idx_posts_policy", columnList = "policy_id"))
+@Table(name = "posts", indexes = @Index(name = "idx_posts_policy", columnList = "policy_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Post extends BaseEntity {

@@ -16,11 +16,10 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 신청관리별 준비 체크리스트 (제출서류 등).
- */
+/** 신청관리별 준비 체크리스트 (제출서류 등). */
 @Entity
-@Table(name = "application_checklists",
+@Table(
+        name = "application_checklists",
         indexes = @Index(name = "idx_application_checklists_app", columnList = "application_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

@@ -15,5 +15,5 @@ public enum UserError implements ErrorCode {
 
     private final HttpStatus status;
     private final String code;
-    private final  String message;
+    private final String message;
 }

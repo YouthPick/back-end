@@ -8,10 +8,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 지역(시군구) 마스터. 행안부 법정동코드 ~250행 1회 적재.
- * 코드는 국가 표준 불변값이라 대리키 없이 code가 PK (통화코드 KRW와 같은 급).
- */
+/** 지역(시군구) 마스터. 행안부 법정동코드 ~250행 1회 적재. 코드는 국가 표준 불변값이라 대리키 없이 code가 PK (통화코드 KRW와 같은 급). */
 @Entity
 @Table(name = "regions")
 @Getter

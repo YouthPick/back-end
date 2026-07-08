@@ -18,17 +18,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 청년정책 (온통청년 API 수집·전처리 결과).
- * 각 필드 주석의 코드는 API 원본 키(plcyNo 등) — 매핑표 역할.
- * [보류] 필드는 원천 데이터 품질 문제로 판정 로직 사용 금지, 적재만 한다.
+ * 청년정책 (온통청년 API 수집·전처리 결과). 각 필드 주석의 코드는 API 원본 키(plcyNo 등) — 매핑표 역할. [보류] 필드는 원천 데이터 품질 문제로 판정 로직
+ * 사용 금지, 적재만 한다.
  */
 @Entity
-@Table(name = "policies",
-        uniqueConstraints = @UniqueConstraint(name = "uk_policies_policy_no", columnNames = "policy_no"),
+@Table(
+        name = "policies",
+        uniqueConstraints =
+                @UniqueConstraint(name = "uk_policies_policy_no", columnNames = "policy_no"),
         indexes = {
-                @Index(name = "idx_policies_application_end", columnList = "application_end_date"),
-                @Index(name = "idx_policies_view_count", columnList = "view_count"),
-                @Index(name = "idx_policies_category", columnList = "category")
+            @Index(name = "idx_policies_application_end", columnList = "application_end_date"),
+            @Index(name = "idx_policies_view_count", columnList = "view_count"),
+            @Index(name = "idx_policies_category", columnList = "category")
         })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
