@@ -7,7 +7,7 @@
 - 청년 정책 추천 서비스 **YouthPick** 백엔드 API 서버
 - Java 21 · Spring Boot 3.5.16 · Gradle Wrapper(Groovy DSL, `build.gradle`)
 - Spring Web MVC / Data JPA / Security / Session(Redis) / Validation / Actuator
-- DB: 로컬·테스트 H2 in-memory(MySQL 모드), 배포 MySQL — 프로파일/환경변수로 전환(기본 프로파일 `local`)
+- DB: 로컬·배포 MySQL + Flyway(`db/migration`, JPA는 validate만) / 테스트만 H2 in-memory(MySQL 모드) — 프로파일/환경변수로 전환(기본 프로파일 `local`)
 - 인증: Spring Security 세션 기반 + OAuth 소셜 로그인(Google/Naver/Kakao), 세션은 Redis 저장
 - 패키지 루트: `com.bop.youthpick`
 
