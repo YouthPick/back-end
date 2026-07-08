@@ -6,10 +6,10 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-# Java: google-java-format(Spotless) 기준 2-space 들여쓰기
+# Java: google-java-format AOSP(Spotless) 기준 4-space 들여쓰기
 [*.java]
 indent_style = space
-indent_size = 2
+indent_size = 4
 
 # YAML / JSON: 2-space
 [*.{yml,yaml,json}]

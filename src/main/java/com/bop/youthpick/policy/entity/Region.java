@@ -15,13 +15,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Region {
 
-  @Id
-  @Column(length = 10)
-  private String code;
+    @Id
+    @Column(length = 10)
+    private String code;
 
-  @Column(name = "sido_name", length = 30, nullable = false)
-  private String sidoName;
+    @Column(name = "sido_name", length = 30, nullable = false)
+    private String sidoName;
 
-  @Column(length = 50, nullable = false)
-  private String name;
+    @Column(length = 50, nullable = false)
+    private String name;
 }

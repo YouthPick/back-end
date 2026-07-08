@@ -27,18 +27,18 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-  private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-  @Override
-  public void commence(
-      HttpServletRequest request,
-      HttpServletResponse response,
-      AuthenticationException authException)
-      throws IOException {
-    ErrorCode errorCode = AuthErrorCode.UNAUTHORIZED;
-    response.setStatus(errorCode.getStatus().value());
-    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-    response.setCharacterEncoding("UTF-8");
-    objectMapper.writeValue(response.getWriter(), ErrorResponse.of(errorCode));
-  }
+    @Override
+    public void commence(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            AuthenticationException authException)
+            throws IOException {
+        ErrorCode errorCode = AuthErrorCode.UNAUTHORIZED;
+        response.setStatus(errorCode.getStatus().value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        objectMapper.writeValue(response.getWriter(), ErrorResponse.of(errorCode));
+    }
 }

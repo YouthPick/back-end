@@ -14,29 +14,29 @@ import java.util.List;
  * [], "timestamp": "2026-06-30T14:16:00.900" }
  */
 public record ErrorResponse(
-    int status,
-    String code,
-    String message,
-    List<FieldErrorDetail> errors,
-    LocalDateTime timestamp) {
-  public static ErrorResponse of(ErrorCode errorCode) {
-    return new ErrorResponse(
-        errorCode.getStatus().value(),
-        errorCode.getCode(),
-        errorCode.getMessage(),
-        List.of(),
-        LocalDateTime.now());
-  }
+        int status,
+        String code,
+        String message,
+        List<FieldErrorDetail> errors,
+        LocalDateTime timestamp) {
+    public static ErrorResponse of(ErrorCode errorCode) {
+        return new ErrorResponse(
+                errorCode.getStatus().value(),
+                errorCode.getCode(),
+                errorCode.getMessage(),
+                List.of(),
+                LocalDateTime.now());
+    }
 
-  public static ErrorResponse of(ErrorCode errorCode, List<FieldErrorDetail> errors) {
-    return new ErrorResponse(
-        errorCode.getStatus().value(),
-        errorCode.getCode(),
-        errorCode.getMessage(),
-        errors,
-        LocalDateTime.now());
-  }
+    public static ErrorResponse of(ErrorCode errorCode, List<FieldErrorDetail> errors) {
+        return new ErrorResponse(
+                errorCode.getStatus().value(),
+                errorCode.getCode(),
+                errorCode.getMessage(),
+                errors,
+                LocalDateTime.now());
+    }
 
-  /** 내부 exception class, SQL, stack trace, secret 값은 넣지 않는다. */
-  public record FieldErrorDetail(String field, String value, String reason) {}
+    /** 내부 exception class, SQL, stack trace, secret 값은 넣지 않는다. */
+    public record FieldErrorDetail(String field, String value, String reason) {}
 }

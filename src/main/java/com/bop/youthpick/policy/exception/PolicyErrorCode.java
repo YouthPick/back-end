@@ -8,10 +8,10 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum PolicyErrorCode implements ErrorCode {
-  POLICY_NOT_FOUND("P001", "일치하는 정책이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
-  POLICY_ALREADY_EXISTS("P002", "이미 존재하는 정책입니다.", HttpStatus.CONFLICT);
+    POLICY_NOT_FOUND("P001", "일치하는 정책이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
+    POLICY_ALREADY_EXISTS("P002", "이미 존재하는 정책입니다.", HttpStatus.CONFLICT);
 
-  private final String code;
-  private final String message;
-  private final HttpStatus status;
+    private final String code;
+    private final String message;
+    private final HttpStatus status;
 }

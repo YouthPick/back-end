@@ -27,31 +27,31 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Post extends BaseEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "policy_id")
-  private Policy policy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "policy_id")
+    private Policy policy;
 
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20, nullable = false)
-  private PostCategory category;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private PostCategory category;
 
-  @Column(length = 100, nullable = false)
-  private String title;
+    @Column(length = 100, nullable = false)
+    private String title;
 
-  @Column(columnDefinition = "TEXT", nullable = false)
-  private String content;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String content;
 
-  @Column(name = "view_count", nullable = false)
-  private int viewCount;
+    @Column(name = "view_count", nullable = false)
+    private int viewCount;
 
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

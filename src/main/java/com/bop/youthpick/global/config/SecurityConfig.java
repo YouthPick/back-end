@@ -37,59 +37,61 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
 
-  // [AUTH ON] 1단계: 팀원 auth 코드 추가 후 아래 주입을 활성화한다.
-  // private final com.bop.youthpick.auth.token.JwtAuthenticationFilter jwtAuthenticationFilter;
+    // [AUTH ON] 1단계: 팀원 auth 코드 추가 후 아래 주입을 활성화한다.
+    // private final com.bop.youthpick.auth.token.JwtAuthenticationFilter jwtAuthenticationFilter;
 
-  @Bean
-  SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(csrf -> csrf.disable())
-        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-        .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .exceptionHandling(
-            exception -> exception.authenticationEntryPoint(restAuthenticationEntryPoint));
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(
+                        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(
+                        exception ->
+                                exception.authenticationEntryPoint(restAuthenticationEntryPoint));
 
-    // ===== DEV: 전부 허용 (로그인 기능 생기기 전까지 개발 편의용) =====
-    http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        // ===== DEV: 전부 허용 (로그인 기능 생기기 전까지 개발 편의용) =====
+        http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
 
-    // ===== [AUTH ON] 2단계: 위 DEV 블록을 지우고 아래를 활성화한다 =====
-    // http.authorizeHttpRequests(auth -> auth
-    //         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-    //         .requestMatchers(
-    //                 "/actuator/health",
-    //                 "/error",
-    //                 // 인증 없이 접근 가능한 공개 엔드포인트 (팀원 auth/정책 API 기준)
-    //                 "/api/v1/auth/oauth/*/authorization-url",
-    //                 "/api/v1/auth/oauth/*/callback",
-    //                 "/api/v1/auth/token/refresh",
-    //                 "/api/v1/auth/logout",
-    //                 "/api/v1/policies",
-    //                 "/api/v1/policies/**"
-    //         ).permitAll()
-    //         .anyRequest().authenticated()
-    // );
-    // http.addFilterBefore(jwtAuthenticationFilter,
-    //
-    // org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+        // ===== [AUTH ON] 2단계: 위 DEV 블록을 지우고 아래를 활성화한다 =====
+        // http.authorizeHttpRequests(auth -> auth
+        //         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        //         .requestMatchers(
+        //                 "/actuator/health",
+        //                 "/error",
+        //                 // 인증 없이 접근 가능한 공개 엔드포인트 (팀원 auth/정책 API 기준)
+        //                 "/api/v1/auth/oauth/*/authorization-url",
+        //                 "/api/v1/auth/oauth/*/callback",
+        //                 "/api/v1/auth/token/refresh",
+        //                 "/api/v1/auth/logout",
+        //                 "/api/v1/policies",
+        //                 "/api/v1/policies/**"
+        //         ).permitAll()
+        //         .anyRequest().authenticated()
+        // );
+        // http.addFilterBefore(jwtAuthenticationFilter,
+        //
+        // org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
-    return http.build();
-  }
+        return http.build();
+    }
 
-  @Bean
-  CorsConfigurationSource corsConfigurationSource() {
-    CorsConfiguration configuration = new CorsConfiguration();
-    // 프론트엔드 개발 서버 주소. 실제 배포 도메인에 맞게 조정한다.
-    configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
-    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
-    configuration.setExposedHeaders(List.of("Location"));
-    configuration.setAllowCredentials(false);
-    configuration.setMaxAge(3600L);
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // 프론트엔드 개발 서버 주소. 실제 배포 도메인에 맞게 조정한다.
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setExposedHeaders(List.of("Location"));
+        configuration.setAllowCredentials(false);
+        configuration.setMaxAge(3600L);
 
-    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-    source.registerCorsConfiguration("/**", configuration);
-    return source;
-  }
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 }

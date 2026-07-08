@@ -21,42 +21,43 @@ import lombok.NoArgsConstructor;
 /** 온보딩 프로필 (users와 1:1). 맞춤정책 점수계산(REC 6축)의 입력값. */
 @Entity
 @Table(
-    name = "user_profiles",
-    uniqueConstraints = @UniqueConstraint(name = "uk_user_profiles_user", columnNames = "user_id"))
+        name = "user_profiles",
+        uniqueConstraints =
+                @UniqueConstraint(name = "uk_user_profiles_user", columnNames = "user_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserProfile extends BaseEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-  @Column(name = "birth_year", nullable = false)
-  private Integer birthYear;
+    @Column(name = "birth_year", nullable = false)
+    private Integer birthYear;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "region_code", nullable = false)
-  private Region region;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "region_code", nullable = false)
+    private Region region;
 
-  @Column(name = "employment_status", length = 16)
-  private String employmentStatus;
+    @Column(name = "employment_status", length = 16)
+    private String employmentStatus;
 
-  @Column(name = "education_level", length = 16)
-  private String educationLevel;
+    @Column(name = "education_level", length = 16)
+    private String educationLevel;
 
-  @Column(length = 500)
-  private String categories;
+    @Column(length = 500)
+    private String categories;
 
-  @Column(length = 700)
-  private String keywords;
+    @Column(length = 700)
+    private String keywords;
 
-  @Column(length = 20, nullable = false)
-  private String status = "COMPLETED";
+    @Column(length = 20, nullable = false)
+    private String status = "COMPLETED";
 
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

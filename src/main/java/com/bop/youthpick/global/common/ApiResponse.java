@@ -8,11 +8,11 @@ import java.util.Map;
  * data가 아닌데 필요한 부가정보를 등록 에러 응답은 이 타입이 아니라 {@code global.error.ErrorResponse} 형식으로 내려간다.
  */
 public record ApiResponse<T>(T data, Map<String, Object> meta) {
-  public static <T> ApiResponse<T> ok(T data) {
-    return new ApiResponse<>(data, Map.of());
-  }
+    public static <T> ApiResponse<T> ok(T data) {
+        return new ApiResponse<>(data, Map.of());
+    }
 
-  public static <T> ApiResponse<T> ok(T data, Map<String, Object> meta) {
-    return new ApiResponse<>(data, meta);
-  }
+    public static <T> ApiResponse<T> ok(T data, Map<String, Object> meta) {
+        return new ApiResponse<>(data, meta);
+    }
 }

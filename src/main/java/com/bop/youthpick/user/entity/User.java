@@ -18,35 +18,35 @@ import lombok.NoArgsConstructor;
 /** 서비스 회원 (소셜 로그인 전용). 식별은 (provider, providerId) — email은 카카오 미제공/미보유 가능이라 NULL 허용. */
 @Entity
 @Table(
-    name = "users",
-    uniqueConstraints =
-        @UniqueConstraint(
-            name = "uk_users_provider",
-            columnNames = {"provider", "provider_id"}))
+        name = "users",
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_users_provider",
+                        columnNames = {"provider", "provider_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @Column(length = 20, nullable = false)
-  private String provider;
+    @Column(length = 20, nullable = false)
+    private String provider;
 
-  @Column(name = "provider_id", length = 255, nullable = false)
-  private String providerId;
+    @Column(name = "provider_id", length = 255, nullable = false)
+    private String providerId;
 
-  @Column(length = 255)
-  private String email;
+    @Column(length = 255)
+    private String email;
 
-  @Column(length = 100)
-  private String nickname;
+    @Column(length = 100)
+    private String nickname;
 
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20, nullable = false)
-  private Role role = Role.USER;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private Role role = Role.USER;
 
-  @Column(name = "deleted_at")
-  private LocalDateTime deletedAt;
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

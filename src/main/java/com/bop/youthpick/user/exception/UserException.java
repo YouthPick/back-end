@@ -5,7 +5,7 @@ import com.bop.youthpick.global.error.ErrorCode;
 
 public class UserException extends CustomException {
 
-  public UserException(ErrorCode errorCode) {
-    super(errorCode);
-  }
+    public UserException(ErrorCode errorCode) {
+        super(errorCode);
+    }
 }
