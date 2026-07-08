@@ -43,6 +43,7 @@ public enum UserErrorCode implements ErrorCode {
 - 비즈니스 예외는 `throw new CustomException(에러코드)` 또는 도메인 예외(`UserException` 등)로 던진다. raw `RuntimeException` 금지.
 - Controller에서 `try-catch`로 에러 응답을 직접 만들지 않는다. `GlobalExceptionHandler`에 위임한다.
 - 내부 예외 메시지/SQL/stack trace/secret 값을 응답에 노출하지 않는다. `errors[].reason`에는 사용자에게 보여줄 수 있는 검증 메시지만 넣는다.
+- `errors[].value`에는 거절된 입력값(rejectedValue)이 담긴다. 비밀번호·토큰 등 **민감 필드는 `value`를 비우거나 마스킹한다.** 현재 `GlobalExceptionHandler`는 rejectedValue를 그대로 담으므로, 민감 입력을 검증하는 DTO는 응답에 값이 반사되지 않도록 처리한다.
 - 새 에러코드는 접두어 체계를 지키고 사용자 메시지를 함께 정의하며, 프론트 매핑 필요 여부를 PR 본문에 명시한다.
 - 같은 오류에 HTTP status만 다르게 내리거나, 같은 `code`에 다른 의미를 부여하지 않는다.
 

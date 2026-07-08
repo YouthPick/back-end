@@ -1,7 +1,7 @@
 ---
 description: GitHub 이슈를 Git 컨벤션대로 브랜치 생성부터 검증까지 처리한다
 argument-hint: <이슈번호>
-allowed-tools: Bash(git:*), Bash(gh:*), Bash(./gradlew:*), Read, Edit, Write, Grep, Glob
+allowed-tools: Bash(git checkout:*), Bash(git switch:*), Bash(git branch:*), Bash(git add:*), Bash(git commit:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(gh issue view:*), Bash(gh pr create:*), Bash(./gradlew test:*), Read, Edit, Write, Grep, Glob
 ---
 
 이슈 #$1 을 이 레포의 Git 컨벤션([.claude/rules/workflow.md](../rules/workflow.md))에 따라 처리한다.
