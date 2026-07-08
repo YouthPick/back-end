@@ -3,5 +3,5 @@ spring:
     active: local
   flyway:
     # 기본 비활성 — H2(local/test)는 ddl-auto로 스키마 생성.
-    # MySQL을 쓰는 프로필(prod)에서만 true로 켠다.
+    # 배포(MySQL) 프로필은 나중에 추가하고, 그때만 true로 켠다.
     enabled: false
