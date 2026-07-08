@@ -17,35 +17,32 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 게시글 댓글. parent가 NULL이면 최상위, 있으면 대댓글(1단).
- */
+/** 게시글 댓글. parent가 NULL이면 최상위, 있으면 대댓글(1단). */
 @Entity
-@Table(name = "comments",
-        indexes = @Index(name = "idx_comments_post", columnList = "post_id"))
+@Table(name = "comments", indexes = @Index(name = "idx_comments_post", columnList = "post_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Comment extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
-    private Post post;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "post_id", nullable = false)
+  private Post post;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
-    private Comment parent;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "parent_id")
+  private Comment parent;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String content;
+  @Column(columnDefinition = "TEXT", nullable = false)
+  private String content;
 
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+  @Column(name = "deleted_at")
+  private LocalDateTime deletedAt;
 }

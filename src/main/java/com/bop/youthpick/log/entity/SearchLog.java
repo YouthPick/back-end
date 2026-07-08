@@ -15,38 +15,36 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-/**
- * 검색 로그 (0건율·인기검색어 집계 원본. 집계 후 기한 지나면 삭제).
- * userId는 연관관계 없이 값만 — 비로그인 검색은 NULL.
- */
+/** 검색 로그 (0건율·인기검색어 집계 원본. 집계 후 기한 지나면 삭제). userId는 연관관계 없이 값만 — 비로그인 검색은 NULL. */
 @Entity
-@Table(name = "search_logs",
-        indexes = @Index(name = "idx_search_logs_created", columnList = "created_at"))
+@Table(
+    name = "search_logs",
+    indexes = @Index(name = "idx_search_logs_created", columnList = "created_at"))
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SearchLog {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "user_id")
-    private Long userId;
+  @Column(name = "user_id")
+  private Long userId;
 
-    /** 입력 원문 */
-    @Column(length = 200, nullable = false)
-    private String query;
+  /** 입력 원문 */
+  @Column(length = 200, nullable = false)
+  private String query;
 
-    /** 소문자·공백정리 표준형 — 집계는 이 컬럼으로 */
-    @Column(length = 200, nullable = false)
-    private String normalized;
+  /** 소문자·공백정리 표준형 — 집계는 이 컬럼으로 */
+  @Column(length = 200, nullable = false)
+  private String normalized;
 
-    /** 검색 결과 건수. 0 = 0건 검색(오타보정 발동 지표) */
-    @Column(name = "result_count", nullable = false)
-    private int resultCount;
+  /** 검색 결과 건수. 0 = 0건 검색(오타보정 발동 지표) */
+  @Column(name = "result_count", nullable = false)
+  private int resultCount;
 
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private LocalDateTime createdAt;
 }
