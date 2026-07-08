@@ -95,26 +95,36 @@ for seg in segments:
             block("시크릿 파일(.env) 내용 노출 시도. .env는 커밋·출력·전송하지 않는다.")
 
     # 3) git add 로 .env 스테이징 (명시적/광범위/force 모두 고려)
-    if name == "git" and args and args[0] == "add":
-        add_args = args[1:]
-        positionals = [a for a in add_args if not a.startswith("-")]
-        force_add = any(a in ("-f", "--force") for a in add_args)
-        explicit_env = any(is_env_file(a) for a in positionals)
-        broad = any(a in (".", "./", "-A", "--all", "-u", "--update", "*") for a in add_args)
+    if name == "git":
+        # git 전역 옵션(-C <path>, -c <k=v>, --git-dir <path> 등)을 먼저 건너뛰고
+        # 실제 서브명령을 찾는다. 값을 따로 받는 옵션은 다음 토큰까지 스킵.
+        # (git -C x add ., git -c k=v add .env 우회 방지)
+        VALUE_OPTS = ("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--super-prefix")
+        gi = 0
+        while gi < len(args) and args[gi].startswith("-"):
+            gi += 2 if args[gi] in VALUE_OPTS else 1
+        subcmd = args[gi] if gi < len(args) else None
+        add_args = args[gi + 1:]
 
-        if explicit_env:
-            block(".env를 git에 추가하려는 시도. .env는 커밋 금지.")
-        if broad or force_add:
-            status_cmd = ["git", "status", "--porcelain"]
-            if force_add:
-                status_cmd.append("--ignored")
-            status_cmd += ["--", ".env"]
-            try:
-                out = subprocess.run(status_cmd, capture_output=True, text=True, timeout=5)
-                if out.stdout.strip():
-                    block(".env가 스테이징 대상에 포함될 수 있음. .env는 커밋 금지.")
-            except Exception:
-                pass
+        if subcmd == "add":
+            positionals = [a for a in add_args if not a.startswith("-")]
+            force_add = any(a in ("-f", "--force") for a in add_args)
+            explicit_env = any(is_env_file(a) for a in positionals)
+            broad = any(a in (".", "./", "-A", "--all", "-u", "--update", "*") for a in add_args)
+
+            if explicit_env:
+                block(".env를 git에 추가하려는 시도. .env는 커밋 금지.")
+            if broad or force_add:
+                status_cmd = ["git", "status", "--porcelain"]
+                if force_add:
+                    status_cmd.append("--ignored")
+                status_cmd += ["--", ".env"]
+                try:
+                    out = subprocess.run(status_cmd, capture_output=True, text=True, timeout=5)
+                    if out.stdout.strip():
+                        block(".env가 스테이징 대상에 포함될 수 있음. .env는 커밋 금지.")
+                except Exception:
+                    pass
 
 sys.exit(0)
 '
