@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class OnboardingServiceTest {
@@ -80,6 +81,20 @@ class OnboardingServiceTest {
     void 이미_프로필이_있으면_PROFILE_ALREADY_EXISTS_예외를_던진다() {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(userProfileRepository.existsByUserId(USER_ID)).thenReturn(true);
+
+        assertThatThrownBy(() -> onboardingService.submit(USER_ID, REQUEST))
+                .isInstanceOf(UserException.class)
+                .extracting(ex -> ((UserException) ex).getErrorCode())
+                .isEqualTo(UserError.PROFILE_ALREADY_EXISTS);
+    }
+
+    @Test
+    void 저장_시점에_동시요청으로_유니크_제약이_위반되면_PROFILE_ALREADY_EXISTS_예외를_던진다() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(userProfileRepository.existsByUserId(USER_ID)).thenReturn(false);
+        when(regionRepository.findById(REQUEST.regionCode())).thenReturn(Optional.of(mock(Region.class)));
+        when(userProfileRepository.save(any(UserProfile.class)))
+                .thenThrow(new DataIntegrityViolationException("uk_user_profiles_user"));
 
         assertThatThrownBy(() -> onboardingService.submit(USER_ID, REQUEST))
                 .isInstanceOf(UserException.class)

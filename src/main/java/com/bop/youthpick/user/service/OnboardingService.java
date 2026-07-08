@@ -13,6 +13,7 @@ import com.bop.youthpick.user.repository.UserProfileRepository;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,7 +47,13 @@ public class OnboardingService {
                 joinToCommaString(request.keywords())
         );
 
-        return userProfileRepository.save(profile);
+        try {
+            return userProfileRepository.save(profile);
+        } catch (DataIntegrityViolationException e) {
+            // existsByUserId() 확인 이후 다른 트랜잭션이 먼저 저장한 경우
+            // (user_profiles.user_id UNIQUE 위반). 같은 도메인 에러로 통일한다.
+            throw new UserException(UserError.PROFILE_ALREADY_EXISTS);
+        }
     }
 
     private String joinToCommaString(List<String> values) {
