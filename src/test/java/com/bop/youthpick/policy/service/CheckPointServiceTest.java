@@ -13,7 +13,7 @@ import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
-import com.bop.youthpick.policy.repository.ApplicationChecklistRepository;
+import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
 import com.bop.youthpick.user.entity.User;
 import java.util.List;
@@ -31,17 +31,17 @@ import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 class CheckPointServiceTest {
 
-    @Mock private ApplicationChecklistRepository applicationChecklistRepository;
+    @Mock private PolicyApplicationChecklistRepository applicationChecklistRepository;
     @Mock private PolicyApplicationRepository policyApplicationRepository;
 
-    private CheckPointService checkPointService;
+    private PolicyManagementCheckpointService checkPointService;
 
     private static final Long MANAGEMENT_ID = 1L;
 
     @BeforeEach
     void setUp() {
         checkPointService =
-                new CheckPointService(applicationChecklistRepository, policyApplicationRepository);
+                new PolicyManagementCheckpointService(applicationChecklistRepository, policyApplicationRepository);
     }
 
     private PolicyApplication management() {

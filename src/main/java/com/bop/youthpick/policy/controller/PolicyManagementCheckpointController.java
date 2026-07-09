@@ -2,10 +2,10 @@ package com.bop.youthpick.policy.controller;
 
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.ApplicationChecklistResponse;
-import com.bop.youthpick.policy.dto.CheckPointMessageResponse;
-import com.bop.youthpick.policy.dto.CreateCheckPointRequest;
+import com.bop.youthpick.policy.dto.CheckpointMessageResponse;
+import com.bop.youthpick.policy.dto.CreateCheckpointRequest;
 import com.bop.youthpick.policy.entity.ApplicationChecklist;
-import com.bop.youthpick.policy.service.CheckPointService;
+import com.bop.youthpick.policy.service.PolicyManagementCheckpointService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -28,13 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/checkpoints")
 @RequiredArgsConstructor
-public class CheckPointController {
+public class PolicyManagementCheckpointController {
 
-    private final CheckPointService checkPointService;
+    private final PolicyManagementCheckpointService checkPointService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<ApplicationChecklistResponse>> add(
-            @Valid @RequestBody CreateCheckPointRequest request) {
+            @Valid @RequestBody CreateCheckpointRequest request) {
         ApplicationChecklist checklist =
                 checkPointService.add(request.managementId(), request.message());
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -55,20 +55,20 @@ public class CheckPointController {
     }
 
     @PatchMapping("/{id}/check")
-    public ApiResponse<CheckPointMessageResponse> check(@PathVariable Long id) {
+    public ApiResponse<CheckpointMessageResponse> check(@PathVariable Long id) {
         checkPointService.check(id);
-        return ApiResponse.ok(new CheckPointMessageResponse("체크 완료"));
+        return ApiResponse.ok(new CheckpointMessageResponse("체크 완료"));
     }
 
     @PatchMapping("/{id}/uncheck")
-    public ApiResponse<CheckPointMessageResponse> uncheck(@PathVariable Long id) {
+    public ApiResponse<CheckpointMessageResponse> uncheck(@PathVariable Long id) {
         checkPointService.uncheck(id);
-        return ApiResponse.ok(new CheckPointMessageResponse("체크 해제 완료"));
+        return ApiResponse.ok(new CheckpointMessageResponse("체크 해제 완료"));
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<CheckPointMessageResponse> delete(@PathVariable Long id) {
+    public ApiResponse<CheckpointMessageResponse> delete(@PathVariable Long id) {
         checkPointService.delete(id);
-        return ApiResponse.ok(new CheckPointMessageResponse("체크리스트 삭제 완료"));
+        return ApiResponse.ok(new CheckpointMessageResponse("체크리스트 삭제 완료"));
     }
 }

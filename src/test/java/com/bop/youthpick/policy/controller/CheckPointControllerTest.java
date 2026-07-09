@@ -16,7 +16,7 @@ import com.bop.youthpick.policy.entity.ApplicationChecklist;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
-import com.bop.youthpick.policy.service.CheckPointService;
+import com.bop.youthpick.policy.service.PolicyManagementCheckpointService;
 import com.bop.youthpick.user.entity.User;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -30,13 +30,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(controllers = CheckPointController.class)
+@WebMvcTest(controllers = PolicyManagementCheckpointController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class CheckPointControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @MockitoBean private CheckPointService checkPointService;
+    @MockitoBean private PolicyManagementCheckpointService checkPointService;
 
     private ApplicationChecklist checklist() {
         PolicyApplication application =

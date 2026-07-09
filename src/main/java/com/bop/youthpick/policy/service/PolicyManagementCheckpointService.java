@@ -5,7 +5,7 @@ import com.bop.youthpick.policy.dto.ApplicationChecklistResponse;
 import com.bop.youthpick.policy.entity.ApplicationChecklist;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
-import com.bop.youthpick.policy.repository.ApplicationChecklistRepository;
+import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,9 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class CheckPointService {
+public class PolicyManagementCheckpointService {
 
-    private final ApplicationChecklistRepository applicationChecklistRepository;
+    private final PolicyApplicationChecklistRepository applicationChecklistRepository;
     private final PolicyApplicationRepository policyApplicationRepository;
 
     @Transactional
