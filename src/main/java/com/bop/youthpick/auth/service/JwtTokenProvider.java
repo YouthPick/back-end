@@ -47,27 +47,34 @@ public class JwtTokenProvider {
         return jwtProperties.refreshTokenExpiration();
     }
 
-    public Long getUserId(String token) {
-        return Long.valueOf(parseClaims(token).getSubject());
+    /** access token의 서명·만료·타입을 검증하고, 요청당 재파싱을 피하기 위해 {@link Claims}를 그대로 반환한다. */
+    public Claims validateAccessToken(String token) {
+        return requireClaims(token, TOKEN_TYPE_ACCESS);
     }
 
-    public String getRole(String token) {
-        return parseClaims(token).get(CLAIM_ROLE, String.class);
+    /** refresh token의 서명·만료·타입을 검증하고 {@link Claims}를 반환한다. */
+    public Claims validateRefreshToken(String token) {
+        return requireClaims(token, TOKEN_TYPE_REFRESH);
     }
 
-    public void validateAccessToken(String token) {
-        validateType(token, TOKEN_TYPE_ACCESS);
+    public Long getUserId(Claims claims) {
+        try {
+            return Long.valueOf(claims.getSubject());
+        } catch (NumberFormatException e) {
+            throw new AuthException(AuthErrorCode.INVALID_TOKEN);
+        }
     }
 
-    public void validateRefreshToken(String token) {
-        validateType(token, TOKEN_TYPE_REFRESH);
+    public String getRole(Claims claims) {
+        return claims.get(CLAIM_ROLE, String.class);
     }
 
-    private void validateType(String token, String expectedType) {
+    private Claims requireClaims(String token, String expectedType) {
         Claims claims = parseClaims(token);
         if (!expectedType.equals(claims.get(CLAIM_TYPE, String.class))) {
             throw new AuthException(AuthErrorCode.INVALID_TOKEN);
         }
+        return claims;
     }
 
     private Claims parseClaims(String token) {

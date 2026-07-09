@@ -6,6 +6,7 @@ import com.bop.youthpick.auth.exception.AuthErrorCode;
 import com.bop.youthpick.auth.exception.AuthException;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.repository.UserRepository;
+import io.jsonwebtoken.Claims;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -74,8 +75,8 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public TokenResponse refresh(String refreshToken) {
-        jwtTokenProvider.validateRefreshToken(refreshToken);
-        Long userId = jwtTokenProvider.getUserId(refreshToken);
+        Claims claims = jwtTokenProvider.validateRefreshToken(refreshToken);
+        Long userId = jwtTokenProvider.getUserId(claims);
 
         User user =
                 userRepository

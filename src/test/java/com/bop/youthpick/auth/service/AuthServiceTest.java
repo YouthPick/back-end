@@ -144,9 +144,11 @@ class AuthServiceTest {
     @Test
     void refresh_token_rotate가_실패하면_거부된다() {
         User user = mock(User.class);
+        io.jsonwebtoken.Claims claims = mock(io.jsonwebtoken.Claims.class);
         when(user.getId()).thenReturn(1L);
         when(user.getRole()).thenReturn(com.bop.youthpick.user.entity.Role.USER);
-        when(jwtTokenProvider.getUserId("refresh-token")).thenReturn(1L);
+        when(jwtTokenProvider.validateRefreshToken("refresh-token")).thenReturn(claims);
+        when(jwtTokenProvider.getUserId(claims)).thenReturn(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(jwtTokenProvider.createAccessToken(1L, "USER")).thenReturn("new-access");
         when(jwtTokenProvider.createRefreshToken(1L)).thenReturn("new-refresh");
@@ -161,9 +163,11 @@ class AuthServiceTest {
     @Test
     void refresh_token이_유효하면_원자적으로_rotate하고_토큰을_재발급한다() {
         User user = mock(User.class);
+        io.jsonwebtoken.Claims claims = mock(io.jsonwebtoken.Claims.class);
         when(user.getId()).thenReturn(1L);
         when(user.getRole()).thenReturn(com.bop.youthpick.user.entity.Role.USER);
-        when(jwtTokenProvider.getUserId("refresh-token")).thenReturn(1L);
+        when(jwtTokenProvider.validateRefreshToken("refresh-token")).thenReturn(claims);
+        when(jwtTokenProvider.getUserId(claims)).thenReturn(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(jwtTokenProvider.createAccessToken(1L, "USER")).thenReturn("new-access");
         when(jwtTokenProvider.createRefreshToken(1L)).thenReturn("new-refresh");

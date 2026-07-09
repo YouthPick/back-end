@@ -67,6 +67,30 @@ class OAuthClientTest {
     }
 
     @Test
+    void 구글_userinfo_응답을_정규화한다() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        String body =
+                """
+                {
+                  "sub": "google-1",
+                  "email": "a@a.com",
+                  "name": "이름"
+                }
+                """;
+        server.expect(requestTo(OAuthProvider.GOOGLE.getUserInfoUri()))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+        OAuthClient client = new OAuthClient(builder);
+
+        OAuthUserInfo userInfo = client.fetchUserInfo(OAuthProvider.GOOGLE, "token");
+
+        assertThat(userInfo.provider()).isEqualTo("GOOGLE");
+        assertThat(userInfo.providerId()).isEqualTo("google-1");
+        assertThat(userInfo.email()).isEqualTo("a@a.com");
+        assertThat(userInfo.nickname()).isEqualTo("이름");
+    }
+
+    @Test
     void 카카오_userinfo_응답을_정규화한다() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();

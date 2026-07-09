@@ -2,6 +2,7 @@ package com.bop.youthpick.auth.service;
 
 import com.bop.youthpick.auth.dto.AuthPrincipal;
 import com.bop.youthpick.auth.exception.AuthException;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,16 +36,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
         if (token != null) {
             try {
-                jwtTokenProvider.validateAccessToken(token);
-                Long userId = jwtTokenProvider.getUserId(token);
-                String role = jwtTokenProvider.getRole(token);
-                AuthPrincipal principal = new AuthPrincipal(userId, role);
-                Authentication authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                principal,
-                                null,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + role)));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                // access token 파싱을 한 번만 수행하고, 검증된 Claims에서 userId/role을 함께 꺼낸다.
+                Claims claims = jwtTokenProvider.validateAccessToken(token);
+                Long userId = jwtTokenProvider.getUserId(claims);
+                String role = jwtTokenProvider.getRole(claims);
+                if (role != null) {
+                    AuthPrincipal principal = new AuthPrincipal(userId, role);
+                    Authentication authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    principal,
+                                    null,
+                                    List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             } catch (AuthException e) {
                 SecurityContextHolder.clearContext();
             }

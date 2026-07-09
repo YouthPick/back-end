@@ -1,6 +1,7 @@
 package com.bop.youthpick.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -8,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.bop.youthpick.auth.dto.AuthPrincipal;
 import com.bop.youthpick.auth.exception.AuthErrorCode;
 import com.bop.youthpick.auth.exception.AuthException;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,9 +32,11 @@ class JwtAuthenticationFilterTest {
         HttpServletRequest request = mock(HttpServletRequest.class);
         HttpServletResponse response = mock(HttpServletResponse.class);
         FilterChain filterChain = mock(FilterChain.class);
+        Claims claims = mock(Claims.class);
         when(request.getHeader("Authorization")).thenReturn("Bearer valid-token");
-        when(jwtTokenProvider.getUserId("valid-token")).thenReturn(1L);
-        when(jwtTokenProvider.getRole("valid-token")).thenReturn("USER");
+        when(jwtTokenProvider.validateAccessToken("valid-token")).thenReturn(claims);
+        when(jwtTokenProvider.getUserId(claims)).thenReturn(1L);
+        when(jwtTokenProvider.getRole(claims)).thenReturn("USER");
 
         filter.doFilter(request, response, filterChain);
 
@@ -41,6 +45,23 @@ class JwtAuthenticationFilterTest {
                         SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         assertThat(principal.userId()).isEqualTo(1L);
         assertThat(principal.role()).isEqualTo("USER");
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void role이_없으면_인증정보를_채우지_않고_통과시킨다() throws Exception {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        FilterChain filterChain = mock(FilterChain.class);
+        Claims claims = mock(Claims.class);
+        when(request.getHeader("Authorization")).thenReturn("Bearer valid-token");
+        when(jwtTokenProvider.validateAccessToken("valid-token")).thenReturn(claims);
+        when(jwtTokenProvider.getUserId(claims)).thenReturn(1L);
+        when(jwtTokenProvider.getRole(claims)).thenReturn(null);
+
+        filter.doFilter(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         verify(filterChain).doFilter(request, response);
     }
 
@@ -63,17 +84,13 @@ class JwtAuthenticationFilterTest {
         HttpServletResponse response = mock(HttpServletResponse.class);
         FilterChain filterChain = mock(FilterChain.class);
         when(request.getHeader("Authorization")).thenReturn("Bearer invalid-token");
-        doThrowInvalidToken();
+        doThrow(new AuthException(AuthErrorCode.INVALID_TOKEN))
+                .when(jwtTokenProvider)
+                .validateAccessToken("invalid-token");
 
         filter.doFilter(request, response, filterChain);
 
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         verify(filterChain).doFilter(request, response);
-    }
-
-    private void doThrowInvalidToken() {
-        org.mockito.Mockito.doThrow(new AuthException(AuthErrorCode.INVALID_TOKEN))
-                .when(jwtTokenProvider)
-                .validateAccessToken("invalid-token");
     }
 }
