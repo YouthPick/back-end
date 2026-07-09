@@ -26,6 +26,12 @@
 | [`../AGENTS.md`](../AGENTS.md) | 모든 에이전트/개발자 공통 진입점. 개요 · 검증 명령 · 비협상 규칙 요약 · 규칙 문서 맵 |
 | [`../CLAUDE.md`](../CLAUDE.md) | Claude Code 진입점. `AGENTS.md`를 import하고 Claude 전용 안내만 추가 |
 
+## 개발 환경
+
+| 문서 | 내용 |
+|------|------|
+| [`ide/README.md`](./ide/README.md) | IntelliJ 코드 스타일(google-java-format AOSP) import 가이드 |
+
 ## 협업 템플릿 (`.github/`)
 
 | 파일 | 내용 |
