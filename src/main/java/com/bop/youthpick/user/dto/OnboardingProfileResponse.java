@@ -13,8 +13,7 @@ public record OnboardingProfileResponse(
         String educationLevel,
         List<String> categories,
         List<String> keywords,
-        String status
-) {
+        String status) {
     public static OnboardingProfileResponse from(UserProfile profile) {
         return new OnboardingProfileResponse(
                 profile.getId(),
@@ -25,8 +24,7 @@ public record OnboardingProfileResponse(
                 profile.getEducationLevel(),
                 splitToList(profile.getCategories()),
                 splitToList(profile.getKeywords()),
-                profile.getStatus()
-        );
+                profile.getStatus());
     }
 
     private static List<String> splitToList(String commaSeparated) {

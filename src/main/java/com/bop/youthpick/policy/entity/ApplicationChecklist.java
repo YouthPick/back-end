@@ -18,8 +18,12 @@ import lombok.NoArgsConstructor;
 
 /** 신청관리별 준비 체크리스트 (제출서류 등). */
 @Entity
-@Table(name = "policy_application_checklists",
-        indexes = @Index(name = "idx_policy_application_checklists_app", columnList = "application_id"))
+@Table(
+        name = "policy_application_checklists",
+        indexes =
+                @Index(
+                        name = "idx_policy_application_checklists_app",
+                        columnList = "application_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ApplicationChecklist extends BaseEntity {

@@ -24,13 +24,12 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc(addFilters = false)
 class OnboardingControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
 
-    @MockitoBean
-    private OnboardingService onboardingService;
+    @MockitoBean private OnboardingService onboardingService;
 
-    private static final String VALID_BODY = """
+    private static final String VALID_BODY =
+            """
             {
                 "birthYear": 2000,
                 "regionCode": "11110",
@@ -59,9 +58,10 @@ class OnboardingControllerTest {
         when(profile.getStatus()).thenReturn("COMPLETED");
         when(onboardingService.submit(eq(1L), any())).thenReturn(profile);
 
-        mockMvc.perform(post("/api/v1/users/{userId}/profile", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(VALID_BODY))
+        mockMvc.perform(
+                        post("/api/v1/users/{userId}/profile", 1L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BODY))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").value(10))
                 .andExpect(jsonPath("$.data.userId").value(1))
@@ -72,15 +72,17 @@ class OnboardingControllerTest {
 
     @Test
     void 출생연도가_없으면_400과_C001을_반환한다() throws Exception {
-        String invalidBody = """
+        String invalidBody =
+                """
                 {
                     "regionCode": "11110"
                 }
                 """;
 
-        mockMvc.perform(post("/api/v1/users/{userId}/profile", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidBody))
+        mockMvc.perform(
+                        post("/api/v1/users/{userId}/profile", 1L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(invalidBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
     }
