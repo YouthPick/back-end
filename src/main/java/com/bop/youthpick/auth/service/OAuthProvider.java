@@ -1,4 +1,4 @@
-package com.bop.youthpick.auth.client;
+package com.bop.youthpick.auth.service;
 
 import com.bop.youthpick.auth.exception.AuthErrorCode;
 import com.bop.youthpick.auth.exception.AuthException;

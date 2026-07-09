@@ -1,7 +1,7 @@
 package com.bop.youthpick.global.config;
 
-import com.bop.youthpick.auth.jwt.JwtAuthenticationFilter;
-import com.bop.youthpick.auth.jwt.JwtTokenProvider;
+import com.bop.youthpick.auth.service.JwtAuthenticationFilter;
+import com.bop.youthpick.auth.service.JwtTokenProvider;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

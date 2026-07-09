@@ -1,6 +1,5 @@
-package com.bop.youthpick.auth.jwt;
+package com.bop.youthpick.auth.service;
 
-import com.bop.youthpick.auth.config.JwtProperties;
 import com.bop.youthpick.auth.exception.AuthErrorCode;
 import com.bop.youthpick.auth.exception.AuthException;
 import io.jsonwebtoken.Claims;

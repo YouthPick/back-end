@@ -21,7 +21,9 @@ spring:
 
 youthpick:
   jwt:
-    secret: ${JWT_SECRET:local-dev-only-secret-key-please-change-this-32bytes-min}
+    # 서명 secret은 DB 계정과 달리 토큰 위조 가능성과 직결되므로 fallback을 두지 않는다.
+    # 로컬에서도 .env(또는 셸 export)로 JWT_SECRET을 반드시 설정한다.
+    secret: ${JWT_SECRET}
     access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:30m}
     refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:14d}
   oauth:

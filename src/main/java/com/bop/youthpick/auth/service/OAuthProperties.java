@@ -1,4 +1,4 @@
-package com.bop.youthpick.auth.config;
+package com.bop.youthpick.auth.service;
 
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -14,5 +14,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "youthpick.oauth")
 public record OAuthProperties(String frontendCallbackUri, Map<String, Registration> providers) {
 
-    public record Registration(String clientId, String clientSecret) {}
+    public record Registration(String clientId, String clientSecret) {
+
+        @Override
+        public String toString() {
+            return "Registration[clientId=" + clientId + ", clientSecret=****]";
+        }
+    }
 }

@@ -1,6 +1,6 @@
 package com.bop.youthpick.global.config;
 
-import com.bop.youthpick.auth.jwt.CurrentUserArgumentResolver;
+import com.bop.youthpick.auth.service.CurrentUserArgumentResolver;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;

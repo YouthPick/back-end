@@ -10,14 +10,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bop.youthpick.auth.client.OAuthClient;
-import com.bop.youthpick.auth.client.OAuthProvider;
-import com.bop.youthpick.auth.config.OAuthProperties;
 import com.bop.youthpick.auth.dto.OAuthUserInfo;
 import com.bop.youthpick.auth.dto.TokenResponse;
 import com.bop.youthpick.auth.exception.AuthException;
-import com.bop.youthpick.auth.jwt.JwtTokenProvider;
-import com.bop.youthpick.auth.jwt.RefreshTokenStore;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.net.URI;
@@ -147,41 +142,73 @@ class AuthServiceTest {
     }
 
     @Test
-    void refresh_token이_redis에_없으면_거부된다() {
-        when(jwtTokenProvider.getUserId("refresh-token")).thenReturn(1L);
-        when(refreshTokenStore.find(1L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> authService.refresh("refresh-token"))
-                .isInstanceOf(AuthException.class);
-    }
-
-    @Test
-    void refresh_token이_redis값과_다르면_거부된다() {
-        when(jwtTokenProvider.getUserId("refresh-token")).thenReturn(1L);
-        when(refreshTokenStore.find(1L)).thenReturn(Optional.of("other-refresh-token"));
-
-        assertThatThrownBy(() -> authService.refresh("refresh-token"))
-                .isInstanceOf(AuthException.class);
-    }
-
-    @Test
-    void refresh_token이_유효하면_토큰을_재발급한다() {
+    void refresh_token_rotate가_실패하면_거부된다() {
         User user = mock(User.class);
         when(user.getId()).thenReturn(1L);
         when(user.getRole()).thenReturn(com.bop.youthpick.user.entity.Role.USER);
         when(jwtTokenProvider.getUserId("refresh-token")).thenReturn(1L);
-        when(refreshTokenStore.find(1L)).thenReturn(Optional.of("refresh-token"));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(jwtTokenProvider.createAccessToken(1L, "USER")).thenReturn("new-access");
+        when(jwtTokenProvider.createRefreshToken(1L)).thenReturn("new-refresh");
+        when(jwtTokenProvider.refreshTokenExpiration()).thenReturn(Duration.ofDays(14));
+        when(refreshTokenStore.rotate(1L, "refresh-token", "new-refresh", Duration.ofDays(14)))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> authService.refresh("refresh-token"))
+                .isInstanceOf(AuthException.class);
+    }
+
+    @Test
+    void refresh_token이_유효하면_원자적으로_rotate하고_토큰을_재발급한다() {
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(1L);
+        when(user.getRole()).thenReturn(com.bop.youthpick.user.entity.Role.USER);
+        when(jwtTokenProvider.getUserId("refresh-token")).thenReturn(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(jwtTokenProvider.createAccessToken(1L, "USER")).thenReturn("new-access");
         when(jwtTokenProvider.createRefreshToken(1L)).thenReturn("new-refresh");
         when(jwtTokenProvider.refreshTokenExpiration()).thenReturn(Duration.ofDays(14));
         when(jwtTokenProvider.accessTokenExpirationSeconds()).thenReturn(1800L);
+        when(refreshTokenStore.rotate(1L, "refresh-token", "new-refresh", Duration.ofDays(14)))
+                .thenReturn(true);
 
         TokenResponse tokens = authService.refresh("refresh-token");
 
         assertThat(tokens.accessToken()).isEqualTo("new-access");
         assertThat(tokens.refreshToken()).isEqualTo("new-refresh");
-        verify(refreshTokenStore).save(1L, "new-refresh", Duration.ofDays(14));
+        verify(refreshTokenStore).rotate(1L, "refresh-token", "new-refresh", Duration.ofDays(14));
+    }
+
+    @Test
+    void 동시_콜백으로_유니크_제약이_위반되면_재조회로_복구한다() {
+        when(oAuthStateStore.consume("state-value", "GOOGLE")).thenReturn(true);
+        when(oAuthClient.exchangeCodeForAccessToken(
+                        eq(OAuthProvider.GOOGLE),
+                        eq("client-id"),
+                        eq("client-secret"),
+                        anyString(),
+                        eq("code")))
+                .thenReturn("provider-access-token");
+        when(oAuthClient.fetchUserInfo(OAuthProvider.GOOGLE, "provider-access-token"))
+                .thenReturn(new OAuthUserInfo("GOOGLE", "provider-id-1", "a@a.com", "닉네임"));
+        User existingUser = User.createSocialUser("GOOGLE", "provider-id-1", "a@a.com", "닉네임");
+        when(userRepository.findByProviderAndProviderId("GOOGLE", "provider-id-1"))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class)))
+                .thenThrow(
+                        new org.springframework.dao.DataIntegrityViolationException(
+                                "uk_users_provider"));
+        when(jwtTokenProvider.createAccessToken(any(), any())).thenReturn("jwt-access");
+        when(jwtTokenProvider.createRefreshToken(any())).thenReturn("jwt-refresh");
+        when(jwtTokenProvider.refreshTokenExpiration()).thenReturn(Duration.ofDays(14));
+        when(jwtTokenProvider.accessTokenExpirationSeconds()).thenReturn(1800L);
+
+        TokenResponse tokens = authService.login("google", "code", "state-value");
+
+        assertThat(tokens.accessToken()).isEqualTo("jwt-access");
+        verify(userRepository, org.mockito.Mockito.times(2))
+                .findByProviderAndProviderId("GOOGLE", "provider-id-1");
     }
 
     @Test

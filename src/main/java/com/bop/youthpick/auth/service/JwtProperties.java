@@ -1,4 +1,4 @@
-package com.bop.youthpick.auth.config;
+package com.bop.youthpick.auth.service;
 
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;

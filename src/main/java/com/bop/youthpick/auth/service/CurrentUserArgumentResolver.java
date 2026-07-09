@@ -1,4 +1,4 @@
-package com.bop.youthpick.auth.jwt;
+package com.bop.youthpick.auth.service;
 
 import com.bop.youthpick.auth.dto.AuthPrincipal;
 import com.bop.youthpick.auth.exception.AuthErrorCode;

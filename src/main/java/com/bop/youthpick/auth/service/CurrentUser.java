@@ -1,4 +1,4 @@
-package com.bop.youthpick.auth.jwt;
+package com.bop.youthpick.auth.service;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

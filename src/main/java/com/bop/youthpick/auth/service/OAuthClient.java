@@ -1,4 +1,4 @@
-package com.bop.youthpick.auth.client;
+package com.bop.youthpick.auth.service;
 
 import com.bop.youthpick.auth.dto.OAuthUserInfo;
 import com.bop.youthpick.auth.exception.AuthErrorCode;
@@ -12,7 +12,13 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-/** OAuth2 authorization code를 access token으로 교환하고, provider별 userinfo를 정규화해 조회한다. */
+/**
+ * OAuth2 authorization code를 access token으로 교환하고, provider별 userinfo를 정규화해 조회한다.
+ *
+ * <p>connect/read timeout은 {@code spring.http.client.*}(application.yml)로 전역 설정한다. 여기서 직접 {@code
+ * RestClient.Builder}의 requestFactory를 덮어쓰면 테스트의 {@code MockRestServiceServer}가 주입한 factory를 지워버려
+ * 실제 네트워크로 요청이 나간다.
+ */
 @Component
 public class OAuthClient {
 
@@ -90,7 +96,7 @@ public class OAuthClient {
     private OAuthUserInfo parseGoogle(JsonNode node) {
         return new OAuthUserInfo(
                 OAuthProvider.GOOGLE.name(),
-                node.path("sub").asText(),
+                requireProviderId(node.path("sub")),
                 textOrNull(node.path("email")),
                 textOrNull(node.path("name")));
     }
@@ -99,7 +105,7 @@ public class OAuthClient {
         JsonNode account = node.path("response");
         return new OAuthUserInfo(
                 OAuthProvider.NAVER.name(),
-                account.path("id").asText(),
+                requireProviderId(account.path("id")),
                 textOrNull(account.path("email")),
                 textOrNull(account.path("name")));
     }
@@ -109,9 +115,17 @@ public class OAuthClient {
         JsonNode profile = kakaoAccount.path("profile");
         return new OAuthUserInfo(
                 OAuthProvider.KAKAO.name(),
-                node.path("id").asText(),
+                requireProviderId(node.path("id")),
                 textOrNull(kakaoAccount.path("email")),
                 textOrNull(profile.path("nickname")));
+    }
+
+    private String requireProviderId(JsonNode node) {
+        String providerId = node.asText();
+        if (providerId.isBlank()) {
+            throw new AuthException(AuthErrorCode.OAUTH_PROVIDER_ERROR);
+        }
+        return providerId;
     }
 
     private String textOrNull(JsonNode node) {

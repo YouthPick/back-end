@@ -1,4 +1,4 @@
-package com.bop.youthpick.auth.client;
+package com.bop.youthpick.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -90,6 +90,24 @@ class OAuthClientTest {
         assertThat(userInfo.providerId()).isEqualTo("12345");
         assertThat(userInfo.email()).isEqualTo("a@a.com");
         assertThat(userInfo.nickname()).isEqualTo("닉네임");
+    }
+
+    @Test
+    void userinfo_응답에_providerId가_없으면_예외() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        String body =
+                """
+                {
+                  "kakao_account": { "email": "a@a.com" }
+                }
+                """;
+        server.expect(requestTo(OAuthProvider.KAKAO.getUserInfoUri()))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+        OAuthClient client = new OAuthClient(builder);
+
+        assertThatThrownBy(() -> client.fetchUserInfo(OAuthProvider.KAKAO, "token"))
+                .isInstanceOf(AuthException.class);
     }
 
     @Test

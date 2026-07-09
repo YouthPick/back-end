@@ -1,9 +1,8 @@
-package com.bop.youthpick.auth.jwt;
+package com.bop.youthpick.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.bop.youthpick.auth.config.JwtProperties;
 import com.bop.youthpick.auth.exception.AuthException;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
