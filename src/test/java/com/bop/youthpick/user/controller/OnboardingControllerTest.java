@@ -8,7 +8,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.bop.youthpick.auth.service.AuthService;
 import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.entity.UserProfile;
@@ -28,10 +27,6 @@ class OnboardingControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private OnboardingService onboardingService;
-
-    // WebMvcConfig가 CurrentUserArgumentResolver(AuthService 의존)를 전역 등록하므로,
-    // 이 컨트롤러가 쓰지 않아도 @WebMvcTest 슬라이스가 부팅되려면 빈이 필요하다.
-    @MockitoBean private AuthService authService;
 
     private static final String VALID_BODY =
             """

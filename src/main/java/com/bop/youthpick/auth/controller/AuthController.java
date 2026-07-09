@@ -47,13 +47,14 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@CurrentUser User user) {
-        authService.logout(user.getId());
+    public ResponseEntity<Void> logout(@CurrentUser Long userId) {
+        authService.logout(userId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me")
-    public ApiResponse<AuthUserResponse> me(@CurrentUser User user) {
+    public ApiResponse<AuthUserResponse> me(@CurrentUser Long userId) {
+        User user = authService.getCurrentUser(userId);
         return ApiResponse.ok(AuthUserResponse.from(user));
     }
 }
