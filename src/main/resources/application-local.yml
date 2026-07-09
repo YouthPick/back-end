@@ -1,13 +1,19 @@
+# 로컬 개발: docker compose up -d 로 MySQL/Redis 먼저 띄운 뒤 앱 실행.
+# 스키마는 Flyway(db/migration)가 만들고, JPA는 엔티티와 일치하는지 검증만 한다.
 spring:
   datasource:
-    url: ${DB_URL:jdbc:h2:mem:youthpick-local;MODE=MySQL;DATABASE_TO_LOWER=TRUE}
-    username: ${DB_USERNAME:sa}
-    password: ${DB_PASSWORD:}
-    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/youthpick?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul}
+    # 기본값 youthpick은 로컬 compose MySQL의 기본 계정(운영 자격증명 아님).
+    # docker-compose.yml의 fallback과 짝이며, .env로 계정을 바꿨다면 앱에도 같은 값을 env로 넘겨야 한다.
+    username: ${DB_USERNAME:youthpick}
+    password: ${DB_PASSWORD:youthpick}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     show-sql: true
+  flyway:
+    enabled: true
   data:
     redis:
       host: ${REDIS_HOST:localhost}

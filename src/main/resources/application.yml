@@ -1,0 +1,7 @@
+spring:
+  profiles:
+    active: local
+  flyway:
+    # 기본 비활성(안전 기본값) — MySQL을 쓰는 프로필(local, 추후 prod)이 각자 true로 켠다.
+    # test는 H2 + ddl-auto(create-drop)라 꺼진 기본값을 그대로 쓴다.
+    enabled: false

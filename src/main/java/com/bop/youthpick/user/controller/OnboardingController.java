@@ -25,9 +25,7 @@ public class OnboardingController {
     // TODO: 인증 도입 후 @PathVariable userId를 인증 principal 기반으로 교체한다.
     @PostMapping("/{userId}/profile")
     public ResponseEntity<ApiResponse<OnboardingProfileResponse>> submit(
-            @PathVariable Long userId,
-            @Valid @RequestBody OnboardingProfileRequest request
-    ) {
+            @PathVariable Long userId, @Valid @RequestBody OnboardingProfileRequest request) {
         UserProfile profile = onboardingService.submit(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(OnboardingProfileResponse.from(profile)));
