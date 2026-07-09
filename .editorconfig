@@ -1,0 +1,26 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Java: google-java-format AOSP(Spotless) 기준 4-space 들여쓰기
+[*.java]
+indent_style = space
+indent_size = 4
+
+# YAML / JSON: 2-space
+[*.{yml,yaml,json}]
+indent_style = space
+indent_size = 2
+
+# Gradle 빌드 스크립트
+[*.gradle]
+indent_style = space
+indent_size = 4
+
+# Markdown: 트레일링 공백은 줄바꿈 의미가 있어 유지
+[*.md]
+trim_trailing_whitespace = false

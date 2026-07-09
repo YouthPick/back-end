@@ -16,12 +16,10 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 게시글 첨부파일.
- * [미정] 첨부 대상이 게시글로 확정되지 않음 — 대상 바뀌면 FK만 교체.
- */
+/** 게시글 첨부파일. [미정] 첨부 대상이 게시글로 확정되지 않음 — 대상 바뀌면 FK만 교체. */
 @Entity
-@Table(name = "attachments",
+@Table(
+        name = "attachments",
         indexes = @Index(name = "idx_attachments_post", columnList = "post_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

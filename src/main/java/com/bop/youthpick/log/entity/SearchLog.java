@@ -15,10 +15,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-/**
- * 검색 로그 (0건율·인기검색어 집계 원본. 집계 후 기한 지나면 삭제).
- * userId는 연관관계 없이 값만 — 비로그인 검색은 NULL.
- */
+/** 검색 로그 (0건율·인기검색어 집계 원본. 집계 후 기한 지나면 삭제). userId는 연관관계 없이 값만 — 비로그인 검색은 NULL. */
 @Entity
 @Table(name = "search_histories",
         indexes = @Index(name = "idx_search_histories_created", columnList = "created_at"))
