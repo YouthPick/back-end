@@ -35,6 +35,10 @@ class OnboardingControllerTest {
                 "regionCode": "11110",
                 "employmentStatus": "EMPLOYED",
                 "educationLevel": "UNIVERSITY",
+                "merryStatus": "SINGLE",
+                "major": ["COMPUTER_SCIENCE"],
+                "specialCondition": ["LOW_INCOME"],
+                "income": 3000,
                 "categories": ["취업", "주거"],
                 "keywords": ["청년", "공모전"]
             }
@@ -53,6 +57,10 @@ class OnboardingControllerTest {
         when(profile.getBirthYear()).thenReturn(2000);
         when(profile.getEmploymentStatus()).thenReturn("EMPLOYED");
         when(profile.getEducationLevel()).thenReturn("UNIVERSITY");
+        when(profile.getMerryStatus()).thenReturn("SINGLE");
+        when(profile.getMajor()).thenReturn("COMPUTER_SCIENCE");
+        when(profile.getSpecialCondition()).thenReturn("LOW_INCOME");
+        when(profile.getIncome()).thenReturn(3000);
         when(profile.getCategories()).thenReturn("취업,주거");
         when(profile.getKeywords()).thenReturn("청년,공모전");
         when(profile.getStatus()).thenReturn("COMPLETED");
@@ -66,6 +74,10 @@ class OnboardingControllerTest {
                 .andExpect(jsonPath("$.data.id").value(10))
                 .andExpect(jsonPath("$.data.userId").value(1))
                 .andExpect(jsonPath("$.data.regionCode").value("11110"))
+                .andExpect(jsonPath("$.data.merryStatus").value("SINGLE"))
+                .andExpect(jsonPath("$.data.major[0]").value("COMPUTER_SCIENCE"))
+                .andExpect(jsonPath("$.data.specialCondition[0]").value("LOW_INCOME"))
+                .andExpect(jsonPath("$.data.income").value(3000))
                 .andExpect(jsonPath("$.data.categories[0]").value("취업"))
                 .andExpect(jsonPath("$.data.categories[1]").value("주거"));
     }
@@ -75,7 +87,28 @@ class OnboardingControllerTest {
         String invalidBody =
                 """
                 {
-                    "regionCode": "11110"
+                    "regionCode": "11110",
+                    "employmentStatus": "EMPLOYED",
+                    "educationLevel": "UNIVERSITY"
+                }
+                """;
+
+        mockMvc.perform(
+                        post("/api/v1/users/{userId}/profile", 1L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(invalidBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    void 취업상태가_없으면_400과_C001을_반환한다() throws Exception {
+        String invalidBody =
+                """
+                {
+                    "birthYear": 2000,
+                    "regionCode": "11110",
+                    "educationLevel": "UNIVERSITY"
                 }
                 """;
 
