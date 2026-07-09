@@ -44,4 +44,24 @@ public class ApplicationChecklist extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public static ApplicationChecklist create(PolicyApplication application, String content) {
+        ApplicationChecklist checklist = new ApplicationChecklist();
+        checklist.application = application;
+        checklist.content = content;
+        checklist.checked = false;
+        return checklist;
+    }
+
+    public void check() {
+        this.checked = true;
+    }
+
+    public void uncheck() {
+        this.checked = false;
+    }
+
+    public void delete() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }

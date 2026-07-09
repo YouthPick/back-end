@@ -48,7 +48,7 @@ public class PolicyApplication extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
-    private ApplicationStatus status = ApplicationStatus.INTERESTED;
+    private ApplicationStatus status;
 
     @Column(columnDefinition = "TEXT")
     private String memo;
@@ -60,4 +60,35 @@ public class PolicyApplication extends BaseEntity {
     /** 관리 해제 = soft delete. 재등록 시 행 재활성화(UNIQUE 충돌 방지) */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public static PolicyApplication register(
+            User user, Policy policy, ApplicationStatus status, String memo, LocalDateTime endAt) {
+        PolicyApplication application = new PolicyApplication();
+        application.user = user;
+        application.policy = policy;
+        application.status = status;
+        application.memo = memo;
+        application.endAt = endAt;
+        return application;
+    }
+
+    public void changeStatus(ApplicationStatus status) {
+        this.status = status;
+    }
+
+    /** soft-delete된 행을 UNIQUE(user, policy) 충돌 없이 재등록한다. */
+    public void reactivate(ApplicationStatus status, String memo, LocalDateTime endAt) {
+        this.status = status;
+        this.memo = memo;
+        this.endAt = endAt;
+        this.deletedAt = null;
+    }
+
+    public void delete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
 }
