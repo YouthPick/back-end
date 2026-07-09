@@ -68,8 +68,7 @@ public class UserProfile extends BaseEntity {
             String employmentStatus,
             String educationLevel,
             String categories,
-            String keywords
-    ) {
+            String keywords) {
         UserProfile profile = new UserProfile();
         profile.user = user;
         profile.region = region;

@@ -27,25 +27,29 @@ public class OnboardingService {
 
     @Transactional
     public UserProfile submit(Long userId, OnboardingProfileRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException(UserError.USER_NOT_FOUND));
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new UserException(UserError.USER_NOT_FOUND));
 
         if (userProfileRepository.existsByUserId(userId)) {
             throw new UserException(UserError.PROFILE_ALREADY_EXISTS);
         }
 
-        Region region = regionRepository.findById(request.regionCode())
-                .orElseThrow(() -> new CustomException(PolicyErrorCode.REGION_NOT_FOUND));
+        Region region =
+                regionRepository
+                        .findById(request.regionCode())
+                        .orElseThrow(() -> new CustomException(PolicyErrorCode.REGION_NOT_FOUND));
 
-        UserProfile profile = UserProfile.create(
-                user,
-                region,
-                request.birthYear(),
-                request.employmentStatus(),
-                request.educationLevel(),
-                joinToCommaString(request.categories()),
-                joinToCommaString(request.keywords())
-        );
+        UserProfile profile =
+                UserProfile.create(
+                        user,
+                        region,
+                        request.birthYear(),
+                        request.employmentStatus(),
+                        request.educationLevel(),
+                        joinToCommaString(request.categories()),
+                        joinToCommaString(request.keywords()));
 
         try {
             return userProfileRepository.save(profile);
