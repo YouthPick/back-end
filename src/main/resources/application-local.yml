@@ -14,11 +14,13 @@ spring:
       port: ${REDIS_PORT:6379}
 
 youthpick:
+  jwt:
+    secret: ${JWT_SECRET:local-dev-only-secret-key-please-change-this-32bytes-min}
+    access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:30m}
+    refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:14d}
   oauth:
-    # 소셜 로그인 provider가 code를 돌려주는 콜백을 받는 이 서버의 base uri
-    redirect-base-uri: ${OAUTH_REDIRECT_BASE_URI:http://localhost:8080}
-    # 로그인 성공 후 최종적으로 리다이렉트할 프론트엔드 uri
-    frontend-redirect-uri: ${OAUTH_FRONTEND_REDIRECT_URI:http://localhost:3000/oauth/callback}
+    # provider 콘솔에 등록하는 redirect_uri와 동일해야 하는 프론트엔드 콜백 라우트
+    frontend-callback-uri: ${OAUTH_FRONTEND_CALLBACK_URI:http://localhost:3000/oauth/callback}
     providers:
       google:
         client-id: ${GOOGLE_OAUTH_CLIENT_ID:}

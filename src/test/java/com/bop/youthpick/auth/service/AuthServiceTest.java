@@ -14,16 +14,16 @@ import com.bop.youthpick.auth.client.OAuthClient;
 import com.bop.youthpick.auth.client.OAuthProvider;
 import com.bop.youthpick.auth.config.OAuthProperties;
 import com.bop.youthpick.auth.dto.OAuthUserInfo;
+import com.bop.youthpick.auth.dto.TokenResponse;
 import com.bop.youthpick.auth.exception.AuthException;
+import com.bop.youthpick.auth.jwt.JwtTokenProvider;
+import com.bop.youthpick.auth.jwt.RefreshTokenStore;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.repository.UserRepository;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -32,14 +32,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.web.context.SecurityContextRepository;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
     @Mock private OAuthClient oAuthClient;
+    @Mock private OAuthStateStore oAuthStateStore;
     @Mock private UserRepository userRepository;
-    @Mock private SecurityContextRepository securityContextRepository;
+    @Mock private JwtTokenProvider jwtTokenProvider;
+    @Mock private RefreshTokenStore refreshTokenStore;
 
     private AuthService authService;
 
@@ -47,112 +48,150 @@ class AuthServiceTest {
     void setUp() {
         OAuthProperties oAuthProperties =
                 new OAuthProperties(
-                        "http://localhost:8080",
                         "http://localhost:3000/oauth/callback",
                         Map.of(
                                 "google",
                                 new OAuthProperties.Registration("client-id", "client-secret")));
         authService =
                 new AuthService(
-                        oAuthProperties, oAuthClient, userRepository, securityContextRepository);
+                        oAuthProperties,
+                        oAuthClient,
+                        oAuthStateStore,
+                        userRepository,
+                        jwtTokenProvider,
+                        refreshTokenStore);
     }
 
     @Test
-    void 등록된_provider면_state를_세션에_저장하고_인가_url을_생성한다() throws Exception {
-        HttpSession session = mock(HttpSession.class);
-
-        String url = authService.buildAuthorizationUrl("google", session);
+    void 등록된_provider면_state를_저장하고_인가_url을_생성한다() throws Exception {
+        String url = authService.buildAuthorizationUrl("google");
 
         Map<String, String> query = parseQuery(url);
         assertThat(url).startsWith("https://accounts.google.com/o/oauth2/v2/auth");
         assertThat(query.get("client_id")).isEqualTo("client-id");
-        assertThat(query.get("redirect_uri"))
-                .isEqualTo("http://localhost:8080/api/v1/auth/oauth/google/callback");
+        assertThat(query.get("redirect_uri")).isEqualTo("http://localhost:3000/oauth/callback");
         assertThat(query.get("state")).isNotBlank();
-        verify(session).setAttribute(eq("OAUTH_STATE"), eq(query.get("state")));
+        verify(oAuthStateStore).save(eq(query.get("state")), eq("GOOGLE"));
     }
 
     @Test
     void 등록되지_않은_provider면_인가_url_생성시_예외() {
-        HttpSession session = mock(HttpSession.class);
-
-        assertThatThrownBy(() -> authService.buildAuthorizationUrl("facebook", session))
+        assertThatThrownBy(() -> authService.buildAuthorizationUrl("facebook"))
                 .isInstanceOf(AuthException.class);
     }
 
     @Test
-    void state가_세션값과_다르면_로그인이_거부된다() {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        HttpServletResponse response = mock(HttpServletResponse.class);
-        HttpSession session = mock(HttpSession.class);
-        when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("OAUTH_STATE")).thenReturn("saved-state");
+    void state_검증에_실패하면_로그인이_거부된다() {
+        when(oAuthStateStore.consume("bad-state", "GOOGLE")).thenReturn(false);
 
-        assertThatThrownBy(
-                        () -> authService.login("google", "code", "other-state", request, response))
+        assertThatThrownBy(() -> authService.login("google", "code", "bad-state"))
                 .isInstanceOf(AuthException.class);
 
         verify(oAuthClient, never()).exchangeCodeForAccessToken(any(), any(), any(), any(), any());
     }
 
     @Test
-    void 신규_사용자면_생성하고_세션에_인증정보를_저장한다() {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        HttpServletResponse response = mock(HttpServletResponse.class);
-        HttpSession session = mock(HttpSession.class);
-        when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("OAUTH_STATE")).thenReturn("state-value");
+    void 신규_사용자면_생성하고_토큰을_발급한다() {
+        when(oAuthStateStore.consume("state-value", "GOOGLE")).thenReturn(true);
         when(oAuthClient.exchangeCodeForAccessToken(
                         eq(OAuthProvider.GOOGLE),
                         eq("client-id"),
                         eq("client-secret"),
                         anyString(),
                         eq("code")))
-                .thenReturn("access-token");
-        when(oAuthClient.fetchUserInfo(OAuthProvider.GOOGLE, "access-token"))
+                .thenReturn("provider-access-token");
+        when(oAuthClient.fetchUserInfo(OAuthProvider.GOOGLE, "provider-access-token"))
                 .thenReturn(new OAuthUserInfo("GOOGLE", "provider-id-1", "a@a.com", "닉네임"));
         when(userRepository.findByProviderAndProviderId("GOOGLE", "provider-id-1"))
                 .thenReturn(Optional.empty());
-        when(userRepository.save(any(User.class)))
-                .thenReturn(User.createSocialUser("GOOGLE", "provider-id-1", "a@a.com", "닉네임"));
+        User savedUser = User.createSocialUser("GOOGLE", "provider-id-1", "a@a.com", "닉네임");
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(jwtTokenProvider.createAccessToken(any(), any())).thenReturn("jwt-access");
+        when(jwtTokenProvider.createRefreshToken(any())).thenReturn("jwt-refresh");
+        when(jwtTokenProvider.refreshTokenExpiration()).thenReturn(Duration.ofDays(14));
+        when(jwtTokenProvider.accessTokenExpirationSeconds()).thenReturn(1800L);
 
-        authService.login("google", "code", "state-value", request, response);
+        TokenResponse tokens = authService.login("google", "code", "state-value");
 
         verify(userRepository).save(any(User.class));
-        verify(session).removeAttribute("OAUTH_STATE");
-        verify(request).changeSessionId();
-        verify(securityContextRepository).saveContext(any(), eq(request), eq(response));
+        verify(refreshTokenStore).save(savedUser.getId(), "jwt-refresh", Duration.ofDays(14));
+        assertThat(tokens.accessToken()).isEqualTo("jwt-access");
+        assertThat(tokens.refreshToken()).isEqualTo("jwt-refresh");
+        assertThat(tokens.expiresIn()).isEqualTo(1800L);
     }
 
     @Test
     void 기존_사용자면_새로_생성하지_않는다() {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        HttpServletResponse response = mock(HttpServletResponse.class);
-        HttpSession session = mock(HttpSession.class);
-        when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("OAUTH_STATE")).thenReturn("state-value");
+        when(oAuthStateStore.consume("state-value", "GOOGLE")).thenReturn(true);
         when(oAuthClient.exchangeCodeForAccessToken(
                         eq(OAuthProvider.GOOGLE),
                         eq("client-id"),
                         eq("client-secret"),
                         anyString(),
                         eq("code")))
-                .thenReturn("access-token");
-        when(oAuthClient.fetchUserInfo(OAuthProvider.GOOGLE, "access-token"))
+                .thenReturn("provider-access-token");
+        when(oAuthClient.fetchUserInfo(OAuthProvider.GOOGLE, "provider-access-token"))
                 .thenReturn(new OAuthUserInfo("GOOGLE", "provider-id-1", "a@a.com", "닉네임"));
         when(userRepository.findByProviderAndProviderId("GOOGLE", "provider-id-1"))
                 .thenReturn(
                         Optional.of(
                                 User.createSocialUser(
                                         "GOOGLE", "provider-id-1", "a@a.com", "닉네임")));
+        when(jwtTokenProvider.createAccessToken(any(), any())).thenReturn("jwt-access");
+        when(jwtTokenProvider.createRefreshToken(any())).thenReturn("jwt-refresh");
+        when(jwtTokenProvider.refreshTokenExpiration()).thenReturn(Duration.ofDays(14));
 
-        authService.login("google", "code", "state-value", request, response);
+        authService.login("google", "code", "state-value");
 
         verify(userRepository, never()).save(any());
-        verify(securityContextRepository).saveContext(any(), eq(request), eq(response));
     }
 
-    private Map<String, String> parseQuery(String url) throws UnsupportedEncodingException {
+    @Test
+    void refresh_token이_redis에_없으면_거부된다() {
+        when(jwtTokenProvider.getUserId("refresh-token")).thenReturn(1L);
+        when(refreshTokenStore.find(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.refresh("refresh-token"))
+                .isInstanceOf(AuthException.class);
+    }
+
+    @Test
+    void refresh_token이_redis값과_다르면_거부된다() {
+        when(jwtTokenProvider.getUserId("refresh-token")).thenReturn(1L);
+        when(refreshTokenStore.find(1L)).thenReturn(Optional.of("other-refresh-token"));
+
+        assertThatThrownBy(() -> authService.refresh("refresh-token"))
+                .isInstanceOf(AuthException.class);
+    }
+
+    @Test
+    void refresh_token이_유효하면_토큰을_재발급한다() {
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(1L);
+        when(user.getRole()).thenReturn(com.bop.youthpick.user.entity.Role.USER);
+        when(jwtTokenProvider.getUserId("refresh-token")).thenReturn(1L);
+        when(refreshTokenStore.find(1L)).thenReturn(Optional.of("refresh-token"));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(jwtTokenProvider.createAccessToken(1L, "USER")).thenReturn("new-access");
+        when(jwtTokenProvider.createRefreshToken(1L)).thenReturn("new-refresh");
+        when(jwtTokenProvider.refreshTokenExpiration()).thenReturn(Duration.ofDays(14));
+        when(jwtTokenProvider.accessTokenExpirationSeconds()).thenReturn(1800L);
+
+        TokenResponse tokens = authService.refresh("refresh-token");
+
+        assertThat(tokens.accessToken()).isEqualTo("new-access");
+        assertThat(tokens.refreshToken()).isEqualTo("new-refresh");
+        verify(refreshTokenStore).save(1L, "new-refresh", Duration.ofDays(14));
+    }
+
+    @Test
+    void 로그아웃하면_refresh_token을_삭제한다() {
+        authService.logout(1L);
+
+        verify(refreshTokenStore).delete(1L);
+    }
+
+    private Map<String, String> parseQuery(String url) {
         String query = URI.create(url).getRawQuery();
         Map<String, String> params = new HashMap<>();
         for (String pair : query.split("&")) {

@@ -6,9 +6,9 @@
 
 - 청년 정책 추천 서비스 **YouthPick** 백엔드 API 서버
 - Java 21 · Spring Boot 3.5.16 · Gradle Wrapper(Groovy DSL, `build.gradle`)
-- Spring Web MVC / Data JPA / Security / Session(Redis) / Validation / Actuator
+- Spring Web MVC / Data JPA / Security / Redis / Validation / Actuator
 - DB: 로컬·테스트 H2 in-memory(MySQL 모드), 배포 MySQL — 프로파일/환경변수로 전환(기본 프로파일 `local`)
-- 인증: Spring Security 세션 기반 + OAuth 소셜 로그인(Google/Naver/Kakao), 세션은 Redis 저장
+- 인증: Spring Security STATELESS + JWT(access/refresh) + OAuth 소셜 로그인(Google/Naver/Kakao). refresh token은 Redis에 TTL로 저장
 - 패키지 루트: `com.bop.youthpick`
 
 ## 검증 명령
@@ -48,7 +48,7 @@
 | [`.claude/rules/entity-jpa.md`](./.claude/rules/entity-jpa.md) | Entity/Repository/JPA 규칙 | `src/main/java` |
 | [`.claude/rules/service.md`](./.claude/rules/service.md) | Service 계층, 트랜잭션 | `src/main/java` |
 | [`.claude/rules/lombok.md`](./.claude/rules/lombok.md) | Lombok 허용/금지 목록 | `src/main/java` |
-| [`.claude/rules/auth-security.md`](./.claude/rules/auth-security.md) | 인증/세션/Redis, secret 취급 | `src/main/java`, `resources` |
+| [`.claude/rules/auth-security.md`](./.claude/rules/auth-security.md) | 인증(JWT)/Redis, secret 취급 | `src/main/java`, `resources` |
 | [`.claude/rules/testing.md`](./.claude/rules/testing.md) | 테스트 작성/실행 규칙 | `src/test` |
 | [`.claude/rules/infra.md`](./.claude/rules/infra.md) | Docker/Compose, 프로파일, API 수동 검증 | compose·resources |
 

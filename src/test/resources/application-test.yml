@@ -12,3 +12,11 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+youthpick:
+  jwt:
+    secret: test-secret-key-please-be-long-enough-for-hs256
+    access-token-expiration: 30m
+    refresh-token-expiration: 14d
+  oauth:
+    frontend-callback-uri: http://localhost:3000/oauth/callback

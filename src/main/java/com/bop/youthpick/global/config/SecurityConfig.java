@@ -1,5 +1,7 @@
 package com.bop.youthpick.global.config;
 
+import com.bop.youthpick.auth.jwt.JwtAuthenticationFilter;
+import com.bop.youthpick.auth.jwt.JwtTokenProvider;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -9,16 +11,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * 보안 기본 골격. REST API 기준으로 CSRF는 끄고, CORS만 켠다. 인증은 세션 기반(Spring Session + Redis)이며, 세션은 OAuth2 로그인
- * 콜백({@code AuthController})에서 생성된다. 인증 실패는 {@link RestAuthenticationEntryPoint}가 JSON 401로 응답하도록
- * 미리 연결해 둔다.
+ * 보안 기본 골격. REST API 기준으로 세션을 쓰지 않고(STATELESS) CSRF는 끄고, CORS만 켠다. 인증은 JWT access/refresh token
+ * 기반이며 {@code JwtAuthenticationFilter}가 매 요청의 {@code Authorization: Bearer} 헤더를 해석해
+ * SecurityContext를 채운다. 인증 실패는 {@link RestAuthenticationEntryPoint}가 JSON 401로 응답하도록 미리 연결해 둔다.
  *
  * <h2>현재 상태: 신규 도메인 API는 개발 편의상 permitAll</h2>
  *
@@ -31,19 +32,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Bean
-    SecurityFilterChain securityFilterChain(
-            HttpSecurity http, SecurityContextRepository securityContextRepository)
-            throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(
-                        session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .securityContext(
-                        securityContext ->
-                                securityContext.securityContextRepository(
-                                        securityContextRepository))
+                        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(
                         exception ->
                                 exception.authenticationEntryPoint(restAuthenticationEntryPoint));
@@ -52,19 +48,19 @@ public class SecurityConfig {
                 auth ->
                         auth.requestMatchers(HttpMethod.OPTIONS, "/**")
                                 .permitAll()
-                                .requestMatchers("/api/v1/auth/oauth/**", "/api/v1/auth/logout")
+                                .requestMatchers(
+                                        "/api/v1/auth/oauth/**", "/api/v1/auth/token/refresh")
                                 .permitAll()
-                                .requestMatchers("/api/v1/auth/me")
+                                .requestMatchers("/api/v1/auth/me", "/api/v1/auth/logout")
                                 .authenticated()
                                 .anyRequest()
                                 .permitAll());
 
-        return http.build();
-    }
+        http.addFilterBefore(
+                new JwtAuthenticationFilter(jwtTokenProvider),
+                UsernamePasswordAuthenticationFilter.class);
 
-    @Bean
-    SecurityContextRepository securityContextRepository() {
-        return new HttpSessionSecurityContextRepository();
+        return http.build();
     }
 
     @Bean
@@ -76,8 +72,7 @@ public class SecurityConfig {
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
         configuration.setExposedHeaders(List.of("Location"));
-        // 세션 쿠키(JSESSIONID)를 프론트(다른 origin)로 내려주려면 credentials를 허용해야 한다.
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
