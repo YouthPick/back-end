@@ -1,30 +1,12 @@
 -- ============================================================
--- YouthPick ERD — ERDCloud 정리본 (2026-07-07)
--- 기준: docs/2026-07-03-youthpick-erd.sql + ERDCloud 추가 테이블
---
--- ERDCloud 대비 변경:
---   삭제: CopyOfuser_profiles, CopyOfCopyOfCopyOffavorite_policies,
---         CopyOfpolicy_region(→ regions로 복구), board, Untitled
---   삭제(설계 결정 2026-07-07): favorite_policies —
---         정책 신청관리(policy_applications)의 status='INTERESTED'가
---         즐겨찾기 역할을 흡수. 별도 테이블 불필요
---   복원: policies 영어 물리명, regions, policy_batch_history
---   정리: 신청관리·게시판·로그 테이블 컬럼명/타입/FK
---   soft delete: 유저 소유 데이터 전부 deleted_at 보유
---         (로그·배치이력은 의도적으로 없음 — 이력은 삭제하지 않음,
---          policies는 visibility가 그 역할)
---   감사 컬럼: 유저 도메인 전 테이블 created_at+updated_at 통일
---         (BaseEntity 상속과 1:1 대응. 예외 = 불변 데이터:
---          regions/policy_regions 없음, 로그는 created_at만,
---          batch_history는 자체 시각)
---   ⚠️팀 결정 필요 표시는 [결정필요]로 검색
+-- V1 — YouthPick 초기 스키마
+-- 원본: docs/schema.sql (2026-07-07 ERD 정리본, PR #10)
+-- 대상: MySQL 8.x 전용 (H2 local/test는 Flyway 비활성, ddl-auto 사용)
+-- 이 파일은 적용 후 수정 금지 — 변경은 V2+ 마이그레이션으로 추가
 -- ============================================================
 
 -- ------------------------------------------------------------
 -- 1. users — 서비스 회원 (소셜 로그인 전용)
---    [결정필요] ERDCloud에서 email·nickname이 user_profiles로
---    이동돼 있었음. 온보딩 전 사용자도 표시명이 필요하므로
---    원본대로 users에 유지 (중복 배치 금지)
 -- ------------------------------------------------------------
 CREATE TABLE users (
     id           BIGINT       NOT NULL AUTO_INCREMENT,
@@ -42,8 +24,6 @@ CREATE TABLE users (
 
 -- ------------------------------------------------------------
 -- 2. regions — 지역 마스터
---    ERDCloud의 CopyOfpolicy_region이 이 테이블의 잔해였음.
---    코드는 VARCHAR(10) — BIGINT면 앞자리 0 소실 + FK 불가
 -- ------------------------------------------------------------
 CREATE TABLE regions (
     code       VARCHAR(10) NOT NULL COMMENT '시군구 코드 5자리 (앞 2자리 = 시도)',
@@ -54,7 +34,6 @@ CREATE TABLE regions (
 
 -- ------------------------------------------------------------
 -- 3. user_profiles — 온보딩 프로필 (users와 1:1)
---    ERDCloud의 id2 → user_id로 정정, deleted_at 복원
 -- ------------------------------------------------------------
 CREATE TABLE user_profiles (
     id                 BIGINT       NOT NULL AUTO_INCREMENT,
@@ -77,7 +56,6 @@ CREATE TABLE user_profiles (
 
 -- ------------------------------------------------------------
 -- 4. policies — 청년정책 (물리명 = 영어, 논리명/설명 = COMMENT)
---    ERDCloud에서 설명문이 물리명 자리에 들어가 있던 것을 복원
 -- ------------------------------------------------------------
 CREATE TABLE policies (
     id                          BIGINT        NOT NULL AUTO_INCREMENT,
@@ -146,7 +124,6 @@ CREATE TABLE policies (
 
 -- ------------------------------------------------------------
 -- 5. policy_regions — 정책 적용지역 (N:M)
---    ERDCloud의 `지역pk` BIGINT → region_code VARCHAR(10) 정정
 -- ------------------------------------------------------------
 CREATE TABLE policy_regions (
     id          BIGINT      NOT NULL AUTO_INCREMENT,
@@ -160,11 +137,7 @@ CREATE TABLE policy_regions (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '정책 적용지역';
 
 -- ------------------------------------------------------------
--- 6. policy_applications — 정책 신청관리 (ERDCloud `정책 신청관리`)
---    ID/id/id2 3개 → id + user_id + policy_id로 정리.
---    기존 favorite_policies 흡수: status='INTERESTED'가 즐겨찾기.
---    UNIQUE(user_id, policy_id) — 같은 정책 중복 등록 방지
---    (즐겨찾기 시절 UNIQUE의 계승)
+-- 6. policy_applications — 정책 신청관리 (즐겨찾기 통합)
 -- ------------------------------------------------------------
 CREATE TABLE policy_applications (
     id         BIGINT      NOT NULL AUTO_INCREMENT,
@@ -184,7 +157,6 @@ CREATE TABLE policy_applications (
 
 -- ------------------------------------------------------------
 -- 7. policy_application_checklists — 신청관리 체크리스트
---    p_id → application_id, status TINYINT → is_checked
 -- ------------------------------------------------------------
 CREATE TABLE policy_application_checklists (
     id             BIGINT   NOT NULL AUTO_INCREMENT,
@@ -200,14 +172,13 @@ CREATE TABLE policy_application_checklists (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '신청관리별 준비 체크리스트';
 
 -- ------------------------------------------------------------
--- 8. posts — 게시판 (ERDCloud `게시글`)
---    `Key` VARCHAR → policy_id BIGINT NULL(자유글 허용)로 정정
+-- 8. posts — 게시판
 -- ------------------------------------------------------------
 CREATE TABLE posts (
     id         BIGINT       NOT NULL AUTO_INCREMENT,
     user_id    BIGINT       NOT NULL COMMENT '글쓴이',
     policy_id  BIGINT       NULL COMMENT '연관 정책 (NULL = 자유글)',
-    category   VARCHAR(20)  NOT NULL COMMENT 'QUESTION(질문) | REVIEW(후기) | FREE(자유) — ENUM 대신 VARCHAR(role과 동일 이유)',
+    category   VARCHAR(20)  NOT NULL COMMENT 'QUESTION(질문) | REVIEW(후기) | FREE(자유)',
     title      VARCHAR(100) NOT NULL,
     content    TEXT         NOT NULL,
     view_count INT          NOT NULL DEFAULT 0,
@@ -221,8 +192,7 @@ CREATE TABLE posts (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '정책 기반 게시판 글';
 
 -- ------------------------------------------------------------
--- 9. comments — 댓글 (ERDCloud `댓글`)
---     Key → parent_id(대댓글), Field3/4/Field → created/updated/deleted_at
+-- 9. comments — 댓글 (1단 대댓글)
 -- ------------------------------------------------------------
 CREATE TABLE comments (
     id         BIGINT   NOT NULL AUTO_INCREMENT,
@@ -241,10 +211,7 @@ CREATE TABLE comments (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '게시글 댓글 (1단 대댓글)';
 
 -- ------------------------------------------------------------
--- 10. attachments — 첨부파일 (ERDCloud `첨부파일`)
---     Key/Key2/Field/Field2/Field3 → 의미 있는 이름으로
---     [미정] 첨부 대상이 게시글인지 아직 미확정 — 일단 post_id로
---     두고, 대상 바뀌면 FK만 교체
+-- 10. attachments — 첨부파일
 -- ------------------------------------------------------------
 CREATE TABLE attachments (
     id         BIGINT       NOT NULL AUTO_INCREMENT,
@@ -260,7 +227,7 @@ CREATE TABLE attachments (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '게시글 첨부파일';
 
 -- ------------------------------------------------------------
--- 11. policy_batch_history — 배치 작업 이력 (ERDCloud 누락 → 복원)
+-- 11. policy_batch_history — 배치 작업 이력
 -- ------------------------------------------------------------
 CREATE TABLE policy_batch_history (
     id              BIGINT        NOT NULL AUTO_INCREMENT,
@@ -280,9 +247,7 @@ CREATE TABLE policy_batch_history (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '정책 수집 배치 이력 (FK 없음 — 독립 이력)';
 
 -- ------------------------------------------------------------
--- 12. app_logs — 앱 에러/요청 로그 (ERDCloud `로그`)
---     VARCHAR 길이 누락 정정, user_id NULL 허용(비로그인/배치),
---     FK 없음 — 로그는 유저 삭제와 무관하게 보존
+-- 12. app_logs — 앱 에러/요청 로그
 -- ------------------------------------------------------------
 CREATE TABLE app_logs (
     id                BIGINT       NOT NULL AUTO_INCREMENT,
@@ -302,8 +267,7 @@ CREATE TABLE app_logs (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '앱 로그 (기한 지나면 삭제)';
 
 -- ------------------------------------------------------------
--- 13. search_histories — 검색 로그 (ERDCloud `검색용 로그`)
---     개수 VARCHAR → INT, user_id NULL 허용, 물리명 영어로
+-- 13. search_histories — 검색 로그
 -- ------------------------------------------------------------
 CREATE TABLE search_histories (
     id           BIGINT       NOT NULL AUTO_INCREMENT,
@@ -315,9 +279,3 @@ CREATE TABLE search_histories (
     PRIMARY KEY (id),
     KEY idx_search_histories_created (created_at)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '검색 로그 (집계 후 원본 정리)';
-
--- ============================================================
--- [결정필요] 원본에 있었으나 이 정리본에 미포함:
---   policy_read_states — 읽음 상태 (원본에서도 "팀 논의 중").
---   포함하려면 docs/2026-07-03-youthpick-erd.sql §6 참조.
--- ============================================================
