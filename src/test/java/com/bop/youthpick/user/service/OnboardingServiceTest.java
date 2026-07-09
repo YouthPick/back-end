@@ -29,33 +29,40 @@ import org.springframework.dao.DataIntegrityViolationException;
 @ExtendWith(MockitoExtension.class)
 class OnboardingServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
+    @Mock private UserRepository userRepository;
 
-    @Mock
-    private UserProfileRepository userProfileRepository;
+    @Mock private UserProfileRepository userProfileRepository;
 
-    @Mock
-    private RegionRepository regionRepository;
+    @Mock private RegionRepository regionRepository;
 
     private OnboardingService onboardingService;
 
     private static final Long USER_ID = 1L;
-    private static final OnboardingProfileRequest REQUEST = new OnboardingProfileRequest(
-            2000, "11110", "EMPLOYED", "UNIVERSITY",
-            List.of("취업", "주거"), List.of("청년", "공모전")
-    );
+    private static final OnboardingProfileRequest REQUEST =
+            new OnboardingProfileRequest(
+                    2000,
+                    "11110",
+                    "EMPLOYED",
+                    "UNIVERSITY",
+                    "SINGLE",
+                    List.of("COMPUTER_SCIENCE"),
+                    List.of("LOW_INCOME"),
+                    3000,
+                    List.of("취업", "주거"),
+                    List.of("청년", "공모전"));
 
     @BeforeEach
     void setUp() {
-        onboardingService = new OnboardingService(userRepository, userProfileRepository, regionRepository);
+        onboardingService =
+                new OnboardingService(userRepository, userProfileRepository, regionRepository);
     }
 
     @Test
     void 온보딩_프로필을_정상적으로_생성한다() {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(userProfileRepository.existsByUserId(USER_ID)).thenReturn(false);
-        when(regionRepository.findById(REQUEST.regionCode())).thenReturn(Optional.of(mock(Region.class)));
+        when(regionRepository.findById(REQUEST.regionCode()))
+                .thenReturn(Optional.of(mock(Region.class)));
         when(userProfileRepository.save(any(UserProfile.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -63,6 +70,11 @@ class OnboardingServiceTest {
 
         assertThat(result.getBirthYear()).isEqualTo(REQUEST.birthYear());
         assertThat(result.getEmploymentStatus()).isEqualTo(REQUEST.employmentStatus());
+        assertThat(result.getEducationLevel()).isEqualTo(REQUEST.educationLevel());
+        assertThat(result.getMerryStatus()).isEqualTo(REQUEST.merryStatus());
+        assertThat(result.getMajor()).isEqualTo("COMPUTER_SCIENCE");
+        assertThat(result.getSpecialCondition()).isEqualTo("LOW_INCOME");
+        assertThat(result.getIncome()).isEqualTo(REQUEST.income());
         assertThat(result.getCategories()).isEqualTo("취업,주거");
         assertThat(result.getKeywords()).isEqualTo("청년,공모전");
     }
@@ -92,7 +104,8 @@ class OnboardingServiceTest {
     void 저장_시점에_동시요청으로_유니크_제약이_위반되면_PROFILE_ALREADY_EXISTS_예외를_던진다() {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(userProfileRepository.existsByUserId(USER_ID)).thenReturn(false);
-        when(regionRepository.findById(REQUEST.regionCode())).thenReturn(Optional.of(mock(Region.class)));
+        when(regionRepository.findById(REQUEST.regionCode()))
+                .thenReturn(Optional.of(mock(Region.class)));
         when(userProfileRepository.save(any(UserProfile.class)))
                 .thenThrow(new DataIntegrityViolationException("uk_user_profiles_user"));
 
