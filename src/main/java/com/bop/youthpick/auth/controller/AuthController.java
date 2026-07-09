@@ -1,18 +1,17 @@
 package com.bop.youthpick.auth.controller;
 
-import com.bop.youthpick.auth.dto.AuthPrincipal;
 import com.bop.youthpick.auth.dto.AuthUserResponse;
 import com.bop.youthpick.auth.dto.OAuthAuthorizationUrlResponse;
 import com.bop.youthpick.auth.dto.OAuthCallbackRequest;
 import com.bop.youthpick.auth.dto.TokenRefreshRequest;
 import com.bop.youthpick.auth.dto.TokenResponse;
+import com.bop.youthpick.auth.jwt.CurrentUser;
 import com.bop.youthpick.auth.service.AuthService;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.user.entity.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,14 +47,13 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@AuthenticationPrincipal AuthPrincipal principal) {
-        authService.logout(principal.userId());
+    public ResponseEntity<Void> logout(@CurrentUser User user) {
+        authService.logout(user.getId());
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me")
-    public ApiResponse<AuthUserResponse> me(@AuthenticationPrincipal AuthPrincipal principal) {
-        User user = authService.getCurrentUser(principal.userId());
+    public ApiResponse<AuthUserResponse> me(@CurrentUser User user) {
         return ApiResponse.ok(AuthUserResponse.from(user));
     }
 }

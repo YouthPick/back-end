@@ -95,10 +95,21 @@ class AuthControllerTest {
 
     @Test
     void 인증된_사용자가_로그아웃하면_204를_반환한다() throws Exception {
+        User user = mock(User.class);
+        when(user.getId()).thenReturn(1L);
+        when(authService.getCurrentUser(1L)).thenReturn(user);
+
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(post("/api/v1/auth/logout"))
                                 .andExpect(status().isNoContent()));
+    }
+
+    @Test
+    void 인증되지_않은_me_요청은_401과_A001을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("A001"));
     }
 
     @Test
