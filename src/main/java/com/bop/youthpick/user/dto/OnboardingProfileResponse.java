@@ -11,10 +11,13 @@ public record OnboardingProfileResponse(
         String regionCode,
         String employmentStatus,
         String educationLevel,
+        String merryStatus,
+        List<String> major,
+        List<String> specialCondition,
+        Integer income,
         List<String> categories,
         List<String> keywords,
-        String status
-) {
+        String status) {
     public static OnboardingProfileResponse from(UserProfile profile) {
         return new OnboardingProfileResponse(
                 profile.getId(),
@@ -23,10 +26,13 @@ public record OnboardingProfileResponse(
                 profile.getRegion().getCode(),
                 profile.getEmploymentStatus(),
                 profile.getEducationLevel(),
+                profile.getMerryStatus(),
+                splitToList(profile.getMajor()),
+                splitToList(profile.getSpecialCondition()),
+                profile.getIncome(),
                 splitToList(profile.getCategories()),
                 splitToList(profile.getKeywords()),
-                profile.getStatus()
-        );
+                profile.getStatus());
     }
 
     private static List<String> splitToList(String commaSeparated) {
