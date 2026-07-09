@@ -20,14 +20,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 사용자별 정책 신청 진행관리 (관심 → 신청 → 완료).
- * 기존 favorite_policies를 흡수 — status=INTERESTED가 즐겨찾기.
- * UNIQUE(user, policy)로 같은 정책 중복 등록 방지.
+ * 사용자별 정책 신청 진행관리 (관심 → 신청 → 완료). 기존 favorite_policies를 흡수 — status=INTERESTED가 즐겨찾기. UNIQUE(user,
+ * policy)로 같은 정책 중복 등록 방지.
  */
 @Entity
-@Table(name = "policy_applications", uniqueConstraints =
-        @UniqueConstraint(name = "uk_policy_applications_user_policy",
-                columnNames = {"user_id", "policy_id"}))
+@Table(
+        name = "policy_applications",
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_policy_applications_user_policy",
+                        columnNames = {"user_id", "policy_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PolicyApplication extends BaseEntity {

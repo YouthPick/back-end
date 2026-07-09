@@ -15,12 +15,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 정책 수집 배치 작업 이력 + 실행 요청서(REQUESTED→RUNNING→...).
- * 자체 시각(requested/started/finished)을 쓰므로 BaseEntity 미상속.
- * 이력은 삭제하지 않는다 — soft delete 없음.
+ * 정책 수집 배치 작업 이력 + 실행 요청서(REQUESTED→RUNNING→...). 자체 시각(requested/started/finished)을 쓰므로 BaseEntity
+ * 미상속. 이력은 삭제하지 않는다 — soft delete 없음.
  */
 @Entity
-@Table(name = "policy_batch_history",
+@Table(
+        name = "policy_batch_history",
         indexes = @Index(name = "idx_policy_batch_history_requested", columnList = "requested_at"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

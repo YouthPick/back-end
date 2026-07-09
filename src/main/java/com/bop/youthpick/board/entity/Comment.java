@@ -17,12 +17,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 게시글 댓글. parent가 NULL이면 최상위, 있으면 대댓글(1단).
- */
+/** 게시글 댓글. parent가 NULL이면 최상위, 있으면 대댓글(1단). */
 @Entity
-@Table(name = "comments",
-        indexes = @Index(name = "idx_comments_post", columnList = "post_id"))
+@Table(name = "comments", indexes = @Index(name = "idx_comments_post", columnList = "post_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Comment extends BaseEntity {

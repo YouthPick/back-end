@@ -18,12 +18,12 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 온보딩 프로필 (users와 1:1). 맞춤정책 점수계산(REC 6축)의 입력값.
- */
+/** 온보딩 프로필 (users와 1:1). 맞춤정책 점수계산(REC 6축)의 입력값. */
 @Entity
-@Table(name = "user_profiles", uniqueConstraints =
-        @UniqueConstraint(name = "uk_user_profiles_user", columnNames = "user_id"))
+@Table(
+        name = "user_profiles",
+        uniqueConstraints =
+                @UniqueConstraint(name = "uk_user_profiles_user", columnNames = "user_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserProfile extends BaseEntity {
@@ -60,4 +60,23 @@ public class UserProfile extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public static UserProfile create(
+            User user,
+            Region region,
+            Integer birthYear,
+            String employmentStatus,
+            String educationLevel,
+            String categories,
+            String keywords) {
+        UserProfile profile = new UserProfile();
+        profile.user = user;
+        profile.region = region;
+        profile.birthYear = birthYear;
+        profile.employmentStatus = employmentStatus;
+        profile.educationLevel = educationLevel;
+        profile.categories = categories;
+        profile.keywords = keywords;
+        return profile;
+    }
 }

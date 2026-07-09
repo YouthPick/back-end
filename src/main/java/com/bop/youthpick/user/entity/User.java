@@ -15,13 +15,14 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * 서비스 회원 (소셜 로그인 전용).
- * 식별은 (provider, providerId) — email은 카카오 미제공/미보유 가능이라 NULL 허용.
- */
+/** 서비스 회원 (소셜 로그인 전용). 식별은 (provider, providerId) — email은 카카오 미제공/미보유 가능이라 NULL 허용. */
 @Entity
-@Table(name = "users", uniqueConstraints =
-        @UniqueConstraint(name = "uk_users_provider", columnNames = {"provider", "provider_id"}))
+@Table(
+        name = "users",
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_users_provider",
+                        columnNames = {"provider", "provider_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
