@@ -10,6 +10,8 @@
 | 관심정책 등록 | PUT | `/api/v1/me/favorites/{policyId}` | 회원 | FAV | 확정 |  |  |
 | 정책 비교 생성 | POST | `/api/v1/policy-comparisons` | 비회원 | CMP | 확정 |  |  |
 | OAuth 인가 URL 생성 | GET | `/api/v1/auth/oauth/{provider}/authorization-url` | 비회원 | AUTH | 확정 |  |  |
+| OAuth 콜백(로그인) | POST | `/api/v1/auth/oauth/{provider}/callback` | 비회원 | AUTH | 확정 | `{code, state}` | `{accessToken, refreshToken, tokenType, expiresIn}` |
+| 액세스 토큰 재발급 | POST | `/api/v1/auth/token/refresh` | 비회원 | AUTH | 확정 | `{refreshToken}` | `{accessToken, refreshToken, tokenType, expiresIn}` |
 | 프로필 선택지 조회 | GET | `/api/v1/meta/profile-options` | 비회원 | ONB | 확정 |  |  |
 | 정책 수집 이력 목록 | GET | `/api/v1/admin/policy-sync-jobs` | 관리자 | SYNC | 확정 |  |  |
 | 맞춤정책 조회 | GET | `/api/v1/me/recommended-policies` | 회원 | REC | 확정 |  |  |
