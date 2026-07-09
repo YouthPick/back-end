@@ -15,6 +15,10 @@ spring:
 
 youthpick:
   oauth:
+    # 소셜 로그인 provider가 code를 돌려주는 콜백을 받는 이 서버의 base uri
+    redirect-base-uri: ${OAUTH_REDIRECT_BASE_URI:http://localhost:8080}
+    # 로그인 성공 후 최종적으로 리다이렉트할 프론트엔드 uri
+    frontend-redirect-uri: ${OAUTH_FRONTEND_REDIRECT_URI:http://localhost:3000/oauth/callback}
     providers:
       google:
         client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
