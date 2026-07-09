@@ -8,7 +8,11 @@ import com.bop.youthpick.policy.entity.ApplicationChecklist;
 import com.bop.youthpick.policy.service.CheckPointService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+// TODO: 인증 도입 후 @PathVariable managementId/id 대신 인증 principal 기반 소유권 검증으로 교체한다.
 @RestController
 @RequestMapping("/api/checkpoints")
 @RequiredArgsConstructor
@@ -38,8 +43,15 @@ public class CheckPointController {
 
     @GetMapping("/management/{managementId}")
     public ApiResponse<List<ApplicationChecklistResponse>> getByManagement(
-            @PathVariable Long managementId) {
-        return ApiResponse.ok(checkPointService.getByManagement(managementId));
+            @PathVariable Long managementId, @PageableDefault(size = 20) Pageable pageable) {
+        Page<ApplicationChecklistResponse> page =
+                checkPointService.getByManagement(managementId, pageable);
+        return ApiResponse.ok(
+                page.getContent(),
+                Map.of(
+                        "page", page.getNumber(),
+                        "totalCount", page.getTotalElements(),
+                        "totalPages", page.getTotalPages()));
     }
 
     @PatchMapping("/{id}/check")

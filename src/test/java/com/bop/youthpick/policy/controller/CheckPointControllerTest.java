@@ -1,5 +1,7 @@
 package com.bop.youthpick.policy.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -9,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bop.youthpick.policy.dto.ApplicationChecklistResponse;
 import com.bop.youthpick.policy.entity.ApplicationChecklist;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
@@ -20,6 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -84,11 +90,14 @@ class CheckPointControllerTest {
 
     @Test
     void getByManagement_신청관리별_체크리스트_목록을_반환한다() throws Exception {
-        when(checkPointService.getByManagement(1L)).thenReturn(List.of());
+        Page<ApplicationChecklistResponse> page =
+                new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+        when(checkPointService.getByManagement(eq(1L), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/checkpoints/management/{managementId}", 1L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.meta.totalCount").value(0));
     }
 
     @Test

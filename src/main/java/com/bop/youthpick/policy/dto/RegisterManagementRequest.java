@@ -3,6 +3,7 @@ package com.bop.youthpick.policy.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 public record RegisterManagementRequest(
@@ -11,5 +12,5 @@ public record RegisterManagementRequest(
         @NotBlank(message = "상태는 필수입니다.")
                 @Pattern(regexp = "INTERESTED|APPLIED|COMPLETED", message = "유효하지 않은 상태값입니다.")
                 String status,
-        String memo,
+        @Size(max = 500, message = "메모는 500자를 초과할 수 없습니다.") String memo,
         LocalDateTime endAt) {}

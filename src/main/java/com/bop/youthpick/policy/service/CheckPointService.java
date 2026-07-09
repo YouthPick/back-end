@@ -7,8 +7,9 @@ import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.ApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,12 +48,11 @@ public class CheckPointService {
     }
 
     @Transactional(readOnly = true)
-    public List<ApplicationChecklistResponse> getByManagement(Long managementId) {
+    public Page<ApplicationChecklistResponse> getByManagement(
+            Long managementId, Pageable pageable) {
         return applicationChecklistRepository
-                .findByApplication_IdAndDeletedAtIsNull(managementId)
-                .stream()
-                .map(ApplicationChecklistResponse::from)
-                .toList();
+                .findByApplication_IdAndDeletedAtIsNull(managementId, pageable)
+                .map(ApplicationChecklistResponse::from);
     }
 
     private ApplicationChecklist findActive(Long id) {

@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
@@ -21,6 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -85,11 +89,13 @@ class PolicyManagementControllerTest {
 
     @Test
     void getManagements_사용자의_신청관리_목록을_반환한다() throws Exception {
-        when(policyManagementService.getManagements(1L)).thenReturn(List.of());
+        Page<PolicyApplicationResponse> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+        when(policyManagementService.getManagements(eq(1L), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/managements").param("userId", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray());
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.meta.totalCount").value(0));
     }
 
     @Test

@@ -13,8 +13,10 @@ import com.bop.youthpick.user.exception.UserError;
 import com.bop.youthpick.user.exception.UserException;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.time.LocalDateTime;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,7 +59,13 @@ public class PolicyManagementService {
 
         PolicyApplication application =
                 PolicyApplication.register(user, policy, status, memo, endAt);
-        return policyApplicationRepository.save(application);
+        try {
+            return policyApplicationRepository.save(application);
+        } catch (DataIntegrityViolationException e) {
+            // findByUser_IdAndPolicy_Id 확인 이후 동시 요청이 먼저 저장한 경우
+            // (uk_policy_applications_user_policy UNIQUE 위반). 같은 도메인 에러로 통일한다.
+            throw new CustomException(PolicyErrorCode.POLICY_ALREADY_EXISTS);
+        }
     }
 
     @Transactional
@@ -68,10 +76,10 @@ public class PolicyManagementService {
     }
 
     @Transactional(readOnly = true)
-    public List<PolicyApplicationResponse> getManagements(Long userId) {
-        return policyApplicationRepository.findByUser_IdAndDeletedAtIsNull(userId).stream()
-                .map(PolicyApplicationResponse::from)
-                .toList();
+    public Page<PolicyApplicationResponse> getManagements(Long userId, Pageable pageable) {
+        return policyApplicationRepository
+                .findByUser_IdAndDeletedAtIsNull(userId, pageable)
+                .map(PolicyApplicationResponse::from);
     }
 
     @Transactional

@@ -26,6 +26,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class PolicyManagementServiceTest {
@@ -105,6 +110,29 @@ class PolicyManagementServiceTest {
         assertThat(result.getStatus()).isEqualTo(ApplicationStatus.APPLIED);
         assertThat(result.getMemo()).isEqualTo("재등록");
         assertThat(result.isDeleted()).isFalse();
+    }
+
+    @Test
+    void 저장_시점에_동시요청으로_유니크_제약이_위반되면_POLICY_ALREADY_EXISTS_예외를_던진다() {
+        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+                .thenReturn(Optional.empty());
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(mock(Policy.class)));
+        when(policyApplicationRepository.save(any(PolicyApplication.class)))
+                .thenThrow(
+                        new DataIntegrityViolationException("uk_policy_applications_user_policy"));
+
+        assertThatThrownBy(
+                        () ->
+                                policyManagementService.register(
+                                        USER_ID,
+                                        POLICY_ID,
+                                        ApplicationStatus.INTERESTED,
+                                        null,
+                                        null))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.POLICY_ALREADY_EXISTS);
     }
 
     @Test
@@ -203,13 +231,16 @@ class PolicyManagementServiceTest {
         PolicyApplication application =
                 PolicyApplication.register(
                         mock(User.class), policy, ApplicationStatus.APPLIED, "메모", null);
-        when(policyApplicationRepository.findByUser_IdAndDeletedAtIsNull(USER_ID))
-                .thenReturn(List.of(application));
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<PolicyApplication> page = new PageImpl<>(List.of(application), pageable, 1);
+        when(policyApplicationRepository.findByUser_IdAndDeletedAtIsNull(USER_ID, pageable))
+                .thenReturn(page);
 
-        List<PolicyApplicationResponse> result = policyManagementService.getManagements(USER_ID);
+        Page<PolicyApplicationResponse> result =
+                policyManagementService.getManagements(USER_ID, pageable);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).policyTitle()).isEqualTo("정책제목");
-        assertThat(result.get(0).status()).isEqualTo(ApplicationStatus.APPLIED);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).policyTitle()).isEqualTo("정책제목");
+        assertThat(result.getContent().get(0).status()).isEqualTo(ApplicationStatus.APPLIED);
     }
 }
