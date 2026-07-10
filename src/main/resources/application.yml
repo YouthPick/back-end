@@ -5,3 +5,13 @@ spring:
     # 기본 비활성(안전 기본값) — MySQL을 쓰는 프로필(local, 추후 prod)이 각자 true로 켠다.
     # test는 H2 + ddl-auto(create-drop)라 꺼진 기본값을 그대로 쓴다.
     enabled: false
+  http:
+    client:
+      # 자동구성 RestClient.Builder 공통 타임아웃 (현재 사용처: PolicyApiClient)
+      connect-timeout: 5s
+      read-timeout: 30s
+
+youthpick:
+  sync:
+    # 온통청년 API 키 — 코드/로그 노출 금지, .env.example 참고
+    api-key: ${YOUTH_API_KEY:}
