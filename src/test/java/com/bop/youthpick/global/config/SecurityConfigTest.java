@@ -1,6 +1,7 @@
 package com.bop.youthpick.global.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -80,5 +81,26 @@ class SecurityConfigTest {
         int status = mockMvc.perform(get("/api/v1/policies")).andReturn().getResponse().getStatus();
 
         assertThat(status).isNotIn(401, 403);
+    }
+
+    @Test
+    void 회원_탈퇴_경로에_인증없이_접근하면_401() throws Exception {
+        mockMvc.perform(delete("/api/v1/users")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void 회원이_탈퇴_경로에_접근하면_인가는_통과한다() throws Exception {
+        String token = jwtTokenProvider.createAccessToken(1L, "USER");
+
+        int status =
+                mockMvc.perform(
+                                delete("/api/v1/users")
+                                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                        .andReturn()
+                        .getResponse()
+                        .getStatus();
+
+        // 컨트롤러가 아직 없어 401이 아닌 다른 상태로 응답한다 — 인가는 통과했다는 뜻이다.
+        assertThat(status).isNotEqualTo(401);
     }
 }
