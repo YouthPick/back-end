@@ -22,8 +22,8 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 |---|---|---|---|---|---|
 | 인증 | 로그아웃 | `POST` | `/api/v1/auth/logout` | 회원 | body: refreshToken |
 | 인증 | 내 로그인 사용자 조회 | `GET` | `/api/v1/auth/me` | 회원 | 없음 |
-| 인증 | OAuth 인가 URL 생성 | `GET` | `/api/v1/auth/oauth/{provider}/authorization-url` | 비회원 | path: provider(kakao, naver, google). query: redirectUri 필수, state 선택 |
-| 인증 | 소셜 로그인 콜백 | `POST` | `/api/v1/auth/oauth/{provider}/callback` | 비회원 | path: provider(kakao, naver, google). body: code, redirectUri |
+| 인증 | OAuth 인가 URL 생성 | `GET` | `/api/v1/auth/oauth/{provider}/authorization-url` | 비회원 | path: provider(kakao, naver, google). 파라미터 없음(state는 서버가 생성해 Redis에 저장, redirect_uri는 서버 설정값 고정) |
+| 인증 | 소셜 로그인 콜백 | `POST` | `/api/v1/auth/oauth/{provider}/callback` | 비회원 | path: provider(kakao, naver, google). body: code, state(서버가 발급한 값을 그대로 반환, CSRF 방어용) |
 | 인증 | 액세스 토큰 갱신 | `POST` | `/api/v1/auth/token/refresh` | 비회원 | body: refreshToken |
 | 인증 | 회원 탈퇴 | `DELETE` | `/api/v1/users` | 회원 | body: confirmText="탈퇴합니다" |
 | 온보딩/프로필 | 프로필 선택지 조회 | `GET` | `/api/v1/profile-options` | 비회원 | 없음 |
@@ -73,25 +73,25 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 
 ### OAuth 인가 URL 생성
 
-소셜 로그인 시작을 위한 OAuth 제공자별 인가 URL을 생성한다.
+소셜 로그인 시작을 위한 OAuth 제공자별 인가 URL을 생성한다. CSRF 방어용 `state`는 서버가 생성해 Redis에 짧은 TTL로 저장하고 응답 URL에 포함시킨다. provider로 리다이렉트할 `redirect_uri`도 서버 설정값(`youthpick.oauth.frontend-callback-uri`)으로 고정되어 있어 프론트가 별도로 넘길 파라미터는 없다.
 
 | 항목 | 내용 |
 |---|---|
 | 메서드 | `GET` |
 | 경로 | `/api/v1/auth/oauth/{provider}/authorization-url` |
 | 권한 | 비회원 |
-| 파라미터 | path: provider(kakao, naver, google). query: redirectUri 필수, state 선택 |
+| 파라미터 | path: provider(kakao, naver, google). 그 외 파라미터 없음 |
 
 ### 소셜 로그인 콜백
 
-OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 발급받는다.
+OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 발급받는다. 프론트는 자신의 콜백 라우트(`redirect_uri`)에서 provider가 붙여준 `code`/`state`를 그대로 읽어 이 API로 전달한다. `state`는 authorization-url 발급 시 서버가 준 값과 일치해야 하며, 1회 사용 후 폐기된다(CSRF 방어).
 
 | 항목 | 내용 |
 |---|---|
 | 메서드 | `POST` |
 | 경로 | `/api/v1/auth/oauth/{provider}/callback` |
 | 권한 | 비회원 |
-| 파라미터 | path: provider(kakao, naver, google). body: code, redirectUri |
+| 파라미터 | path: provider(kakao, naver, google). body: code, state |
 
 ### 액세스 토큰 갱신
 
