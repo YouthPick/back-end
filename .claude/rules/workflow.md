@@ -33,4 +33,5 @@ refac: 정책 검색 서비스 책임 분리
 
 - 기능 변경 시 관련 작은 테스트를 먼저 실행하고, 마지막에 전체 테스트를 실행한다.
 - `./gradlew test`(Windows: `.\gradlew.bat test`)를 통과시킨 뒤에만 완료를 주장한다.
+- Java 코드를 작성/수정했다면 `./gradlew spotlessApply`로 포맷을 맞추고 `./gradlew spotlessCheck`(또는 `test`에 포함된 빌드)가 통과하는지 확인한다(코드 포맷 기준은 [`code-style.md`](./code-style.md)).
 - Docker/Compose 관련 변경 시 가능한 범위로 `docker compose config`와 기동 smoke를 확인한다. 실행 환경에 Docker가 없으면 PR 검증 결과에 명시한다.

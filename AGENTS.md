@@ -42,6 +42,7 @@
 | 문서 | 내용 | 적용 범위 |
 |------|------|-----------|
 | [`.claude/rules/workflow.md`](./.claude/rules/workflow.md) | 작업 흐름, Git 브랜치/커밋/PR/리뷰, 완료 전 검증 | 항상 |
+| [`.claude/rules/code-style.md`](./.claude/rules/code-style.md) | 코드 포맷(Google Java Style, AOSP), Spotless | `src` |
 | [`.claude/rules/architecture.md`](./.claude/rules/architecture.md) | 패키지 구조, 계층 책임, 금지 구조 | `src/main/java` |
 | [`.claude/rules/api-design.md`](./.claude/rules/api-design.md) | Controller, DTO, Validation, `ApiResponse`, Pageable | `src/main/java` |
 | [`.claude/rules/error-handling.md`](./.claude/rules/error-handling.md) | `ErrorCode` 인터페이스, 도메인 에러코드, `ErrorResponse` | `src/main/java` |
