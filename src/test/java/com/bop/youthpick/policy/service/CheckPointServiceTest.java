@@ -108,6 +108,28 @@ class CheckPointServiceTest {
     }
 
     @Test
+    void uncheck_대상이_없으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
+        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> checkPointService.uncheck(5L))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
+    }
+
+    @Test
+    void delete_대상이_없으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
+        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> checkPointService.delete(5L))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
+    }
+
+    @Test
     void delete_soft_delete한다() {
         ApplicationChecklist checklist = ApplicationChecklist.create(management(), "제출 서류 준비");
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
