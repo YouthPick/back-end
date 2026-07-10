@@ -41,7 +41,8 @@ class CheckPointServiceTest {
     @BeforeEach
     void setUp() {
         checkPointService =
-                new PolicyManagementCheckpointService(applicationChecklistRepository, policyApplicationRepository);
+                new PolicyManagementCheckpointService(
+                        applicationChecklistRepository, policyApplicationRepository);
     }
 
     private PolicyApplication management() {
