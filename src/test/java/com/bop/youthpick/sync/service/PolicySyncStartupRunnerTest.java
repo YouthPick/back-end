@@ -15,14 +15,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PolicySyncStartupRunnerTest {
 
-    @Mock
-    private PolicyRepository policyRepository;
+    @Mock private PolicyRepository policyRepository;
 
-    @Mock
-    private PolicySyncService policySyncService;
+    @Mock private PolicySyncService policySyncService;
 
-    @InjectMocks
-    private PolicySyncStartupRunner runner;
+    @InjectMocks private PolicySyncStartupRunner runner;
 
     @Test
     @DisplayName("policies가 비어 있으면 시작 시 전량 수집을 실행한다")

@@ -10,11 +10,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * 앱 시작 시 policies가 비어 있으면 초기 수집을 1회 실행한다.
- * 팀원 누구나 compose up + 앱 실행만으로 실데이터를 갖게 하는 장치.
+ * 앱 시작 시 policies가 비어 있으면 초기 수집을 1회 실행한다. 팀원 누구나 compose up + 앱 실행만으로 실데이터를 갖게 하는 장치.
  *
- * youthpick.sync.startup-on-empty=true 인 프로파일에서만 동작한다
- * (기본 off — 테스트/CI의 빈 H2에서 외부 API를 치는 사고 방지).
+ * <p>youthpick.sync.startup-on-empty=true 인 프로파일에서만 동작한다 (기본 off — 테스트/CI의 빈 H2에서 외부 API를 치는 사고
+ * 방지).
  */
 @Component
 @ConditionalOnProperty(name = "youthpick.sync.startup-on-empty", havingValue = "true")
