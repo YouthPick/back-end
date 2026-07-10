@@ -46,7 +46,8 @@ public record PolicyCardResponse(Long id, String title, String summary) {
 
 ## 공통 응답 봉투 `ApiResponse` (data + meta)
 
-- 단일/객체 데이터는 `ApiResponse.ok(data)`. 페이지 등 부가정보(`page`, `totalCount` 등)는 **`data`가 아니라 `meta`에** 담는다.
+- 단일/객체 데이터는 `ApiResponse.ok(data)`. 페이지 부가정보(`page`, `totalCount`, `totalPages`)는 **`data`가 아니라 `meta`(`PageMeta`)에** 담는다.
+- `meta`는 Swagger(OpenAPI) 문서에 필드 스키마가 드러나도록 `Map`이 아니라 타입 있는 `PageMeta` record를 사용한다. 새 부가정보가 필요하면 `Map`으로 돌아가지 말고 `PageMeta`에 필드를 추가하거나 전용 meta 타입을 정의한다.
 - 200 외 상태 코드가 필요하면 `ResponseEntity<ApiResponse<?>>`로 감싼다.
 - 에러 응답은 `ApiResponse`가 아니라 `global.error.ErrorResponse`로 내려간다 (→ `error-handling.md`).
 
@@ -56,11 +57,7 @@ public record PolicyCardResponse(Long id, String title, String summary) {
 @GetMapping
 public ApiResponse<List<PolicyCardResponse>> search(@PageableDefault(size = 20) Pageable pageable) {
     Page<PolicyCardResponse> page = policySearchService.search(pageable);
-    return ApiResponse.ok(page.getContent(), Map.of(
-            "page", page.getNumber(),
-            "totalCount", page.getTotalElements(),
-            "totalPages", page.getTotalPages()
-    ));
+    return ApiResponse.ok(page.getContent(), page);
 }
 ```
 
