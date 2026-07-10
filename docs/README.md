@@ -19,6 +19,12 @@
 | [`../.claude/rules/testing.md`](../.claude/rules/testing.md) | 테스트 규칙 |
 | [`../.claude/rules/infra.md`](../.claude/rules/infra.md) | Docker/Compose, API 수동 검증 |
 
+## 설계/명세 문서
+
+| 문서 | 내용 |
+|------|------|
+| [`api-spec.md`](./api-spec.md) | 프론트 연동 기준 API 명세(엔드포인트, 메서드, 권한, 파라미터) |
+
 ## 진입점 문서 (레포 루트)
 
 | 문서 | 내용 |
@@ -50,7 +56,6 @@
 
 ## 앞으로 추가하면 좋은 문서 (제안)
 
-- `api-spec.md` — API 명세(엔드포인트, 요청/응답, 에러코드 매핑표)
 - `error-codes.md` — `ErrorCode` 카탈로그와 프론트 메시지 매핑
 - `oauth-setup.md` — Google/Naver/Kakao OAuth 앱 등록 및 환경변수 세팅 가이드
 - `local-setup.md` — 로컬 실행(H2/Redis/compose) 온보딩 가이드
