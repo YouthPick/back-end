@@ -3,6 +3,7 @@ package com.bop.youthpick.policy.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -97,7 +98,9 @@ class CheckPointControllerTest {
         mockMvc.perform(get("/api/checkpoints/management/{managementId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.meta.totalCount").value(0));
+                .andExpect(jsonPath("$.meta.page").value(0))
+                .andExpect(jsonPath("$.meta.totalCount").value(0))
+                .andExpect(jsonPath("$.meta.totalPages").value(0));
     }
 
     @Test
@@ -105,6 +108,8 @@ class CheckPointControllerTest {
         mockMvc.perform(patch("/api/checkpoints/{id}/check", 5L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.message").value("체크 완료"));
+
+        verify(checkPointService).check(5L);
     }
 
     @Test
@@ -112,6 +117,8 @@ class CheckPointControllerTest {
         mockMvc.perform(patch("/api/checkpoints/{id}/uncheck", 5L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.message").value("체크 해제 완료"));
+
+        verify(checkPointService).uncheck(5L);
     }
 
     @Test
@@ -119,5 +126,7 @@ class CheckPointControllerTest {
         mockMvc.perform(delete("/api/checkpoints/{id}", 5L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.message").value("체크리스트 삭제 완료"));
+
+        verify(checkPointService).delete(5L);
     }
 }

@@ -3,6 +3,7 @@ package com.bop.youthpick.policy.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -95,7 +96,9 @@ class PolicyManagementControllerTest {
         mockMvc.perform(get("/api/managements").param("userId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.meta.totalCount").value(0));
+                .andExpect(jsonPath("$.meta.page").value(0))
+                .andExpect(jsonPath("$.meta.totalCount").value(0))
+                .andExpect(jsonPath("$.meta.totalPages").value(0));
     }
 
     @Test
@@ -113,10 +116,14 @@ class PolicyManagementControllerTest {
         mockMvc.perform(patch("/api/managements/{id}/status", 10L).param("status", "APPLIED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("APPLIED"));
+
+        verify(policyManagementService).changeStatus(10L, ApplicationStatus.APPLIED);
     }
 
     @Test
     void delete_성공하면_200을_반환한다() throws Exception {
         mockMvc.perform(delete("/api/managements/{id}", 10L)).andExpect(status().isOk());
+
+        verify(policyManagementService).delete(10L);
     }
 }
