@@ -8,7 +8,6 @@ import com.bop.youthpick.policy.entity.ApplicationChecklist;
 import com.bop.youthpick.policy.service.PolicyManagementCheckpointService;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,12 +45,7 @@ public class PolicyManagementCheckpointController {
             @PathVariable Long managementId, @PageableDefault(size = 20) Pageable pageable) {
         Page<ApplicationChecklistResponse> page =
                 checkPointService.getByManagement(managementId, pageable);
-        return ApiResponse.ok(
-                page.getContent(),
-                Map.of(
-                        "page", page.getNumber(),
-                        "totalCount", page.getTotalElements(),
-                        "totalPages", page.getTotalPages()));
+        return ApiResponse.ok(page.getContent(), page);
     }
 
     @PatchMapping("/{id}/check")

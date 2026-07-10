@@ -8,7 +8,6 @@ import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.service.PolicyManagementService;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,12 +51,7 @@ public class PolicyManagementController {
             @RequestParam Long userId, @PageableDefault(size = 20) Pageable pageable) {
         Page<PolicyApplicationResponse> page =
                 policyManagementService.getManagements(userId, pageable);
-        return ApiResponse.ok(
-                page.getContent(),
-                Map.of(
-                        "page", page.getNumber(),
-                        "totalCount", page.getTotalElements(),
-                        "totalPages", page.getTotalPages()));
+        return ApiResponse.ok(page.getContent(), page);
     }
 
     @PatchMapping("/{id}/status")
