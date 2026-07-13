@@ -50,14 +50,24 @@ public class PolicyManagementCheckpointService {
     @Transactional(readOnly = true)
     public Page<ApplicationChecklistResponse> getByManagement(
             Long managementId, Pageable pageable) {
+        policyApplicationRepository
+                .findByIdAndDeletedAtIsNull(managementId)
+                .orElseThrow(() -> new CustomException(PolicyErrorCode.MANAGEMENT_NOT_FOUND));
+
         return applicationChecklistRepository
                 .findByApplication_IdAndDeletedAtIsNull(managementId, pageable)
                 .map(ApplicationChecklistResponse::from);
     }
 
     private ApplicationChecklist findActive(Long id) {
-        return applicationChecklistRepository
-                .findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new CustomException(PolicyErrorCode.CHECKLIST_NOT_FOUND));
+        ApplicationChecklist checklist =
+                applicationChecklistRepository
+                        .findByIdAndDeletedAtIsNull(id)
+                        .orElseThrow(
+                                () -> new CustomException(PolicyErrorCode.CHECKLIST_NOT_FOUND));
+        if (checklist.getApplication().isDeleted()) {
+            throw new CustomException(PolicyErrorCode.CHECKLIST_NOT_FOUND);
+        }
+        return checklist;
     }
 }

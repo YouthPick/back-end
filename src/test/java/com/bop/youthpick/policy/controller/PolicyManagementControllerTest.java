@@ -121,6 +121,13 @@ class PolicyManagementControllerTest {
     }
 
     @Test
+    void changeStatus_status값이_유효하지_않으면_400과_C001을_반환한다() throws Exception {
+        mockMvc.perform(patch("/api/managements/{id}/status", 10L).param("status", "UNKNOWN"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
     void delete_성공하면_200을_반환한다() throws Exception {
         mockMvc.perform(delete("/api/managements/{id}", 10L)).andExpect(status().isOk());
 

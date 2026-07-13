@@ -6,6 +6,7 @@ import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
+import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.user.entity.User;
@@ -27,6 +28,7 @@ public class PolicyManagementService {
     private final PolicyApplicationRepository policyApplicationRepository;
     private final UserRepository userRepository;
     private final PolicyRepository policyRepository;
+    private final PolicyApplicationChecklistRepository policyApplicationChecklistRepository;
 
     @Transactional
     public PolicyApplication register(
@@ -45,6 +47,7 @@ public class PolicyManagementService {
                 throw new CustomException(PolicyErrorCode.POLICY_ALREADY_EXISTS);
             }
             existing.reactivate(status, memo, endAt);
+            policyApplicationChecklistRepository.softDeleteAllByApplicationId(existing.getId());
             return existing;
         }
 

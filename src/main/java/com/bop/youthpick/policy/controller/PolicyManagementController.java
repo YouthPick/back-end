@@ -7,6 +7,8 @@ import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.service.PolicyManagementService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 // TODO: 인증 도입 후 @RequestParam userId, @PathVariable id 대신 인증 principal 기반 소유권 검증으로 교체한다.
+@Validated
 @RestController
 @RequestMapping("/api/managements")
 @RequiredArgsConstructor
@@ -56,8 +60,13 @@ public class PolicyManagementController {
 
     @PatchMapping("/{id}/status")
     public ApiResponse<PolicyApplicationResponse> changeStatus(
-            @PathVariable Long id, @RequestParam ApplicationStatus status) {
-        PolicyApplication application = policyManagementService.changeStatus(id, status);
+            @PathVariable Long id,
+            @RequestParam
+                    @NotBlank(message = "상태는 필수입니다.")
+                    @Pattern(regexp = "INTERESTED|APPLIED|COMPLETED", message = "유효하지 않은 상태값입니다.")
+                    String status) {
+        PolicyApplication application =
+                policyManagementService.changeStatus(id, ApplicationStatus.valueOf(status));
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 

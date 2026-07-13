@@ -29,7 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
-class CheckPointServiceTest {
+class PolicyManagementCheckpointServiceTest {
 
     @Mock private PolicyApplicationChecklistRepository applicationChecklistRepository;
     @Mock private PolicyApplicationRepository policyApplicationRepository;
@@ -142,10 +142,26 @@ class CheckPointServiceTest {
     }
 
     @Test
+    void check_상위_신청관리가_삭제되었으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
+        PolicyApplication deletedManagement = management();
+        deletedManagement.delete();
+        ApplicationChecklist checklist = ApplicationChecklist.create(deletedManagement, "제출 서류 준비");
+        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+                .thenReturn(Optional.of(checklist));
+
+        assertThatThrownBy(() -> checkPointService.check(5L))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
+    }
+
+    @Test
     void getByManagement_신청관리별_체크리스트_목록을_반환한다() {
         ApplicationChecklist checklist = ApplicationChecklist.create(management(), "제출 서류 준비");
         Pageable pageable = PageRequest.of(0, 20);
         Page<ApplicationChecklist> page = new PageImpl<>(List.of(checklist), pageable, 1);
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(MANAGEMENT_ID))
+                .thenReturn(Optional.of(management()));
         when(applicationChecklistRepository.findByApplication_IdAndDeletedAtIsNull(
                         MANAGEMENT_ID, pageable))
                 .thenReturn(page);
@@ -155,5 +171,19 @@ class CheckPointServiceTest {
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).message()).isEqualTo("제출 서류 준비");
+    }
+
+    @Test
+    void getByManagement_대상_신청관리가_없으면_MANAGEMENT_NOT_FOUND_예외를_던진다() {
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(MANAGEMENT_ID))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(
+                        () ->
+                                checkPointService.getByManagement(
+                                        MANAGEMENT_ID, PageRequest.of(0, 20)))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.MANAGEMENT_NOT_FOUND);
     }
 }

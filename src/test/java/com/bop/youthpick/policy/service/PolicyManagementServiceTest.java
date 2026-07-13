@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bop.youthpick.global.error.CustomException;
@@ -12,6 +13,7 @@ import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
+import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.user.entity.User;
@@ -38,6 +40,7 @@ class PolicyManagementServiceTest {
     @Mock private PolicyApplicationRepository policyApplicationRepository;
     @Mock private UserRepository userRepository;
     @Mock private PolicyRepository policyRepository;
+    @Mock private PolicyApplicationChecklistRepository policyApplicationChecklistRepository;
 
     private PolicyManagementService policyManagementService;
 
@@ -48,7 +51,10 @@ class PolicyManagementServiceTest {
     void setUp() {
         policyManagementService =
                 new PolicyManagementService(
-                        policyApplicationRepository, userRepository, policyRepository);
+                        policyApplicationRepository,
+                        userRepository,
+                        policyRepository,
+                        policyApplicationChecklistRepository);
     }
 
     @Test
@@ -110,6 +116,25 @@ class PolicyManagementServiceTest {
         assertThat(result.getStatus()).isEqualTo(ApplicationStatus.APPLIED);
         assertThat(result.getMemo()).isEqualTo("재등록");
         assertThat(result.isDeleted()).isFalse();
+    }
+
+    @Test
+    void soft_delete된_행을_재활성화하면_이전_체크리스트를_모두_소프트딜리트한다() {
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        mock(User.class),
+                        mock(Policy.class),
+                        ApplicationStatus.INTERESTED,
+                        null,
+                        null);
+        existing.delete();
+        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+                .thenReturn(Optional.of(existing));
+
+        policyManagementService.register(
+                USER_ID, POLICY_ID, ApplicationStatus.APPLIED, "재등록", null);
+
+        verify(policyApplicationChecklistRepository).softDeleteAllByApplicationId(existing.getId());
     }
 
     @Test
@@ -219,6 +244,17 @@ class PolicyManagementServiceTest {
         policyManagementService.delete(10L);
 
         assertThat(existing.isDeleted()).isTrue();
+    }
+
+    @Test
+    void delete_대상이_없으면_MANAGEMENT_NOT_FOUND_예외를_던진다() {
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> policyManagementService.delete(10L))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.MANAGEMENT_NOT_FOUND);
     }
 
     @Test

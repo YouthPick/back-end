@@ -33,7 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = PolicyManagementCheckpointController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class CheckPointControllerTest {
+class PolicyManagementCheckpointControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
