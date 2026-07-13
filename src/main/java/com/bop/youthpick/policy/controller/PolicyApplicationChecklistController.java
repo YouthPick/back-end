@@ -1,10 +1,10 @@
 package com.bop.youthpick.policy.controller;
 
 import com.bop.youthpick.global.common.ApiResponse;
-import com.bop.youthpick.policy.dto.ApplicationChecklistResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationChecklistMessageResponse;
+import com.bop.youthpick.policy.dto.PolicyApplicationChecklistResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationCreateChecklistRequest;
-import com.bop.youthpick.policy.entity.ApplicationChecklist;
+import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import com.bop.youthpick.policy.service.PolicyApplicationChecklistService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// TODO: 인증 도입 후 @PathVariable managementId/id 대신 인증 principal 기반 소유권 검증으로 교체한다.
+// TODO: 인증 도입 후 @PathVariable applicationId/id 대신 인증 principal 기반 소유권 검증으로 교체한다.
 @RestController
 @RequestMapping("/api/checklists")
 @RequiredArgsConstructor
@@ -32,19 +32,19 @@ public class PolicyApplicationChecklistController {
     private final PolicyApplicationChecklistService checklistService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<ApplicationChecklistResponse>> add(
+    public ResponseEntity<ApiResponse<PolicyApplicationChecklistResponse>> add(
             @Valid @RequestBody PolicyApplicationCreateChecklistRequest request) {
-        ApplicationChecklist checklist =
-                checklistService.add(request.managementId(), request.message());
+        PolicyApplicationChecklist checklist =
+                checklistService.add(request.applicationId(), request.message());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(ApplicationChecklistResponse.from(checklist)));
+                .body(ApiResponse.ok(PolicyApplicationChecklistResponse.from(checklist)));
     }
 
-    @GetMapping("/management/{managementId}")
-    public ApiResponse<List<ApplicationChecklistResponse>> getByManagement(
-            @PathVariable Long managementId, @PageableDefault(size = 20) Pageable pageable) {
-        Page<ApplicationChecklistResponse> page =
-                checklistService.getByManagement(managementId, pageable);
+    @GetMapping("/application/{applicationId}")
+    public ApiResponse<List<PolicyApplicationChecklistResponse>> getByApplication(
+            @PathVariable Long applicationId, @PageableDefault(size = 20) Pageable pageable) {
+        Page<PolicyApplicationChecklistResponse> page =
+                checklistService.getByApplication(applicationId, pageable);
         return ApiResponse.ok(page.getContent(), page);
     }
 

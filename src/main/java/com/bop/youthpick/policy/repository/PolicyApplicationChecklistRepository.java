@@ -1,6 +1,6 @@
 package com.bop.youthpick.policy.repository;
 
-import com.bop.youthpick.policy.entity.ApplicationChecklist;
+import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,16 +10,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PolicyApplicationChecklistRepository
-        extends JpaRepository<ApplicationChecklist, Long> {
+        extends JpaRepository<PolicyApplicationChecklist, Long> {
 
-    Optional<ApplicationChecklist> findByIdAndDeletedAtIsNull(Long id);
+    Optional<PolicyApplicationChecklist> findByIdAndDeletedAtIsNull(Long id);
 
-    Page<ApplicationChecklist> findByApplication_IdAndDeletedAtIsNull(
+    Page<PolicyApplicationChecklist> findByApplication_IdAndDeletedAtIsNull(
             Long applicationId, Pageable pageable);
 
     @Modifying(flushAutomatically = true)
     @Query(
-            "UPDATE ApplicationChecklist c SET c.deletedAt = CURRENT_TIMESTAMP "
+            "UPDATE PolicyApplicationChecklist c SET c.deletedAt = CURRENT_TIMESTAMP "
                     + "WHERE c.application.id = :applicationId AND c.deletedAt IS NULL")
     void softDeleteAllByApplicationId(@Param("applicationId") Long applicationId);
 }

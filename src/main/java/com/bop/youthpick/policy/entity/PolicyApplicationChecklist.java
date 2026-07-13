@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
                         columnList = "application_id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ApplicationChecklist extends BaseEntity {
+public class PolicyApplicationChecklist extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,8 +45,8 @@ public class ApplicationChecklist extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    public static ApplicationChecklist create(PolicyApplication application, String content) {
-        ApplicationChecklist checklist = new ApplicationChecklist();
+    public static PolicyApplicationChecklist create(PolicyApplication application, String content) {
+        PolicyApplicationChecklist checklist = new PolicyApplicationChecklist();
         checklist.application = application;
         checklist.content = content;
         checklist.checked = false;

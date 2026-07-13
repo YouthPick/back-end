@@ -28,7 +28,7 @@ public class PolicyApplicationService {
     private final PolicyApplicationRepository policyApplicationRepository;
     private final UserRepository userRepository;
     private final PolicyRepository policyRepository;
-    private final PolicyApplicationChecklistRepository policyApplicationChecklistRepository;
+    private final PolicyApplicationChecklistRepository policyPolicyApplicationChecklistRepository;
 
     @Transactional
     public PolicyApplication register(
@@ -47,7 +47,8 @@ public class PolicyApplicationService {
                 throw new CustomException(PolicyErrorCode.POLICY_ALREADY_EXISTS);
             }
             existing.reactivate(status, memo, endAt);
-            policyApplicationChecklistRepository.softDeleteAllByApplicationId(existing.getId());
+            policyPolicyApplicationChecklistRepository.softDeleteAllByApplicationId(
+                    existing.getId());
             return existing;
         }
 
@@ -79,7 +80,7 @@ public class PolicyApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PolicyApplicationResponse> getManagements(Long userId, Pageable pageable) {
+    public Page<PolicyApplicationResponse> getApplications(Long userId, Pageable pageable) {
         return policyApplicationRepository
                 .findByUser_IdAndDeletedAtIsNull(userId, pageable)
                 .map(PolicyApplicationResponse::from);
@@ -93,6 +94,7 @@ public class PolicyApplicationService {
     private PolicyApplication findActive(Long id) {
         return policyApplicationRepository
                 .findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new CustomException(PolicyErrorCode.MANAGEMENT_NOT_FOUND));
+                .orElseThrow(
+                        () -> new CustomException(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
     }
 }

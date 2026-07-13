@@ -62,7 +62,7 @@ class PolicyApplicationControllerTest {
                 """;
 
         mockMvc.perform(
-                        post("/api/managements")
+                        post("/api/applications")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(body))
                 .andExpect(status().isCreated())
@@ -81,7 +81,7 @@ class PolicyApplicationControllerTest {
                 """;
 
         mockMvc.perform(
-                        post("/api/managements")
+                        post("/api/applications")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(body))
                 .andExpect(status().isBadRequest())
@@ -89,11 +89,11 @@ class PolicyApplicationControllerTest {
     }
 
     @Test
-    void getManagements_사용자의_신청관리_목록을_반환한다() throws Exception {
+    void getApplications_사용자의_신청관리_목록을_반환한다() throws Exception {
         Page<PolicyApplicationResponse> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
-        when(policyApplicationService.getManagements(eq(1L), any())).thenReturn(page);
+        when(policyApplicationService.getApplications(eq(1L), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/managements").param("userId", "1"))
+        mockMvc.perform(get("/api/applications").param("userId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.meta.page").value(0))
@@ -113,7 +113,7 @@ class PolicyApplicationControllerTest {
         when(policyApplicationService.changeStatus(10L, ApplicationStatus.APPLIED))
                 .thenReturn(application);
 
-        mockMvc.perform(patch("/api/managements/{id}/status", 10L).param("status", "APPLIED"))
+        mockMvc.perform(patch("/api/applications/{id}/status", 10L).param("status", "APPLIED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("APPLIED"));
 
@@ -122,14 +122,14 @@ class PolicyApplicationControllerTest {
 
     @Test
     void changeStatus_status값이_유효하지_않으면_400과_C001을_반환한다() throws Exception {
-        mockMvc.perform(patch("/api/managements/{id}/status", 10L).param("status", "UNKNOWN"))
+        mockMvc.perform(patch("/api/applications/{id}/status", 10L).param("status", "UNKNOWN"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
     }
 
     @Test
     void delete_성공하면_200을_반환한다() throws Exception {
-        mockMvc.perform(delete("/api/managements/{id}", 10L)).andExpect(status().isOk());
+        mockMvc.perform(delete("/api/applications/{id}", 10L)).andExpect(status().isOk());
 
         verify(policyApplicationService).delete(10L);
     }

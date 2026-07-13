@@ -40,7 +40,7 @@ class PolicyApplicationServiceTest {
     @Mock private PolicyApplicationRepository policyApplicationRepository;
     @Mock private UserRepository userRepository;
     @Mock private PolicyRepository policyRepository;
-    @Mock private PolicyApplicationChecklistRepository policyApplicationChecklistRepository;
+    @Mock private PolicyApplicationChecklistRepository policyPolicyApplicationChecklistRepository;
 
     private PolicyApplicationService policyApplicationService;
 
@@ -54,7 +54,7 @@ class PolicyApplicationServiceTest {
                         policyApplicationRepository,
                         userRepository,
                         policyRepository,
-                        policyApplicationChecklistRepository);
+                        policyPolicyApplicationChecklistRepository);
     }
 
     @Test
@@ -134,7 +134,8 @@ class PolicyApplicationServiceTest {
         policyApplicationService.register(
                 USER_ID, POLICY_ID, ApplicationStatus.APPLIED, "재등록", null);
 
-        verify(policyApplicationChecklistRepository).softDeleteAllByApplicationId(existing.getId());
+        verify(policyPolicyApplicationChecklistRepository)
+                .softDeleteAllByApplicationId(existing.getId());
     }
 
     @Test
@@ -218,7 +219,7 @@ class PolicyApplicationServiceTest {
     }
 
     @Test
-    void changeStatus_대상이_없으면_MANAGEMENT_NOT_FOUND_예외를_던진다() {
+    void changeStatus_대상이_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
 
@@ -226,7 +227,7 @@ class PolicyApplicationServiceTest {
                         () -> policyApplicationService.changeStatus(10L, ApplicationStatus.APPLIED))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
-                .isEqualTo(PolicyErrorCode.MANAGEMENT_NOT_FOUND);
+                .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);
     }
 
     @Test
@@ -247,18 +248,18 @@ class PolicyApplicationServiceTest {
     }
 
     @Test
-    void delete_대상이_없으면_MANAGEMENT_NOT_FOUND_예외를_던진다() {
+    void delete_대상이_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> policyApplicationService.delete(10L))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
-                .isEqualTo(PolicyErrorCode.MANAGEMENT_NOT_FOUND);
+                .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);
     }
 
     @Test
-    void getManagements_사용자의_신청관리_목록을_반환한다() {
+    void getApplications_사용자의_신청관리_목록을_반환한다() {
         Policy policy = mock(Policy.class);
         when(policy.getId()).thenReturn(POLICY_ID);
         when(policy.getTitle()).thenReturn("정책제목");
@@ -273,7 +274,7 @@ class PolicyApplicationServiceTest {
                 .thenReturn(page);
 
         Page<PolicyApplicationResponse> result =
-                policyApplicationService.getManagements(USER_ID, pageable);
+                policyApplicationService.getApplications(USER_ID, pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).policyTitle()).isEqualTo("정책제목");

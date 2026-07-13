@@ -2,7 +2,7 @@ package com.bop.youthpick.policy.controller;
 
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
-import com.bop.youthpick.policy.dto.RegisterManagementRequest;
+import com.bop.youthpick.policy.dto.RegisterPolicyApplicationRequest;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.service.PolicyApplicationService;
@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 // TODO: 인증 도입 후 @RequestParam userId, @PathVariable id 대신 인증 principal 기반 소유권 검증으로 교체한다.
 @Validated
 @RestController
-@RequestMapping("/api/managements")
+@RequestMapping("/api/applications")
 @RequiredArgsConstructor
 public class PolicyApplicationController {
 
@@ -38,7 +38,7 @@ public class PolicyApplicationController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<PolicyApplicationResponse>> register(
-            @Valid @RequestBody RegisterManagementRequest request) {
+            @Valid @RequestBody RegisterPolicyApplicationRequest request) {
         PolicyApplication application =
                 policyApplicationService.register(
                         request.userId(),
@@ -51,10 +51,10 @@ public class PolicyApplicationController {
     }
 
     @GetMapping
-    public ApiResponse<List<PolicyApplicationResponse>> getManagements(
+    public ApiResponse<List<PolicyApplicationResponse>> getApplications(
             @RequestParam Long userId, @PageableDefault(size = 20) Pageable pageable) {
         Page<PolicyApplicationResponse> page =
-                policyApplicationService.getManagements(userId, pageable);
+                policyApplicationService.getApplications(userId, pageable);
         return ApiResponse.ok(page.getContent(), page);
     }
 

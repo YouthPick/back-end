@@ -12,11 +12,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.bop.youthpick.policy.dto.ApplicationChecklistResponse;
-import com.bop.youthpick.policy.entity.ApplicationChecklist;
+import com.bop.youthpick.policy.dto.PolicyApplicationChecklistResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
+import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import com.bop.youthpick.policy.service.PolicyApplicationChecklistService;
 import com.bop.youthpick.user.entity.User;
 import java.util.List;
@@ -39,7 +39,7 @@ class PolicyApplicationChecklistControllerTest {
 
     @MockitoBean private PolicyApplicationChecklistService checklistService;
 
-    private ApplicationChecklist checklist() {
+    private PolicyApplicationChecklist checklist() {
         PolicyApplication application =
                 PolicyApplication.register(
                         mock(User.class),
@@ -47,7 +47,7 @@ class PolicyApplicationChecklistControllerTest {
                         ApplicationStatus.APPLIED,
                         null,
                         null);
-        return ApplicationChecklist.create(application, "제출 서류 준비");
+        return PolicyApplicationChecklist.create(application, "제출 서류 준비");
     }
 
     @Test
@@ -57,7 +57,7 @@ class PolicyApplicationChecklistControllerTest {
         String body =
                 """
                 {
-                    "managementId": 1,
+                    "applicationId": 1,
                     "message": "제출 서류 준비"
                 }
                 """;
@@ -76,7 +76,7 @@ class PolicyApplicationChecklistControllerTest {
         String body =
                 """
                 {
-                    "managementId": 1,
+                    "applicationId": 1,
                     "message": ""
                 }
                 """;
@@ -90,12 +90,12 @@ class PolicyApplicationChecklistControllerTest {
     }
 
     @Test
-    void getByManagement_신청관리별_체크리스트_목록을_반환한다() throws Exception {
-        Page<ApplicationChecklistResponse> page =
+    void getByApplication_신청관리별_체크리스트_목록을_반환한다() throws Exception {
+        Page<PolicyApplicationChecklistResponse> page =
                 new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
-        when(checklistService.getByManagement(eq(1L), any())).thenReturn(page);
+        when(checklistService.getByApplication(eq(1L), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/checklists/management/{managementId}", 1L))
+        mockMvc.perform(get("/api/checklists/application/{applicationId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.meta.page").value(0))

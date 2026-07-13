@@ -7,11 +7,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.bop.youthpick.global.error.CustomException;
-import com.bop.youthpick.policy.dto.ApplicationChecklistResponse;
-import com.bop.youthpick.policy.entity.ApplicationChecklist;
+import com.bop.youthpick.policy.dto.PolicyApplicationChecklistResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
+import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
@@ -36,7 +36,7 @@ class PolicyApplicationChecklistServiceTest {
 
     private PolicyApplicationChecklistService checklistService;
 
-    private static final Long MANAGEMENT_ID = 1L;
+    private static final Long APPLICATION_ID = 1L;
 
     @BeforeEach
     void setUp() {
@@ -45,38 +45,39 @@ class PolicyApplicationChecklistServiceTest {
                         applicationChecklistRepository, policyApplicationRepository);
     }
 
-    private PolicyApplication management() {
+    private PolicyApplication application() {
         return PolicyApplication.register(
                 mock(User.class), mock(Policy.class), ApplicationStatus.APPLIED, null, null);
     }
 
     @Test
     void add_체크리스트를_정상적으로_생성한다() {
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(MANAGEMENT_ID))
-                .thenReturn(Optional.of(management()));
-        when(applicationChecklistRepository.save(any(ApplicationChecklist.class)))
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
+                .thenReturn(Optional.of(application()));
+        when(applicationChecklistRepository.save(any(PolicyApplicationChecklist.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ApplicationChecklist result = checklistService.add(MANAGEMENT_ID, "제출 서류 준비");
+        PolicyApplicationChecklist result = checklistService.add(APPLICATION_ID, "제출 서류 준비");
 
         assertThat(result.getContent()).isEqualTo("제출 서류 준비");
         assertThat(result.isChecked()).isFalse();
     }
 
     @Test
-    void add_대상_신청관리가_없으면_MANAGEMENT_NOT_FOUND_예외를_던진다() {
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(MANAGEMENT_ID))
+    void add_대상_신청관리가_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> checklistService.add(MANAGEMENT_ID, "제출 서류 준비"))
+        assertThatThrownBy(() -> checklistService.add(APPLICATION_ID, "제출 서류 준비"))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
-                .isEqualTo(PolicyErrorCode.MANAGEMENT_NOT_FOUND);
+                .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);
     }
 
     @Test
     void check_체크상태로_변경한다() {
-        ApplicationChecklist checklist = ApplicationChecklist.create(management(), "제출 서류 준비");
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(application(), "제출 서류 준비");
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.of(checklist));
 
@@ -87,7 +88,8 @@ class PolicyApplicationChecklistServiceTest {
 
     @Test
     void uncheck_체크해제_상태로_변경한다() {
-        ApplicationChecklist checklist = ApplicationChecklist.create(management(), "제출 서류 준비");
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(application(), "제출 서류 준비");
         checklist.check();
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.of(checklist));
@@ -132,7 +134,8 @@ class PolicyApplicationChecklistServiceTest {
 
     @Test
     void delete_soft_delete한다() {
-        ApplicationChecklist checklist = ApplicationChecklist.create(management(), "제출 서류 준비");
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(application(), "제출 서류 준비");
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.of(checklist));
 
@@ -143,9 +146,10 @@ class PolicyApplicationChecklistServiceTest {
 
     @Test
     void check_상위_신청관리가_삭제되었으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
-        PolicyApplication deletedManagement = management();
-        deletedManagement.delete();
-        ApplicationChecklist checklist = ApplicationChecklist.create(deletedManagement, "제출 서류 준비");
+        PolicyApplication deletedApplication = application();
+        deletedApplication.delete();
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(deletedApplication, "제출 서류 준비");
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.of(checklist));
 
@@ -156,34 +160,35 @@ class PolicyApplicationChecklistServiceTest {
     }
 
     @Test
-    void getByManagement_신청관리별_체크리스트_목록을_반환한다() {
-        ApplicationChecklist checklist = ApplicationChecklist.create(management(), "제출 서류 준비");
+    void getByApplication_신청관리별_체크리스트_목록을_반환한다() {
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(application(), "제출 서류 준비");
         Pageable pageable = PageRequest.of(0, 20);
-        Page<ApplicationChecklist> page = new PageImpl<>(List.of(checklist), pageable, 1);
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(MANAGEMENT_ID))
-                .thenReturn(Optional.of(management()));
+        Page<PolicyApplicationChecklist> page = new PageImpl<>(List.of(checklist), pageable, 1);
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
+                .thenReturn(Optional.of(application()));
         when(applicationChecklistRepository.findByApplication_IdAndDeletedAtIsNull(
-                        MANAGEMENT_ID, pageable))
+                        APPLICATION_ID, pageable))
                 .thenReturn(page);
 
-        Page<ApplicationChecklistResponse> result =
-                checklistService.getByManagement(MANAGEMENT_ID, pageable);
+        Page<PolicyApplicationChecklistResponse> result =
+                checklistService.getByApplication(APPLICATION_ID, pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).message()).isEqualTo("제출 서류 준비");
     }
 
     @Test
-    void getByManagement_대상_신청관리가_없으면_MANAGEMENT_NOT_FOUND_예외를_던진다() {
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(MANAGEMENT_ID))
+    void getByApplication_대상_신청관리가_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(
                         () ->
-                                checklistService.getByManagement(
-                                        MANAGEMENT_ID, PageRequest.of(0, 20)))
+                                checklistService.getByApplication(
+                                        APPLICATION_ID, PageRequest.of(0, 20)))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
-                .isEqualTo(PolicyErrorCode.MANAGEMENT_NOT_FOUND);
+                .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);
     }
 }

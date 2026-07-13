@@ -1,9 +1,9 @@
 package com.bop.youthpick.policy.service;
 
 import com.bop.youthpick.global.error.CustomException;
-import com.bop.youthpick.policy.dto.ApplicationChecklistResponse;
-import com.bop.youthpick.policy.entity.ApplicationChecklist;
+import com.bop.youthpick.policy.dto.PolicyApplicationChecklistResponse;
 import com.bop.youthpick.policy.entity.PolicyApplication;
+import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
@@ -21,14 +21,17 @@ public class PolicyApplicationChecklistService {
     private final PolicyApplicationRepository policyApplicationRepository;
 
     @Transactional
-    public ApplicationChecklist add(Long managementId, String message) {
+    public PolicyApplicationChecklist add(Long applicationId, String message) {
         PolicyApplication application =
                 policyApplicationRepository
-                        .findByIdAndDeletedAtIsNull(managementId)
+                        .findByIdAndDeletedAtIsNull(applicationId)
                         .orElseThrow(
-                                () -> new CustomException(PolicyErrorCode.MANAGEMENT_NOT_FOUND));
+                                () ->
+                                        new CustomException(
+                                                PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
 
-        ApplicationChecklist checklist = ApplicationChecklist.create(application, message);
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(application, message);
         return applicationChecklistRepository.save(checklist);
     }
 
@@ -48,19 +51,20 @@ public class PolicyApplicationChecklistService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ApplicationChecklistResponse> getByManagement(
-            Long managementId, Pageable pageable) {
+    public Page<PolicyApplicationChecklistResponse> getByApplication(
+            Long applicationId, Pageable pageable) {
         policyApplicationRepository
-                .findByIdAndDeletedAtIsNull(managementId)
-                .orElseThrow(() -> new CustomException(PolicyErrorCode.MANAGEMENT_NOT_FOUND));
+                .findByIdAndDeletedAtIsNull(applicationId)
+                .orElseThrow(
+                        () -> new CustomException(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
 
         return applicationChecklistRepository
-                .findByApplication_IdAndDeletedAtIsNull(managementId, pageable)
-                .map(ApplicationChecklistResponse::from);
+                .findByApplication_IdAndDeletedAtIsNull(applicationId, pageable)
+                .map(PolicyApplicationChecklistResponse::from);
     }
 
-    private ApplicationChecklist findActive(Long id) {
-        ApplicationChecklist checklist =
+    private PolicyApplicationChecklist findActive(Long id) {
+        PolicyApplicationChecklist checklist =
                 applicationChecklistRepository
                         .findByIdAndDeletedAtIsNull(id)
                         .orElseThrow(
