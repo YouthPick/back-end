@@ -12,11 +12,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
+import com.bop.youthpick.policy.dto.ApplicationChecklistResponse;
+import com.bop.youthpick.policy.entity.ApplicationChecklist;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
-import com.bop.youthpick.policy.service.PolicyManagementService;
+import com.bop.youthpick.policy.service.PolicyApplicationChecklistService;
 import com.bop.youthpick.user.entity.User;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -30,58 +31,58 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(controllers = PolicyManagementController.class)
+@WebMvcTest(controllers = PolicyApplicationChecklistController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class PolicyManagementControllerTest {
+class PolicyApplicationChecklistControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @MockitoBean private PolicyManagementService policyManagementService;
+    @MockitoBean private PolicyApplicationChecklistService checklistService;
 
-    @Test
-    void 유효한_요청이면_201과_등록된_신청관리를_반환한다() throws Exception {
+    private ApplicationChecklist checklist() {
         PolicyApplication application =
                 PolicyApplication.register(
                         mock(User.class),
                         mock(Policy.class),
-                        ApplicationStatus.INTERESTED,
-                        "메모",
+                        ApplicationStatus.APPLIED,
+                        null,
                         null);
-        when(policyManagementService.register(
-                        eq(1L), eq(2L), eq(ApplicationStatus.INTERESTED), any(), any()))
-                .thenReturn(application);
-
-        String body =
-                """
-                {
-                    "userId": 1,
-                    "policyId": 2,
-                    "status": "INTERESTED",
-                    "memo": "메모"
-                }
-                """;
-
-        mockMvc.perform(
-                        post("/api/managements")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(body))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.status").value("INTERESTED"));
+        return ApplicationChecklist.create(application, "제출 서류 준비");
     }
 
     @Test
-    void status값이_유효하지_않으면_400과_C001을_반환한다() throws Exception {
+    void add_유효한_요청이면_201과_생성된_체크리스트를_반환한다() throws Exception {
+        when(checklistService.add(1L, "제출 서류 준비")).thenReturn(checklist());
+
         String body =
                 """
                 {
-                    "userId": 1,
-                    "policyId": 2,
-                    "status": "UNKNOWN"
+                    "managementId": 1,
+                    "message": "제출 서류 준비"
                 }
                 """;
 
         mockMvc.perform(
-                        post("/api/managements")
+                        post("/api/checklists")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.message").value("제출 서류 준비"))
+                .andExpect(jsonPath("$.data.checked").value(false));
+    }
+
+    @Test
+    void add_message가_비어있으면_400과_C001을_반환한다() throws Exception {
+        String body =
+                """
+                {
+                    "managementId": 1,
+                    "message": ""
+                }
+                """;
+
+        mockMvc.perform(
+                        post("/api/checklists")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(body))
                 .andExpect(status().isBadRequest())
@@ -89,11 +90,12 @@ class PolicyManagementControllerTest {
     }
 
     @Test
-    void getManagements_사용자의_신청관리_목록을_반환한다() throws Exception {
-        Page<PolicyApplicationResponse> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
-        when(policyManagementService.getManagements(eq(1L), any())).thenReturn(page);
+    void getByManagement_신청관리별_체크리스트_목록을_반환한다() throws Exception {
+        Page<ApplicationChecklistResponse> page =
+                new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+        when(checklistService.getByManagement(eq(1L), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/managements").param("userId", "1"))
+        mockMvc.perform(get("/api/checklists/management/{managementId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.meta.page").value(0))
@@ -102,35 +104,29 @@ class PolicyManagementControllerTest {
     }
 
     @Test
-    void changeStatus_유효한_요청이면_200과_변경된_상태를_반환한다() throws Exception {
-        PolicyApplication application =
-                PolicyApplication.register(
-                        mock(User.class),
-                        mock(Policy.class),
-                        ApplicationStatus.APPLIED,
-                        null,
-                        null);
-        when(policyManagementService.changeStatus(10L, ApplicationStatus.APPLIED))
-                .thenReturn(application);
-
-        mockMvc.perform(patch("/api/managements/{id}/status", 10L).param("status", "APPLIED"))
+    void check_성공하면_200과_체크_완료_메시지를_반환한다() throws Exception {
+        mockMvc.perform(patch("/api/checklists/{id}/check", 5L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("APPLIED"));
+                .andExpect(jsonPath("$.data.message").value("체크 완료"));
 
-        verify(policyManagementService).changeStatus(10L, ApplicationStatus.APPLIED);
+        verify(checklistService).check(5L);
     }
 
     @Test
-    void changeStatus_status값이_유효하지_않으면_400과_C001을_반환한다() throws Exception {
-        mockMvc.perform(patch("/api/managements/{id}/status", 10L).param("status", "UNKNOWN"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("C001"));
+    void uncheck_성공하면_200과_체크_해제_완료_메시지를_반환한다() throws Exception {
+        mockMvc.perform(patch("/api/checklists/{id}/uncheck", 5L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.message").value("체크 해제 완료"));
+
+        verify(checklistService).uncheck(5L);
     }
 
     @Test
-    void delete_성공하면_200을_반환한다() throws Exception {
-        mockMvc.perform(delete("/api/managements/{id}", 10L)).andExpect(status().isOk());
+    void delete_성공하면_200과_체크리스트_삭제_완료_메시지를_반환한다() throws Exception {
+        mockMvc.perform(delete("/api/checklists/{id}", 5L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.message").value("체크리스트 삭제 완료"));
 
-        verify(policyManagementService).delete(10L);
+        verify(checklistService).delete(5L);
     }
 }

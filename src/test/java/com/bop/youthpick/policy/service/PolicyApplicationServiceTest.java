@@ -35,22 +35,22 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
-class PolicyManagementServiceTest {
+class PolicyApplicationServiceTest {
 
     @Mock private PolicyApplicationRepository policyApplicationRepository;
     @Mock private UserRepository userRepository;
     @Mock private PolicyRepository policyRepository;
     @Mock private PolicyApplicationChecklistRepository policyApplicationChecklistRepository;
 
-    private PolicyManagementService policyManagementService;
+    private PolicyApplicationService policyApplicationService;
 
     private static final Long USER_ID = 1L;
     private static final Long POLICY_ID = 2L;
 
     @BeforeEach
     void setUp() {
-        policyManagementService =
-                new PolicyManagementService(
+        policyApplicationService =
+                new PolicyApplicationService(
                         policyApplicationRepository,
                         userRepository,
                         policyRepository,
@@ -67,7 +67,7 @@ class PolicyManagementServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         PolicyApplication result =
-                policyManagementService.register(
+                policyApplicationService.register(
                         USER_ID, POLICY_ID, ApplicationStatus.INTERESTED, "메모", null);
 
         assertThat(result.getStatus()).isEqualTo(ApplicationStatus.INTERESTED);
@@ -88,7 +88,7 @@ class PolicyManagementServiceTest {
 
         assertThatThrownBy(
                         () ->
-                                policyManagementService.register(
+                                policyApplicationService.register(
                                         USER_ID, POLICY_ID, ApplicationStatus.APPLIED, null, null))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
@@ -109,7 +109,7 @@ class PolicyManagementServiceTest {
                 .thenReturn(Optional.of(existing));
 
         PolicyApplication result =
-                policyManagementService.register(
+                policyApplicationService.register(
                         USER_ID, POLICY_ID, ApplicationStatus.APPLIED, "재등록", null);
 
         assertThat(result).isSameAs(existing);
@@ -131,7 +131,7 @@ class PolicyManagementServiceTest {
         when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
                 .thenReturn(Optional.of(existing));
 
-        policyManagementService.register(
+        policyApplicationService.register(
                 USER_ID, POLICY_ID, ApplicationStatus.APPLIED, "재등록", null);
 
         verify(policyApplicationChecklistRepository).softDeleteAllByApplicationId(existing.getId());
@@ -149,7 +149,7 @@ class PolicyManagementServiceTest {
 
         assertThatThrownBy(
                         () ->
-                                policyManagementService.register(
+                                policyApplicationService.register(
                                         USER_ID,
                                         POLICY_ID,
                                         ApplicationStatus.INTERESTED,
@@ -168,7 +168,7 @@ class PolicyManagementServiceTest {
 
         assertThatThrownBy(
                         () ->
-                                policyManagementService.register(
+                                policyApplicationService.register(
                                         USER_ID,
                                         POLICY_ID,
                                         ApplicationStatus.INTERESTED,
@@ -188,7 +188,7 @@ class PolicyManagementServiceTest {
 
         assertThatThrownBy(
                         () ->
-                                policyManagementService.register(
+                                policyApplicationService.register(
                                         USER_ID,
                                         POLICY_ID,
                                         ApplicationStatus.INTERESTED,
@@ -212,7 +212,7 @@ class PolicyManagementServiceTest {
                 .thenReturn(Optional.of(existing));
 
         PolicyApplication result =
-                policyManagementService.changeStatus(10L, ApplicationStatus.APPLIED);
+                policyApplicationService.changeStatus(10L, ApplicationStatus.APPLIED);
 
         assertThat(result.getStatus()).isEqualTo(ApplicationStatus.APPLIED);
     }
@@ -223,7 +223,7 @@ class PolicyManagementServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(
-                        () -> policyManagementService.changeStatus(10L, ApplicationStatus.APPLIED))
+                        () -> policyApplicationService.changeStatus(10L, ApplicationStatus.APPLIED))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.MANAGEMENT_NOT_FOUND);
@@ -241,7 +241,7 @@ class PolicyManagementServiceTest {
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
 
-        policyManagementService.delete(10L);
+        policyApplicationService.delete(10L);
 
         assertThat(existing.isDeleted()).isTrue();
     }
@@ -251,7 +251,7 @@ class PolicyManagementServiceTest {
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> policyManagementService.delete(10L))
+        assertThatThrownBy(() -> policyApplicationService.delete(10L))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.MANAGEMENT_NOT_FOUND);
@@ -273,7 +273,7 @@ class PolicyManagementServiceTest {
                 .thenReturn(page);
 
         Page<PolicyApplicationResponse> result =
-                policyManagementService.getManagements(USER_ID, pageable);
+                policyApplicationService.getManagements(USER_ID, pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).policyTitle()).isEqualTo("정책제목");

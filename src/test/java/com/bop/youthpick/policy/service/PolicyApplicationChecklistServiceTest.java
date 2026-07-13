@@ -29,19 +29,19 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
-class PolicyManagementCheckpointServiceTest {
+class PolicyApplicationChecklistServiceTest {
 
     @Mock private PolicyApplicationChecklistRepository applicationChecklistRepository;
     @Mock private PolicyApplicationRepository policyApplicationRepository;
 
-    private PolicyManagementCheckpointService checkPointService;
+    private PolicyApplicationChecklistService checklistService;
 
     private static final Long MANAGEMENT_ID = 1L;
 
     @BeforeEach
     void setUp() {
-        checkPointService =
-                new PolicyManagementCheckpointService(
+        checklistService =
+                new PolicyApplicationChecklistService(
                         applicationChecklistRepository, policyApplicationRepository);
     }
 
@@ -57,7 +57,7 @@ class PolicyManagementCheckpointServiceTest {
         when(applicationChecklistRepository.save(any(ApplicationChecklist.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ApplicationChecklist result = checkPointService.add(MANAGEMENT_ID, "제출 서류 준비");
+        ApplicationChecklist result = checklistService.add(MANAGEMENT_ID, "제출 서류 준비");
 
         assertThat(result.getContent()).isEqualTo("제출 서류 준비");
         assertThat(result.isChecked()).isFalse();
@@ -68,7 +68,7 @@ class PolicyManagementCheckpointServiceTest {
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(MANAGEMENT_ID))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> checkPointService.add(MANAGEMENT_ID, "제출 서류 준비"))
+        assertThatThrownBy(() -> checklistService.add(MANAGEMENT_ID, "제출 서류 준비"))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.MANAGEMENT_NOT_FOUND);
@@ -80,7 +80,7 @@ class PolicyManagementCheckpointServiceTest {
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.of(checklist));
 
-        checkPointService.check(5L);
+        checklistService.check(5L);
 
         assertThat(checklist.isChecked()).isTrue();
     }
@@ -92,7 +92,7 @@ class PolicyManagementCheckpointServiceTest {
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.of(checklist));
 
-        checkPointService.uncheck(5L);
+        checklistService.uncheck(5L);
 
         assertThat(checklist.isChecked()).isFalse();
     }
@@ -102,7 +102,7 @@ class PolicyManagementCheckpointServiceTest {
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> checkPointService.check(5L))
+        assertThatThrownBy(() -> checklistService.check(5L))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
@@ -113,7 +113,7 @@ class PolicyManagementCheckpointServiceTest {
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> checkPointService.uncheck(5L))
+        assertThatThrownBy(() -> checklistService.uncheck(5L))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
@@ -124,7 +124,7 @@ class PolicyManagementCheckpointServiceTest {
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> checkPointService.delete(5L))
+        assertThatThrownBy(() -> checklistService.delete(5L))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
@@ -136,7 +136,7 @@ class PolicyManagementCheckpointServiceTest {
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.of(checklist));
 
-        checkPointService.delete(5L);
+        checklistService.delete(5L);
 
         assertThat(checklist.getDeletedAt()).isNotNull();
     }
@@ -149,7 +149,7 @@ class PolicyManagementCheckpointServiceTest {
         when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
                 .thenReturn(Optional.of(checklist));
 
-        assertThatThrownBy(() -> checkPointService.check(5L))
+        assertThatThrownBy(() -> checklistService.check(5L))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
@@ -167,7 +167,7 @@ class PolicyManagementCheckpointServiceTest {
                 .thenReturn(page);
 
         Page<ApplicationChecklistResponse> result =
-                checkPointService.getByManagement(MANAGEMENT_ID, pageable);
+                checklistService.getByManagement(MANAGEMENT_ID, pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).message()).isEqualTo("제출 서류 준비");
@@ -180,7 +180,7 @@ class PolicyManagementCheckpointServiceTest {
 
         assertThatThrownBy(
                         () ->
-                                checkPointService.getByManagement(
+                                checklistService.getByManagement(
                                         MANAGEMENT_ID, PageRequest.of(0, 20)))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())

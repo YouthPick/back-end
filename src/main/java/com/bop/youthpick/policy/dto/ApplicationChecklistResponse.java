@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public record ApplicationChecklistResponse(
         Long id,
-        Long policyManagementId,
+        Long policyApplicationId,
         String message,
         boolean checked,
         LocalDateTime createdAt) {

@@ -5,7 +5,7 @@ import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.dto.RegisterManagementRequest;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.PolicyApplication;
-import com.bop.youthpick.policy.service.PolicyManagementService;
+import com.bop.youthpick.policy.service.PolicyApplicationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -32,15 +32,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/managements")
 @RequiredArgsConstructor
-public class PolicyManagementController {
+public class PolicyApplicationController {
 
-    private final PolicyManagementService policyManagementService;
+    private final PolicyApplicationService policyApplicationService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<PolicyApplicationResponse>> register(
             @Valid @RequestBody RegisterManagementRequest request) {
         PolicyApplication application =
-                policyManagementService.register(
+                policyApplicationService.register(
                         request.userId(),
                         request.policyId(),
                         ApplicationStatus.valueOf(request.status()),
@@ -54,7 +54,7 @@ public class PolicyManagementController {
     public ApiResponse<List<PolicyApplicationResponse>> getManagements(
             @RequestParam Long userId, @PageableDefault(size = 20) Pageable pageable) {
         Page<PolicyApplicationResponse> page =
-                policyManagementService.getManagements(userId, pageable);
+                policyApplicationService.getManagements(userId, pageable);
         return ApiResponse.ok(page.getContent(), page);
     }
 
@@ -66,13 +66,13 @@ public class PolicyManagementController {
                     @Pattern(regexp = "INTERESTED|APPLIED|COMPLETED", message = "유효하지 않은 상태값입니다.")
                     String status) {
         PolicyApplication application =
-                policyManagementService.changeStatus(id, ApplicationStatus.valueOf(status));
+                policyApplicationService.changeStatus(id, ApplicationStatus.valueOf(status));
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
-        policyManagementService.delete(id);
+        policyApplicationService.delete(id);
         return ApiResponse.ok(null);
     }
 }

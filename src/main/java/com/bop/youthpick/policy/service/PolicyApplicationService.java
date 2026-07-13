@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class PolicyManagementService {
+public class PolicyApplicationService {
 
     private final PolicyApplicationRepository policyApplicationRepository;
     private final UserRepository userRepository;

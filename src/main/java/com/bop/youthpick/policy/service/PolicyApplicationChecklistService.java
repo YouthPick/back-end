@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class PolicyManagementCheckpointService {
+public class PolicyApplicationChecklistService {
 
     private final PolicyApplicationChecklistRepository applicationChecklistRepository;
     private final PolicyApplicationRepository policyApplicationRepository;
