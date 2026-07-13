@@ -26,6 +26,12 @@ youthpick:
     secret: ${JWT_SECRET}
     access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:30m}
     refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:14d}
+  auth:
+    refresh-cookie:
+      # 로컬은 http(비TLS)라 secure=false. localhost:5173↔localhost:8080은 포트만 다른 동일 사이트라
+      # SameSite=Lax로도 쿠키가 정상 전송된다(운영은 application.yml의 SameSite=None+Secure 기본값을 쓴다).
+      secure: false
+      same-site: Lax
   oauth:
     # provider 콘솔에 등록하는 redirect_uri와 동일해야 하는 프론트엔드 콜백 라우트
     frontend-callback-uri: ${OAUTH_FRONTEND_CALLBACK_URI:http://localhost:3000/oauth/callback}

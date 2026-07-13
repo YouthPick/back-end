@@ -116,10 +116,12 @@ sequenceDiagram
     AS->>JTP: createAccessToken / createRefreshToken
     AS->>RTS: save(userId, refreshToken 해시, TTL)
     AS-->>AC: TokenResponse(accessToken, refreshToken, ...)
-    AC-->>FE: 200 OK + 토큰 두 개
+    AC-->>FE: 200 OK + accessToken(body) + Set-Cookie: refresh_token(HttpOnly)
 ```
 
 `RefreshTokenStore`([RefreshTokenStore.java](../src/main/java/com/bop/youthpick/auth/service/RefreshTokenStore.java))는 refresh token **원문을 저장하지 않고 SHA-256 해시만** 저장한다. Redis가 유출되더라도 그 값으로 바로 로그인할 수 없게 하기 위함이다.
+
+`AuthService`가 반환하는 `TokenResponse`는 access/refresh token을 둘 다 담고 있지만, 이 값이 그대로 JSON으로 나가지는 않는다. `AuthController`가 [`RefreshTokenCookieSupport`](../src/main/java/com/bop/youthpick/auth/service/RefreshTokenCookieSupport.java)로 refreshToken을 HttpOnly 쿠키(`Set-Cookie`)로 옮겨 담고, 응답 body는 refreshToken이 빠진 `AccessTokenResponse`로 감싼다. XSS로 실행된 스크립트가 JS에서 refresh token을 읽지 못하게 하기 위함이다 — access token은 여전히 body로 내려가 `Authorization: Bearer` 헤더로 쓰인다.
 
 ### 5-2. 이후 모든 요청 — `Authorization: Bearer <accessToken>`
 
@@ -196,6 +198,8 @@ JWT는 서명이 유효하고 만료 전이면 그 자체로는 "위조되지 �
 - 불일치(이미 로그아웃됨/이미 재발급에 쓰여서 폐기됨)면 거부.
 - "대조"와 "교체"를 하나의 Lua 스크립트로 묶은 이유는 동시에 같은 refresh token으로 두 번 재발급 요청이 와도 **하나만 성공**하게 만들기 위해서다(따로 하면 둘 다 대조를 통과한 뒤 각자 교체해버리는 race condition이 생긴다).
 
+`AuthController.refresh()`는 더 이상 요청 body로 refreshToken을 받지 않고 `@CookieValue`로 `refresh_token` 쿠키에서 읽는다. 쿠키만으로 동작하면 preflight 없는 단순 요청(cross-site `<form>` 제출 등)도 쿠키를 자동으로 실어 도달할 수 있어서, `Origin` 헤더가 있는데 `SecurityConfig.ALLOWED_ORIGINS`에 없으면 서비스 호출 전에 `AuthErrorCode.FORBIDDEN`(403 `A008`)으로 거부한다(헤더 자체가 없으면 통과 — 브라우저가 아닌 클라이언트를 막지 않기 위해서다).
+
 ## 9. 전체 그림 한 장
 
 ```mermaid
@@ -225,6 +229,7 @@ flowchart TB
 | JWT Bearer 헤더 해석 필터 | [`JwtAuthenticationFilter`](../src/main/java/com/bop/youthpick/auth/service/JwtAuthenticationFilter.java) |
 | JWT 발급/검증 | [`JwtTokenProvider`](../src/main/java/com/bop/youthpick/auth/service/JwtTokenProvider.java) |
 | Redis 기반 refresh token 저장/원자적 rotate | [`RefreshTokenStore`](../src/main/java/com/bop/youthpick/auth/service/RefreshTokenStore.java) |
+| refresh token HttpOnly 쿠키 발급/삭제 | [`RefreshTokenCookieSupport`](../src/main/java/com/bop/youthpick/auth/service/RefreshTokenCookieSupport.java) / [`RefreshCookieProperties`](../src/main/java/com/bop/youthpick/auth/service/RefreshCookieProperties.java) |
 | 인증 principal DTO | [`AuthPrincipal`](../src/main/java/com/bop/youthpick/auth/dto/AuthPrincipal.java) |
 | 인증 실패(401) 처리 | [`RestAuthenticationEntryPoint`](../src/main/java/com/bop/youthpick/global/config/RestAuthenticationEntryPoint.java) |
 | 인가 실패(403) 처리 | [`RestAccessDeniedHandler`](../src/main/java/com/bop/youthpick/global/config/RestAccessDeniedHandler.java) |

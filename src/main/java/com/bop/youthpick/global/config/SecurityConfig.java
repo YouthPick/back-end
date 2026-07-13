@@ -17,10 +17,11 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * 보안 기본 골격. REST API 기준으로 세션을 쓰지 않고(STATELESS) CSRF는 끄고, CORS만 켠다. 인증은 JWT access/refresh token
- * 기반이며 {@code JwtAuthenticationFilter}가 매 요청의 {@code Authorization: Bearer} 헤더를 해석해
- * SecurityContext를 채운다. 인증 실패는 {@link RestAuthenticationEntryPoint}가 JSON 401로, 권한 부족은 {@link
- * RestAccessDeniedHandler}가 JSON 403으로 응답하도록 미리 연결해 둔다.
+ * 보안 기본 골격. REST API 기준으로 세션을 쓰지 않고(STATELESS) CSRF는 끄고, CORS만 켠다. 인증은 JWT access token 기반이며 {@code
+ * JwtAuthenticationFilter}가 매 요청의 {@code Authorization: Bearer} 헤더를 해석해 SecurityContext를 채운다.
+ * refresh token은 XSS로부터 보호하기 위해 HttpOnly 쿠키로만 전달하며({@code RefreshTokenCookieSupport}), 이 때문에 CORS
+ * {@code allowCredentials}를 켜 둔다. 인증 실패는 {@link RestAuthenticationEntryPoint}가 JSON 401로, 권한 부족은
+ * {@link RestAccessDeniedHandler}가 JSON 403으로 응답하도록 미리 연결해 둔다.
  *
  * <h2>인가 규칙: API 명세서(docs)의 권한 컬럼 기준</h2>
  *
@@ -32,6 +33,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+    /** 프론트엔드 배포 주소. refresh token 쿠키 Origin 검증({@code AuthController})과 CORS 설정이 이 목록을 공유한다. */
+    public static final List<String> ALLOWED_ORIGINS =
+            List.of("http://localhost:3000", "http://localhost:5173");
 
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
@@ -89,13 +94,14 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 프론트엔드 개발 서버 주소. 실제 배포 도메인에 맞게 조정한다.
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
+        configuration.setAllowedOrigins(ALLOWED_ORIGINS);
         configuration.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
         configuration.setExposedHeaders(List.of("Location"));
-        configuration.setAllowCredentials(false);
+        // refresh token을 HttpOnly 쿠키로 내려주므로 브라우저가 쿠키를 담아 보내려면 credentials 허용이 필수.
+        // allowedOrigins가 명시적 목록(와일드카드 아님)이라 credentials=true와 함께 써도 안전하다.
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

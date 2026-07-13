@@ -11,3 +11,12 @@ spring:
       # 스레드/DB 커넥션을 오래 붙잡지 않도록 한다.
       connect-timeout: 3s
       read-timeout: 5s
+
+youthpick:
+  auth:
+    refresh-cookie:
+      # 운영 안전 기본값: 프론트/백엔드가 서로 다른 도메인(크로스사이트)이라 SameSite=None + Secure가 필수.
+      # 로컬(application-local.yml)은 http라 secure=false, localhost 동일 사이트라 SameSite=Lax로 완화한다.
+      path: /api/v1/auth
+      secure: true
+      same-site: None
