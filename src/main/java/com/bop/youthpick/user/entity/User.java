@@ -49,4 +49,14 @@ public class User extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public static User createSocialUser(
+            String provider, String providerId, String email, String nickname) {
+        User user = new User();
+        user.provider = provider;
+        user.providerId = providerId;
+        user.email = email;
+        user.nickname = nickname;
+        return user;
+    }
 }
