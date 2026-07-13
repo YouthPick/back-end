@@ -7,6 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bop.youthpick.auth.exception.AuthErrorCode;
+import com.bop.youthpick.auth.exception.AuthException;
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
@@ -201,18 +203,16 @@ class PolicyApplicationServiceTest {
 
     @Test
     void changeStatus_성공() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
                 PolicyApplication.register(
-                        mock(User.class),
-                        mock(Policy.class),
-                        ApplicationStatus.INTERESTED,
-                        null,
-                        null);
+                        owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
 
         PolicyApplication result =
-                policyApplicationService.changeStatus(10L, ApplicationStatus.APPLIED);
+                policyApplicationService.changeStatus(10L, USER_ID, ApplicationStatus.APPLIED);
 
         assertThat(result.getStatus()).isEqualTo(ApplicationStatus.APPLIED);
     }
@@ -223,25 +223,45 @@ class PolicyApplicationServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(
-                        () -> policyApplicationService.changeStatus(10L, ApplicationStatus.APPLIED))
+                        () ->
+                                policyApplicationService.changeStatus(
+                                        10L, USER_ID, ApplicationStatus.APPLIED))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);
     }
 
     @Test
-    void delete_성공() {
+    void changeStatus_소유자가_아니면_FORBIDDEN_예외를_던진다() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
                 PolicyApplication.register(
-                        mock(User.class),
-                        mock(Policy.class),
-                        ApplicationStatus.INTERESTED,
-                        null,
-                        null);
+                        owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
 
-        policyApplicationService.delete(10L);
+        Long otherUserId = 999L;
+        assertThatThrownBy(
+                        () ->
+                                policyApplicationService.changeStatus(
+                                        10L, otherUserId, ApplicationStatus.APPLIED))
+                .isInstanceOf(AuthException.class)
+                .extracting(ex -> ((AuthException) ex).getErrorCode())
+                .isEqualTo(AuthErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    void delete_성공() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(existing));
+
+        policyApplicationService.delete(10L, USER_ID);
 
         assertThat(existing.isDeleted()).isTrue();
     }
@@ -251,10 +271,27 @@ class PolicyApplicationServiceTest {
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> policyApplicationService.delete(10L))
+        assertThatThrownBy(() -> policyApplicationService.delete(10L, USER_ID))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);
+    }
+
+    @Test
+    void delete_소유자가_아니면_FORBIDDEN_예외를_던진다() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(existing));
+
+        Long otherUserId = 999L;
+        assertThatThrownBy(() -> policyApplicationService.delete(10L, otherUserId))
+                .isInstanceOf(AuthException.class)
+                .extracting(ex -> ((AuthException) ex).getErrorCode())
+                .isEqualTo(AuthErrorCode.FORBIDDEN);
     }
 
     @Test

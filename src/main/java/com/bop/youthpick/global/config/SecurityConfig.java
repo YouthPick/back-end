@@ -80,6 +80,11 @@ public class SecurityConfig {
                                         "/api/v1/me/**",
                                         "/api/v1/policy-chat/profile-consent")
                                 .authenticated()
+                                // 회원 전용 — 정책 신청관리(관심정책 흡수) + 체크리스트.
+                                // 명세(docs/api-spec.md)의 /api/v1/policy-applications와 경로가 아직
+                                // 다르지만(이슈 #24), 소유권 검증이 걸린 회원 전용 API이므로 먼저 인증만 강제한다.
+                                .requestMatchers("/api/applications/**", "/api/checklists/**")
+                                .authenticated()
                                 // 명세에 없는 나머지 경로(구현 중인 다른 도메인 등)는 개발 편의상 열어 둔다.
                                 .anyRequest()
                                 .permitAll());

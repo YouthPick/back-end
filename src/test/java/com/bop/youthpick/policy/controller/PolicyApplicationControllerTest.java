@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bop.youthpick.auth.dto.AuthPrincipal;
 import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
@@ -27,6 +28,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -54,19 +59,20 @@ class PolicyApplicationControllerTest {
         String body =
                 """
                 {
-                    "userId": 1,
                     "policyId": 2,
                     "status": "INTERESTED",
                     "memo": "메모"
                 }
                 """;
 
-        mockMvc.perform(
-                        post("/api/applications")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(body))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.status").value("INTERESTED"));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        post("/api/applications")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(body))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.data.status").value("INTERESTED")));
     }
 
     @Test
@@ -74,18 +80,19 @@ class PolicyApplicationControllerTest {
         String body =
                 """
                 {
-                    "userId": 1,
                     "policyId": 2,
                     "status": "UNKNOWN"
                 }
                 """;
 
-        mockMvc.perform(
-                        post("/api/applications")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("C001"));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        post("/api/applications")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(body))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
     }
 
     @Test
@@ -93,12 +100,14 @@ class PolicyApplicationControllerTest {
         Page<PolicyApplicationResponse> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
         when(policyApplicationService.getApplications(eq(1L), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/applications").param("userId", "1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.meta.page").value(0))
-                .andExpect(jsonPath("$.meta.totalCount").value(0))
-                .andExpect(jsonPath("$.meta.totalPages").value(0));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(get("/api/applications"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data").isArray())
+                                .andExpect(jsonPath("$.meta.page").value(0))
+                                .andExpect(jsonPath("$.meta.totalCount").value(0))
+                                .andExpect(jsonPath("$.meta.totalPages").value(0)));
     }
 
     @Test
@@ -110,27 +119,60 @@ class PolicyApplicationControllerTest {
                         ApplicationStatus.APPLIED,
                         null,
                         null);
-        when(policyApplicationService.changeStatus(10L, ApplicationStatus.APPLIED))
+        when(policyApplicationService.changeStatus(10L, 1L, ApplicationStatus.APPLIED))
                 .thenReturn(application);
 
-        mockMvc.perform(patch("/api/applications/{id}/status", 10L).param("status", "APPLIED"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("APPLIED"));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        patch("/api/applications/{id}/status", 10L)
+                                                .param("status", "APPLIED"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.status").value("APPLIED")));
 
-        verify(policyApplicationService).changeStatus(10L, ApplicationStatus.APPLIED);
+        verify(policyApplicationService).changeStatus(10L, 1L, ApplicationStatus.APPLIED);
     }
 
     @Test
     void changeStatus_status값이_유효하지_않으면_400과_C001을_반환한다() throws Exception {
-        mockMvc.perform(patch("/api/applications/{id}/status", 10L).param("status", "UNKNOWN"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("C001"));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        patch("/api/applications/{id}/status", 10L)
+                                                .param("status", "UNKNOWN"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
     }
 
     @Test
     void delete_성공하면_200을_반환한다() throws Exception {
-        mockMvc.perform(delete("/api/applications/{id}", 10L)).andExpect(status().isOk());
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(delete("/api/applications/{id}", 10L))
+                                .andExpect(status().isOk()));
 
-        verify(policyApplicationService).delete(10L);
+        verify(policyApplicationService).delete(10L, 1L);
+    }
+
+    /**
+     * addFilters=false로 시큐리티 필터 체인(JwtAuthenticationFilter 포함)을 건너뛰므로, SecurityContextHolder를 직접
+     * 채워 @CurrentUser를 해석시킨다.
+     */
+    private void withAuthenticatedPrincipal(ThrowingRunnable runnable) throws Exception {
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        new AuthPrincipal(1L, "USER"),
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        try {
+            runnable.run();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    private interface ThrowingRunnable {
+        void run() throws Exception;
     }
 }

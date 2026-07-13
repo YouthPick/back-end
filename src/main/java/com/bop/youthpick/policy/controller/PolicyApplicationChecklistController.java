@@ -1,5 +1,6 @@
 package com.bop.youthpick.policy.controller;
 
+import com.bop.youthpick.auth.service.CurrentUser;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationChecklistMessageResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationChecklistResponse;
@@ -23,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// TODO: 인증 도입 후 @PathVariable applicationId/id 대신 인증 principal 기반 소유권 검증으로 교체한다.
 @RestController
 @RequestMapping("/api/checklists")
 @RequiredArgsConstructor
@@ -33,36 +33,42 @@ public class PolicyApplicationChecklistController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<PolicyApplicationChecklistResponse>> add(
+            @CurrentUser Long userId,
             @Valid @RequestBody PolicyApplicationCreateChecklistRequest request) {
         PolicyApplicationChecklist checklist =
-                checklistService.add(request.applicationId(), request.message());
+                checklistService.add(request.applicationId(), userId, request.message());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(PolicyApplicationChecklistResponse.from(checklist)));
     }
 
     @GetMapping("/application/{applicationId}")
     public ApiResponse<List<PolicyApplicationChecklistResponse>> getByApplication(
-            @PathVariable Long applicationId, @PageableDefault(size = 20) Pageable pageable) {
+            @CurrentUser Long userId,
+            @PathVariable Long applicationId,
+            @PageableDefault(size = 20) Pageable pageable) {
         Page<PolicyApplicationChecklistResponse> page =
-                checklistService.getByApplication(applicationId, pageable);
+                checklistService.getByApplication(applicationId, userId, pageable);
         return ApiResponse.ok(page.getContent(), page);
     }
 
     @PatchMapping("/{id}/check")
-    public ApiResponse<PolicyApplicationChecklistMessageResponse> check(@PathVariable Long id) {
-        checklistService.check(id);
+    public ApiResponse<PolicyApplicationChecklistMessageResponse> check(
+            @CurrentUser Long userId, @PathVariable Long id) {
+        checklistService.check(id, userId);
         return ApiResponse.ok(new PolicyApplicationChecklistMessageResponse("체크 완료"));
     }
 
     @PatchMapping("/{id}/uncheck")
-    public ApiResponse<PolicyApplicationChecklistMessageResponse> uncheck(@PathVariable Long id) {
-        checklistService.uncheck(id);
+    public ApiResponse<PolicyApplicationChecklistMessageResponse> uncheck(
+            @CurrentUser Long userId, @PathVariable Long id) {
+        checklistService.uncheck(id, userId);
         return ApiResponse.ok(new PolicyApplicationChecklistMessageResponse("체크 해제 완료"));
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<PolicyApplicationChecklistMessageResponse> delete(@PathVariable Long id) {
-        checklistService.delete(id);
+    public ApiResponse<PolicyApplicationChecklistMessageResponse> delete(
+            @CurrentUser Long userId, @PathVariable Long id) {
+        checklistService.delete(id, userId);
         return ApiResponse.ok(new PolicyApplicationChecklistMessageResponse("체크리스트 삭제 완료"));
     }
 }

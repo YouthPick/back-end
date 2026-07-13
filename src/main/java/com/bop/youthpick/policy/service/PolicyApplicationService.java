@@ -1,5 +1,7 @@
 package com.bop.youthpick.policy.service;
 
+import com.bop.youthpick.auth.exception.AuthErrorCode;
+import com.bop.youthpick.auth.exception.AuthException;
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
@@ -72,8 +74,9 @@ public class PolicyApplicationService {
     }
 
     @Transactional
-    public PolicyApplication changeStatus(Long id, ApplicationStatus status) {
+    public PolicyApplication changeStatus(Long id, Long userId, ApplicationStatus status) {
         PolicyApplication application = findActive(id);
+        verifyOwner(application, userId);
         application.changeStatus(status);
         return application;
     }
@@ -86,8 +89,10 @@ public class PolicyApplicationService {
     }
 
     @Transactional
-    public void delete(Long id) {
-        findActive(id).delete();
+    public void delete(Long id, Long userId) {
+        PolicyApplication application = findActive(id);
+        verifyOwner(application, userId);
+        application.delete();
     }
 
     private PolicyApplication findActive(Long id) {
@@ -95,5 +100,11 @@ public class PolicyApplicationService {
                 .findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(
                         () -> new CustomException(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
+    }
+
+    private void verifyOwner(PolicyApplication application, Long userId) {
+        if (!application.getUser().getId().equals(userId)) {
+            throw new AuthException(AuthErrorCode.FORBIDDEN);
+        }
     }
 }

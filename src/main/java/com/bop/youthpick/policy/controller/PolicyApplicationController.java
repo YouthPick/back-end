@@ -1,5 +1,6 @@
 package com.bop.youthpick.policy.controller;
 
+import com.bop.youthpick.auth.service.CurrentUser;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.dto.RegisterPolicyApplicationRequest;
@@ -27,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-// TODO: 인증 도입 후 @RequestParam userId, @PathVariable id 대신 인증 principal 기반 소유권 검증으로 교체한다.
 @Validated
 @RestController
 @RequestMapping("/api/applications")
@@ -38,10 +38,11 @@ public class PolicyApplicationController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<PolicyApplicationResponse>> register(
+            @CurrentUser Long userId,
             @Valid @RequestBody RegisterPolicyApplicationRequest request) {
         PolicyApplication application =
                 policyApplicationService.register(
-                        request.userId(),
+                        userId,
                         request.policyId(),
                         ApplicationStatus.valueOf(request.status()),
                         request.memo(),
@@ -52,7 +53,7 @@ public class PolicyApplicationController {
 
     @GetMapping
     public ApiResponse<List<PolicyApplicationResponse>> getApplications(
-            @RequestParam Long userId, @PageableDefault(size = 20) Pageable pageable) {
+            @CurrentUser Long userId, @PageableDefault(size = 20) Pageable pageable) {
         Page<PolicyApplicationResponse> page =
                 policyApplicationService.getApplications(userId, pageable);
         return ApiResponse.ok(page.getContent(), page);
@@ -60,19 +61,21 @@ public class PolicyApplicationController {
 
     @PatchMapping("/{id}/status")
     public ApiResponse<PolicyApplicationResponse> changeStatus(
+            @CurrentUser Long userId,
             @PathVariable Long id,
             @RequestParam
                     @NotBlank(message = "상태는 필수입니다.")
                     @Pattern(regexp = "INTERESTED|APPLIED|COMPLETED", message = "유효하지 않은 상태값입니다.")
                     String status) {
         PolicyApplication application =
-                policyApplicationService.changeStatus(id, ApplicationStatus.valueOf(status));
+                policyApplicationService.changeStatus(
+                        id, userId, ApplicationStatus.valueOf(status));
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        policyApplicationService.delete(id);
+    public ApiResponse<Void> delete(@CurrentUser Long userId, @PathVariable Long id) {
+        policyApplicationService.delete(id, userId);
         return ApiResponse.ok(null);
     }
 }

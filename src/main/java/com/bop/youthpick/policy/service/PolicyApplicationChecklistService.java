@@ -1,5 +1,7 @@
 package com.bop.youthpick.policy.service;
 
+import com.bop.youthpick.auth.exception.AuthErrorCode;
+import com.bop.youthpick.auth.exception.AuthException;
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyApplicationChecklistResponse;
 import com.bop.youthpick.policy.entity.PolicyApplication;
@@ -21,14 +23,8 @@ public class PolicyApplicationChecklistService {
     private final PolicyApplicationRepository policyApplicationRepository;
 
     @Transactional
-    public PolicyApplicationChecklist add(Long applicationId, String message) {
-        PolicyApplication application =
-                policyApplicationRepository
-                        .findByIdAndDeletedAtIsNull(applicationId)
-                        .orElseThrow(
-                                () ->
-                                        new CustomException(
-                                                PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
+    public PolicyApplicationChecklist add(Long applicationId, Long userId, String message) {
+        PolicyApplication application = findActiveApplication(applicationId, userId);
 
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application, message);
@@ -36,34 +32,43 @@ public class PolicyApplicationChecklistService {
     }
 
     @Transactional
-    public void check(Long id) {
-        findActive(id).check();
+    public void check(Long id, Long userId) {
+        findActive(id, userId).check();
     }
 
     @Transactional
-    public void uncheck(Long id) {
-        findActive(id).uncheck();
+    public void uncheck(Long id, Long userId) {
+        findActive(id, userId).uncheck();
     }
 
     @Transactional
-    public void delete(Long id) {
-        findActive(id).delete();
+    public void delete(Long id, Long userId) {
+        findActive(id, userId).delete();
     }
 
     @Transactional(readOnly = true)
     public Page<PolicyApplicationChecklistResponse> getByApplication(
-            Long applicationId, Pageable pageable) {
-        policyApplicationRepository
-                .findByIdAndDeletedAtIsNull(applicationId)
-                .orElseThrow(
-                        () -> new CustomException(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
+            Long applicationId, Long userId, Pageable pageable) {
+        findActiveApplication(applicationId, userId);
 
         return applicationChecklistRepository
                 .findByApplication_IdAndDeletedAtIsNull(applicationId, pageable)
                 .map(PolicyApplicationChecklistResponse::from);
     }
 
-    private PolicyApplicationChecklist findActive(Long id) {
+    private PolicyApplication findActiveApplication(Long applicationId, Long userId) {
+        PolicyApplication application =
+                policyApplicationRepository
+                        .findByIdAndDeletedAtIsNull(applicationId)
+                        .orElseThrow(
+                                () ->
+                                        new CustomException(
+                                                PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
+        verifyOwner(application, userId);
+        return application;
+    }
+
+    private PolicyApplicationChecklist findActive(Long id, Long userId) {
         PolicyApplicationChecklist checklist =
                 applicationChecklistRepository
                         .findByIdAndDeletedAtIsNull(id)
@@ -72,6 +77,13 @@ public class PolicyApplicationChecklistService {
         if (checklist.getApplication().isDeleted()) {
             throw new CustomException(PolicyErrorCode.CHECKLIST_NOT_FOUND);
         }
+        verifyOwner(checklist.getApplication(), userId);
         return checklist;
+    }
+
+    private void verifyOwner(PolicyApplication application, Long userId) {
+        if (!application.getUser().getId().equals(userId)) {
+            throw new AuthException(AuthErrorCode.FORBIDDEN);
+        }
     }
 }

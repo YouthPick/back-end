@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bop.youthpick.auth.dto.AuthPrincipal;
 import com.bop.youthpick.policy.dto.PolicyApplicationChecklistResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
@@ -28,6 +29,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -52,7 +57,7 @@ class PolicyApplicationChecklistControllerTest {
 
     @Test
     void add_유효한_요청이면_201과_생성된_체크리스트를_반환한다() throws Exception {
-        when(checklistService.add(1L, "제출 서류 준비")).thenReturn(checklist());
+        when(checklistService.add(1L, 1L, "제출 서류 준비")).thenReturn(checklist());
 
         String body =
                 """
@@ -62,13 +67,15 @@ class PolicyApplicationChecklistControllerTest {
                 }
                 """;
 
-        mockMvc.perform(
-                        post("/api/checklists")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(body))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.message").value("제출 서류 준비"))
-                .andExpect(jsonPath("$.data.checked").value(false));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        post("/api/checklists")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(body))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.data.message").value("제출 서류 준비"))
+                                .andExpect(jsonPath("$.data.checked").value(false)));
     }
 
     @Test
@@ -81,52 +88,84 @@ class PolicyApplicationChecklistControllerTest {
                 }
                 """;
 
-        mockMvc.perform(
-                        post("/api/checklists")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("C001"));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        post("/api/checklists")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(body))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
     }
 
     @Test
     void getByApplication_신청관리별_체크리스트_목록을_반환한다() throws Exception {
         Page<PolicyApplicationChecklistResponse> page =
                 new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
-        when(checklistService.getByApplication(eq(1L), any())).thenReturn(page);
+        when(checklistService.getByApplication(eq(1L), eq(1L), any())).thenReturn(page);
 
-        mockMvc.perform(get("/api/checklists/application/{applicationId}", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.meta.page").value(0))
-                .andExpect(jsonPath("$.meta.totalCount").value(0))
-                .andExpect(jsonPath("$.meta.totalPages").value(0));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(get("/api/checklists/application/{applicationId}", 1L))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data").isArray())
+                                .andExpect(jsonPath("$.meta.page").value(0))
+                                .andExpect(jsonPath("$.meta.totalCount").value(0))
+                                .andExpect(jsonPath("$.meta.totalPages").value(0)));
     }
 
     @Test
     void check_성공하면_200과_체크_완료_메시지를_반환한다() throws Exception {
-        mockMvc.perform(patch("/api/checklists/{id}/check", 5L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.message").value("체크 완료"));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(patch("/api/checklists/{id}/check", 5L))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.message").value("체크 완료")));
 
-        verify(checklistService).check(5L);
+        verify(checklistService).check(5L, 1L);
     }
 
     @Test
     void uncheck_성공하면_200과_체크_해제_완료_메시지를_반환한다() throws Exception {
-        mockMvc.perform(patch("/api/checklists/{id}/uncheck", 5L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.message").value("체크 해제 완료"));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(patch("/api/checklists/{id}/uncheck", 5L))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.message").value("체크 해제 완료")));
 
-        verify(checklistService).uncheck(5L);
+        verify(checklistService).uncheck(5L, 1L);
     }
 
     @Test
     void delete_성공하면_200과_체크리스트_삭제_완료_메시지를_반환한다() throws Exception {
-        mockMvc.perform(delete("/api/checklists/{id}", 5L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.message").value("체크리스트 삭제 완료"));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(delete("/api/checklists/{id}", 5L))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.message").value("체크리스트 삭제 완료")));
 
-        verify(checklistService).delete(5L);
+        verify(checklistService).delete(5L, 1L);
+    }
+
+    /**
+     * addFilters=false로 시큐리티 필터 체인(JwtAuthenticationFilter 포함)을 건너뛰므로, SecurityContextHolder를 직접
+     * 채워 @CurrentUser를 해석시킨다.
+     */
+    private void withAuthenticatedPrincipal(ThrowingRunnable runnable) throws Exception {
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        new AuthPrincipal(1L, "USER"),
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        try {
+            runnable.run();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    private interface ThrowingRunnable {
+        void run() throws Exception;
     }
 }
