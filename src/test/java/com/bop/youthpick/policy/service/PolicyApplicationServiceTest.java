@@ -40,7 +40,7 @@ class PolicyApplicationServiceTest {
     @Mock private PolicyApplicationRepository policyApplicationRepository;
     @Mock private UserRepository userRepository;
     @Mock private PolicyRepository policyRepository;
-    @Mock private PolicyApplicationChecklistRepository policyPolicyApplicationChecklistRepository;
+    @Mock private PolicyApplicationChecklistRepository policyApplicationChecklistRepository;
 
     private PolicyApplicationService policyApplicationService;
 
@@ -54,7 +54,7 @@ class PolicyApplicationServiceTest {
                         policyApplicationRepository,
                         userRepository,
                         policyRepository,
-                        policyPolicyApplicationChecklistRepository);
+                        policyApplicationChecklistRepository);
     }
 
     @Test
@@ -134,8 +134,7 @@ class PolicyApplicationServiceTest {
         policyApplicationService.register(
                 USER_ID, POLICY_ID, ApplicationStatus.APPLIED, "재등록", null);
 
-        verify(policyPolicyApplicationChecklistRepository)
-                .softDeleteAllByApplicationId(existing.getId());
+        verify(policyApplicationChecklistRepository).softDeleteAllByApplicationId(existing.getId());
     }
 
     @Test

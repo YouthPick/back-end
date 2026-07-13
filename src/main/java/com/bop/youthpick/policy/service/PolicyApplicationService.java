@@ -28,7 +28,7 @@ public class PolicyApplicationService {
     private final PolicyApplicationRepository policyApplicationRepository;
     private final UserRepository userRepository;
     private final PolicyRepository policyRepository;
-    private final PolicyApplicationChecklistRepository policyPolicyApplicationChecklistRepository;
+    private final PolicyApplicationChecklistRepository policyApplicationChecklistRepository;
 
     @Transactional
     public PolicyApplication register(
@@ -47,8 +47,7 @@ public class PolicyApplicationService {
                 throw new CustomException(PolicyErrorCode.POLICY_ALREADY_EXISTS);
             }
             existing.reactivate(status, memo, endAt);
-            policyPolicyApplicationChecklistRepository.softDeleteAllByApplicationId(
-                    existing.getId());
+            policyApplicationChecklistRepository.softDeleteAllByApplicationId(existing.getId());
             return existing;
         }
 
