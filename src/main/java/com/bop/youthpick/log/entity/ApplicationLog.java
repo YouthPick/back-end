@@ -18,12 +18,12 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /** 앱 에러/요청 로그. userId는 연관관계 없이 값만 저장 — 로그는 유저 삭제와 무관하게 보존하고, 비로그인/배치는 NULL. */
 @Entity
 @Table(
-        name = "app_logs",
-        indexes = @Index(name = "idx_app_logs_created", columnList = "created_at"))
+        name = "application_logs",
+        indexes = @Index(name = "idx_application_logs_created", columnList = "created_at"))
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AppLog {
+public class ApplicationLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -5,14 +5,14 @@
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%throwable"/>
         </Console>
 
-        <!-- com.bop.youthpick 로거의 WARN 이상 로그를 app_logs 테이블에 적재. DB 장애 시에도 앱은 죽지 않는다(ignoreExceptions). -->
-        <AppLog name="AppLogAppender"/>
+        <!-- com.bop.youthpick 로거의 WARN 이상 로그를 application_logs 테이블에 적재. DB 장애 시에도 앱은 죽지 않는다(ignoreExceptions). -->
+        <ApplicationLog name="ApplicationLogAppender"/>
     </Appenders>
 
     <Loggers>
         <Logger name="com.bop.youthpick" level="INFO" additivity="false">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="AppLogAppender" level="WARN"/>
+            <AppenderRef ref="ApplicationLogAppender" level="WARN"/>
         </Logger>
         <Root level="INFO">
             <AppenderRef ref="Console"/>

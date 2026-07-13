@@ -18,30 +18,30 @@ import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.util.ReadOnlyStringMap;
 
 /**
- * app_logs 테이블에 로그를 적재하는 전용 Appender. Log4j2 내장 JDBC Appender는 컬럼 값을 항상 문자열로 바인딩해 MDC 값이 없을 때 빈
- * 문자열("")을 BIGINT user_id 컬럼에 넣으려다 실패하므로, 직접 PreparedStatement로 타입을 맞춰 적재한다.
+ * application_logs 테이블에 로그를 적재하는 전용 Appender. Log4j2 내장 JDBC Appender는 컬럼 값을 항상 문자열로 바인딩해 MDC 값이 없을
+ * 때 빈 문자열("")을 BIGINT user_id 컬럼에 넣으려다 실패하므로, 직접 PreparedStatement로 타입을 맞춰 적재한다.
  */
-@Plugin(name = "AppLog", category = "Core", elementType = "appender", printObject = true)
-public final class AppLogAppender extends AbstractAppender {
+@Plugin(name = "ApplicationLog", category = "Core", elementType = "appender", printObject = true)
+public final class ApplicationLogAppender extends AbstractAppender {
 
     private static final String INSERT_SQL =
-            "INSERT INTO app_logs "
+            "INSERT INTO application_logs "
                     + "(level, message, trace_id, method, uri, ip, exception_class, exception_message, stack_trace, user_id) "
                     + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    private AppLogAppender(String name, Filter filter) {
+    private ApplicationLogAppender(String name, Filter filter) {
         super(name, filter, null, true, Property.EMPTY_ARRAY);
     }
 
     @PluginFactory
-    public static AppLogAppender createAppender(
+    public static ApplicationLogAppender createAppender(
             @PluginAttribute("name") String name, @PluginElement("Filter") Filter filter) {
-        return new AppLogAppender(name, filter);
+        return new ApplicationLogAppender(name, filter);
     }
 
     @Override
     public void append(LogEvent event) {
-        DataSource dataSource = AppLogDataSource.getDataSource();
+        DataSource dataSource = ApplicationLogDataSource.getDataSource();
         Throwable thrown = event.getThrown();
         ReadOnlyStringMap context = event.getContextData();
         try (Connection connection = dataSource.getConnection();
@@ -58,7 +58,7 @@ public final class AppLogAppender extends AbstractAppender {
             setNullableLong(statement, 10, context.getValue("userId"));
             statement.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.error("app_logs 적재에 실패했습니다.", e);
+            LOGGER.error("application_logs 적재에 실패했습니다.", e);
         }
     }
 

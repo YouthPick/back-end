@@ -71,7 +71,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.of(errorCode));
     }
 
-    // 개발자가 예상치 못한 에러 — app_logs 테이블에 남도록 ERROR로 로깅한다.
+    // 개발자가 예상치 못한 에러 — application_logs 테이블에 남도록 ERROR로 로깅한다.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception exception) {
         log.error("처리되지 않은 예외가 발생했습니다.", exception);
