@@ -1,17 +1,20 @@
 # 보안 점검 체크리스트 (YouthPick 백엔드)
 
-## 인증 / 세션 / OAuth
+## 인증 / JWT / OAuth
 
 - [ ] 미인증 접근이 리다이렉트가 아니라 `RestAuthenticationEntryPoint`에서 JSON + `A001 UNAUTHORIZED`로 내려가는가.
-- [ ] 세션이 Spring Session(Redis)에 저장되는가. in-memory 세션에 의존하는 코드가 새로 생기지 않았는가.
+- [ ] `SecurityConfig`가 `SessionCreationPolicy.STATELESS`를 유지하는가. 세션/쿠키 기반 인증 코드가 새로 생기지 않았는가.
+- [ ] access token은 짧은 TTL, refresh token은 발급 시 `RefreshTokenStore`(Redis)에 저장되고 재발급(rotate)/로그아웃 시 갱신·삭제되는가.
+- [ ] `/api/v1/auth/token/refresh`가 JWT 서명·만료뿐 아니라 Redis에 저장된 값과 일치하는지도 검증하는가(탈취된 구 토큰 재사용 방지).
 - [ ] 인가 규칙(경로별 권한)이 `SecurityConfig`에 모여 있는가. Controller에 `if (권한)` 식으로 흩뿌려지지 않았는가.
+- [ ] 새로 추가된 인증 필요 엔드포인트가 `SecurityConfig`의 `authenticated()` 목록에 반영됐는가(빠지면 `anyRequest().permitAll()`로 누구나 접근 가능).
 - [ ] 로그인/회원가입에서 비밀번호가 평문 저장·로그되지 않는가. 인증 실패 메시지가 아이디 존재 여부를 흘리지 않는가(`A002`로 통일).
-- [ ] OAuth 콜백에서 state/redirect_uri 검증이 있는가. 외부에서 받은 값을 검증 없이 신뢰하지 않는가.
+- [ ] OAuth 콜백에서 state 검증이 있는가(`OAuthStateStore` 1회 소비). 외부에서 받은 값을 검증 없이 신뢰하지 않는가.
 
 ## Secret / 민감정보
 
-- [ ] OAuth client id/secret 등이 하드코딩되지 않고 환경변수로 주입되는가. 새 secret은 `.env.example`에 placeholder만 추가됐는가.
-- [ ] secret / token / 세션 값이 로그(`log.info` 등)·응답 DTO·예외 메시지에 노출되지 않는가.
+- [ ] OAuth client id/secret, `JWT_SECRET` 등이 하드코딩되지 않고 환경변수로 주입되는가. 새 secret은 `.env.example`에 placeholder만 추가됐는가.
+- [ ] secret / access·refresh 토큰 값이 로그(`log.info` 등)·응답 DTO·예외 메시지에 노출되지 않는가.
 - [ ] `.env`가 커밋 대상에 포함되지 않았는가.
 - [ ] 응답 DTO가 Entity의 민감 필드(비밀번호 해시, 내부 상태, raw OAuth payload)를 노출하지 않는가.
 

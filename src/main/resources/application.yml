@@ -7,11 +7,21 @@ spring:
     enabled: false
   http:
     client:
-      # 자동구성 RestClient.Builder 공통 타임아웃 (현재 사용처: PolicyApiClient)
-      connect-timeout: 5s
-      read-timeout: 30s
+      # OAuthClient·PolicyApiClient 등 자동구성된 RestClient.Builder에 전역 적용. provider가 응답이 없을 때
+      # 스레드/DB 커넥션을 오래 붙잡지 않도록 한다.
+      # read-timeout은 "연속 무응답" 기준(소켓 SO_TIMEOUT)이라 배치의 대용량 페이지 수신도
+      # 스트림이 흐르는 한 걸리지 않는다 — 배치 실측(페이지당 ~2초)과도 여유 있음.
+      connect-timeout: 3s
+      read-timeout: 5s
 
 youthpick:
+  auth:
+    refresh-cookie:
+      # 운영 안전 기본값: 프론트/백엔드가 서로 다른 도메인(크로스사이트)이라 SameSite=None + Secure가 필수.
+      # 로컬(application-local.yml)은 http라 secure=false, localhost 동일 사이트라 SameSite=Lax로 완화한다.
+      path: /api/v1/auth
+      secure: true
+      same-site: None
   sync:
     # 온통청년 API 키 — 코드/로그 노출 금지, .env.example 참고
     api-key: ${YOUTH_API_KEY:}

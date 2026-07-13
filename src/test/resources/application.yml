@@ -17,7 +17,17 @@ spring:
       port: ${REDIS_PORT:6379}
 
 youthpick:
+  jwt:
+    secret: test-secret-key-please-be-long-enough-for-hs256
+    access-token-expiration: 30m
+    refresh-token-expiration: 14d
+  auth:
+    refresh-cookie:
+      path: /api/v1/auth
+      secure: false
+      same-site: Lax
   oauth:
+    frontend-callback-uri: http://localhost:3000/oauth/callback
     providers:
       google:
         client-id: ${GOOGLE_OAUTH_CLIENT_ID:}

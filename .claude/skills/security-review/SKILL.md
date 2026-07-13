@@ -1,11 +1,11 @@
 ---
 name: security-review
-description: YouthPick 백엔드 변경분의 보안 점검. 인증/세션/OAuth, secret 노출, 입력 검증, 인가, 민감정보 응답 노출을 검토한다. PR 전 또는 auth/user/secret 관련 코드를 만졌을 때 사용.
+description: YouthPick 백엔드 변경분의 보안 점검. 인증/JWT/OAuth, secret 노출, 입력 검증, 인가, 민감정보 응답 노출을 검토한다. PR 전 또는 auth/user/secret 관련 코드를 만졌을 때 사용.
 ---
 
 # Security Review
 
-YouthPick 백엔드(세션 기반 인증 + OAuth 소셜 로그인 + Redis 세션) 변경분을 보안 관점에서 점검한다.
+YouthPick 백엔드(STATELESS + JWT access/refresh 인증 + OAuth 소셜 로그인, refresh token은 Redis TTL 저장) 변경분을 보안 관점에서 점검한다.
 
 ## 절차
 
@@ -19,6 +19,6 @@ YouthPick 백엔드(세션 기반 인증 + OAuth 소셜 로그인 + Redis 세션
 
 ## 원칙
 
-- secret / OAuth client secret / 세션 토큰 값이 코드·로그·응답·예외 메시지에 노출되는지 최우선으로 본다.
+- secret / OAuth client secret / JWT access·refresh 토큰 값이 코드·로그·응답·예외 메시지에 노출되는지 최우선으로 본다.
 - 규칙 근거는 [`.claude/rules/auth-security.md`](../../rules/auth-security.md), [`.claude/rules/error-handling.md`](../../rules/error-handling.md)와 일치시킨다.
 - 이 스킬은 **점검·보고만** 한다. 수정이 필요하면 항목을 제시하고, 실제 수정은 사용자 승인 후 진행한다.
