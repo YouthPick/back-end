@@ -283,7 +283,7 @@ CREATE TABLE policy_batch_history (
 -- 12. application_logs — 앱 에러/요청 로그 (ERDCloud `로그`)
 --     VARCHAR 길이 누락 정정, user_id NULL 허용(비로그인/배치),
 --     FK 없음 — 로그는 유저 삭제와 무관하게 보존
---     V3 마이그레이션에서 app_logs → application_logs로 개명(ERD 물리명 기준)
+--     V4 마이그레이션에서 app_logs → application_logs로 개명(ERD 물리명 기준)
 -- ------------------------------------------------------------
 CREATE TABLE application_logs (
     id                BIGINT       NOT NULL AUTO_INCREMENT,
