@@ -238,4 +238,103 @@ public class Policy extends BaseEntity {
     /** API 응답 원문 JSON — 스키마 진화 시 백필용 보험 */
     @Column(name = "raw_payload", columnDefinition = "LONGTEXT")
     private String rawPayload;
+
+    /**
+     * 배치 전처리(PolicyMapper) 전용 생성 통로. 파라미터 순서 = 필드 선언 순서 — 인접 String이 많아 순서가 바뀌어도 컴파일은 통과하므로, 필드를
+     * 추가/삭제할 때 반드시 선언 순서를 유지하고 PolicyMapperTest의 전 필드 검증으로 확인한다.
+     */
+    public static Policy create(
+            String policyNo,
+            String title,
+            String description,
+            String supportContent,
+            String keywords,
+            String category,
+            String middleCategory,
+            String organizationName,
+            Integer minAge,
+            Integer maxAge,
+            String jobCodes,
+            String schoolCodes,
+            String incomeConditionCode,
+            Integer incomeMaxAmount,
+            String incomeEtcContent,
+            String maritalStatusCode,
+            String majorCodes,
+            String specializationCodes,
+            String additionalQualification,
+            String participationRestriction,
+            String applicationPeriodType,
+            String applicationPeriodRaw,
+            LocalDate applicationStartDate,
+            LocalDate applicationEndDate,
+            LocalDate businessPeriodBegin,
+            LocalDate businessPeriodEnd,
+            String businessPeriodEtc,
+            Integer supportScaleCount,
+            boolean firstComeFirstServed,
+            String applicationUrl,
+            String referenceUrl1,
+            String referenceUrl2,
+            String applicationMethod,
+            String submissionDocuments,
+            String screeningMethod,
+            String ageLimitFlag,
+            Integer incomeMinAmount,
+            Boolean supportScaleLimit,
+            String operatingInstitutionName,
+            String approvalStatusCode,
+            String etcMatters,
+            int viewCount,
+            LocalDateTime firstRegisteredAt,
+            LocalDateTime lastModifiedAt,
+            String rawPayload) {
+        Policy policy = new Policy();
+        policy.policyNo = policyNo;
+        policy.title = title;
+        policy.description = description;
+        policy.supportContent = supportContent;
+        policy.keywords = keywords;
+        policy.category = category;
+        policy.middleCategory = middleCategory;
+        policy.organizationName = organizationName;
+        policy.minAge = minAge;
+        policy.maxAge = maxAge;
+        policy.jobCodes = jobCodes;
+        policy.schoolCodes = schoolCodes;
+        policy.incomeConditionCode = incomeConditionCode;
+        policy.incomeMaxAmount = incomeMaxAmount;
+        policy.incomeEtcContent = incomeEtcContent;
+        policy.maritalStatusCode = maritalStatusCode;
+        policy.majorCodes = majorCodes;
+        policy.specializationCodes = specializationCodes;
+        policy.additionalQualification = additionalQualification;
+        policy.participationRestriction = participationRestriction;
+        policy.applicationPeriodType = applicationPeriodType;
+        policy.applicationPeriodRaw = applicationPeriodRaw;
+        policy.applicationStartDate = applicationStartDate;
+        policy.applicationEndDate = applicationEndDate;
+        policy.businessPeriodBegin = businessPeriodBegin;
+        policy.businessPeriodEnd = businessPeriodEnd;
+        policy.businessPeriodEtc = businessPeriodEtc;
+        policy.supportScaleCount = supportScaleCount;
+        policy.firstComeFirstServed = firstComeFirstServed;
+        policy.applicationUrl = applicationUrl;
+        policy.referenceUrl1 = referenceUrl1;
+        policy.referenceUrl2 = referenceUrl2;
+        policy.applicationMethod = applicationMethod;
+        policy.submissionDocuments = submissionDocuments;
+        policy.screeningMethod = screeningMethod;
+        policy.ageLimitFlag = ageLimitFlag;
+        policy.incomeMinAmount = incomeMinAmount;
+        policy.supportScaleLimit = supportScaleLimit;
+        policy.operatingInstitutionName = operatingInstitutionName;
+        policy.approvalStatusCode = approvalStatusCode;
+        policy.etcMatters = etcMatters;
+        policy.viewCount = viewCount;
+        policy.firstRegisteredAt = firstRegisteredAt;
+        policy.lastModifiedAt = lastModifiedAt;
+        policy.rawPayload = rawPayload;
+        return policy;
+    }
 }
