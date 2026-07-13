@@ -38,4 +38,11 @@ public class PolicyRegion {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "region_code", nullable = false)
     private Region region;
+
+    public static PolicyRegion create(Policy policy, Region region) {
+        PolicyRegion policyRegion = new PolicyRegion();
+        policyRegion.policy = policy;
+        policyRegion.region = region;
+        return policyRegion;
+    }
 }

@@ -3,7 +3,9 @@ package com.bop.youthpick.sync.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bop.youthpick.policy.entity.Policy;
+import com.bop.youthpick.policy.entity.PolicyRegion;
 import com.bop.youthpick.policy.entity.PolicyVisibility;
+import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.sync.dto.YouthPolicyApiResponse;
 import com.bop.youthpick.sync.dto.YouthPolicyItem;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +13,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -168,5 +175,82 @@ class PolicyMapperTest {
                 mapper.toEntity(
                         item("{\"plcyNo\":\"X4\",\"sprvsnInstCdNm\":\"\",\"operInstCdNm\":\"\"}"));
         assertThat(bothBlank.getOrganizationName()).isNull();
+    }
+
+    // ---- toRegions: zipCd → PolicyRegion 정규화 (plan 2-2) ----
+
+    private Policy policy(String plcyNo) throws IOException {
+        return mapper.toEntity(item("{\"plcyNo\":\"" + plcyNo + "\"}"));
+    }
+
+    private static Map<String, Region> regionMap(String... codes) {
+        Map<String, Region> map = new HashMap<>();
+        for (String code : codes) {
+            map.put(code, Region.create(code, "시도" + code, "시군구" + code));
+        }
+        return map;
+    }
+
+    @Test
+    @DisplayName("A: 단일 코드는 PolicyRegion 1건으로, 정책·지역이 연결된다")
+    void mapsSingleRegionCode() throws IOException {
+        Policy policy = policy("R1");
+
+        List<PolicyRegion> regions = mapper.toRegions(policy, "11110", regionMap("11110"));
+
+        assertThat(regions).hasSize(1);
+        assertThat(regions.get(0).getPolicy()).isSameAs(policy);
+        assertThat(regions.get(0).getRegion().getCode()).isEqualTo("11110");
+    }
+
+    @Test
+    @DisplayName("A: 콤마 다중 목록은 행 단위로 분해되고, 중복 코드·공백 토큰은 접힌다")
+    void mapsMultipleCodesWithDedup() throws IOException {
+        List<PolicyRegion> regions =
+                mapper.toRegions(
+                        policy("R2"),
+                        "11110, 11140 ,11110,,11170",
+                        regionMap("11110", "11140", "11170"));
+
+        assertThat(regions)
+                .extracting(r -> r.getRegion().getCode())
+                .containsExactly("11110", "11140", "11170");
+    }
+
+    @Test
+    @DisplayName("A: 전국 정책(256개 코드)은 전부 행으로 정규화된다")
+    void mapsNationwideCodeList() throws IOException {
+        List<String> codes =
+                IntStream.range(0, 256).mapToObj(i -> String.valueOf(10000 + i * 10)).toList();
+        Map<String, Region> regions = regionMap(codes.toArray(String[]::new));
+
+        List<PolicyRegion> result =
+                mapper.toRegions(policy("R3"), String.join(",", codes), regions);
+
+        assertThat(result).hasSize(256);
+        assertThat(result.stream().map(r -> r.getRegion().getCode()).collect(Collectors.toSet()))
+                .hasSize(256);
+    }
+
+    @Test
+    @DisplayName("X: regions에 없는 코드는 FK 위반 대신 스킵하고 아는 코드만 매핑한다")
+    void skipsUnknownCodes() throws IOException {
+        List<PolicyRegion> regions =
+                mapper.toRegions(policy("R4"), "11110,99999,11140", regionMap("11110", "11140"));
+
+        assertThat(regions)
+                .extracting(r -> r.getRegion().getCode())
+                .containsExactly("11110", "11140");
+    }
+
+    @Test
+    @DisplayName("X: zipCd가 빈값/공백/null이면 빈 리스트 (전국 아님 — 지역정보 없음)")
+    void emptyZipCdMeansNoRegions() throws IOException {
+        Policy policy = policy("R5");
+        Map<String, Region> regions = regionMap("11110");
+
+        assertThat(mapper.toRegions(policy, "", regions)).isEmpty();
+        assertThat(mapper.toRegions(policy, "   ", regions)).isEmpty();
+        assertThat(mapper.toRegions(policy, null, regions)).isEmpty();
     }
 }

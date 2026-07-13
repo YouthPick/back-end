@@ -1,6 +1,8 @@
 package com.bop.youthpick.sync.service;
 
 import com.bop.youthpick.policy.entity.Policy;
+import com.bop.youthpick.policy.entity.PolicyRegion;
+import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.sync.dto.YouthPolicyItem;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +10,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +94,38 @@ public class PolicyMapper {
                 toDateTime(plcyNo, "frstRegDt", item.frstRegDt()),
                 toDateTime(plcyNo, "lastMdfcnDt", item.lastMdfcnDt()),
                 toRawPayload(plcyNo, item));
+    }
+
+    /**
+     * zipCd 콤마 목록 → PolicyRegion 정규화 (전국이면 256개 코드). 중복 코드는 1건으로 접고, regions에 없는 코드는 FK 위반을 막기 위해
+     * 경고 로그 + 스킵한다 — zipCd는 표준 법정동코드가 아니라 온통청년 자체 코드(광주/전남이 12xxx)라서 시드에 없는 코드가 나타날 수 있다.
+     *
+     * @param regionsByCode 호출자(배치 Job)가 회차당 1회 로드한 지역 마스터 (code → Region)
+     */
+    public List<PolicyRegion> toRegions(
+            Policy policy, String zipCd, Map<String, Region> regionsByCode) {
+        String raw = trimToNull(zipCd);
+        if (raw == null) {
+            return List.of();
+        }
+        Set<String> seen = new LinkedHashSet<>();
+        List<PolicyRegion> regions = new ArrayList<>();
+        for (String token : raw.split(",")) {
+            String code = trimToNull(token);
+            if (code == null || !seen.add(code)) {
+                continue;
+            }
+            Region region = regionsByCode.get(code);
+            if (region == null) {
+                log.warn(
+                        "정책 {} 알 수 없는 지역코드 '{}' — 스킵 (regions 시드 갱신 필요)",
+                        policy.getPolicyNo(),
+                        code);
+                continue;
+            }
+            regions.add(PolicyRegion.create(policy, region));
+        }
+        return regions;
     }
 
     private record ApplyPeriod(LocalDate start, LocalDate end) {}
