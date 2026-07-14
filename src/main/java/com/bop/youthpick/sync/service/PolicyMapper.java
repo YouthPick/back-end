@@ -1,7 +1,6 @@
 package com.bop.youthpick.sync.service;
 
 import com.bop.youthpick.policy.entity.Policy;
-import com.bop.youthpick.policy.entity.PolicyRegion;
 import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.sync.dto.YouthPolicyItem;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -97,20 +96,21 @@ public class PolicyMapper {
     }
 
     /**
-     * zipCd 콤마 목록 → PolicyRegion 정규화 (전국이면 256개 코드). 중복 코드는 1건으로 접고, regions에 없는 코드는 FK 위반을 막기 위해
-     * 경고 로그 + 스킵한다 — zipCd는 현행 법정시군구코드 5자리(예: 전남광주통합특별시=12xxx)라 행정구역 개편으로 코드가 신설/폐지되면 시드에 없는 코드가
-     * 나타날 수 있다.
+     * zipCd 콤마 목록 → Region 해석 (전국이면 256개 코드). 중복 코드는 1건으로 접고, regions에 없는 코드는 FK 위반을 막기 위해 경고 로그 +
+     * 스킵한다 — zipCd는 현행 법정시군구코드 5자리(예: 전남광주통합특별시=12xxx)라 행정구역 개편으로 코드가 신설/폐지되면 시드에 없는 코드가 나타날 수 있다.
+     *
+     * <p>PolicyRegion 링크 생성은 Writer의 몫이다 — 변경 UPDATE 경로에서는 DB의 관리 엔티티에 링크를 걸어야 하므로 여기서 만들면 못 쓴다.
      *
      * @param regionsByCode 호출자(배치 Job)가 회차당 1회 로드한 지역 마스터 (code → Region)
      */
-    public List<PolicyRegion> toRegions(
-            Policy policy, String zipCd, Map<String, Region> regionsByCode) {
+    public List<Region> resolveRegions(
+            String policyNo, String zipCd, Map<String, Region> regionsByCode) {
         String raw = trimToNull(zipCd);
         if (raw == null) {
             return List.of();
         }
         Set<String> seen = new LinkedHashSet<>();
-        List<PolicyRegion> regions = new ArrayList<>();
+        List<Region> regions = new ArrayList<>();
         for (String token : raw.split(",")) {
             String code = trimToNull(token);
             if (code == null || !seen.add(code)) {
@@ -118,13 +118,10 @@ public class PolicyMapper {
             }
             Region region = regionsByCode.get(code);
             if (region == null) {
-                log.warn(
-                        "정책 {} 알 수 없는 지역코드 '{}' — 스킵 (regions 시드 갱신 필요)",
-                        policy.getPolicyNo(),
-                        code);
+                log.warn("정책 {} 알 수 없는 지역코드 '{}' — 스킵 (regions 시드 갱신 필요)", policyNo, code);
                 continue;
             }
-            regions.add(PolicyRegion.create(policy, region));
+            regions.add(region);
         }
         return regions;
     }
