@@ -37,8 +37,8 @@ public class AdminPolicyApplicationController {
             @RequestParam(required = false) String policyName,
             @RequestParam(required = false)
                     @Pattern(
-                            regexp = "INTERESTED|APPLIED|COMPLETED",
-                            message = "status는 INTERESTED, APPLIED, COMPLETED 중 하나여야 합니다.")
+                            regexp = "INTERESTED|PREPARING|SUBMITTED|CLOSED",
+                            message = "status는 INTERESTED, PREPARING, SUBMITTED, CLOSED 중 하나여야 합니다.")
                     String status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
                     LocalDate deadlineStart,

@@ -43,7 +43,9 @@ public class AdminPolicyApplicationService {
     @Transactional(readOnly = true)
     public List<ApplicationChecklistItemResponse> getChecklist(Long applicationId) {
         findApplication(applicationId);
-        return applicationChecklistRepository.findByApplicationId(applicationId).stream()
+        return applicationChecklistRepository
+                .findByApplicationIdAndDeletedAtIsNullOrderByIdAsc(applicationId)
+                .stream()
                 .map(ApplicationChecklistItemResponse::from)
                 .toList();
     }
@@ -57,7 +59,7 @@ public class AdminPolicyApplicationService {
 
     private PolicyApplication findApplication(Long applicationId) {
         return policyApplicationRepository
-                .findById(applicationId)
+                .findByIdAndDeletedAtIsNull(applicationId)
                 .orElseThrow(
                         () -> new CustomException(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
     }

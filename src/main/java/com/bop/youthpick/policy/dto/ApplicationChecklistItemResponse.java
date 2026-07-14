@@ -1,11 +1,12 @@
 package com.bop.youthpick.policy.dto;
 
 import com.bop.youthpick.policy.entity.ApplicationChecklist;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 
 public record ApplicationChecklistItemResponse(
-        Long id,
-        Long policyApplicationId,
+        @JsonFormat(shape = JsonFormat.Shape.STRING) Long id,
+        @JsonFormat(shape = JsonFormat.Shape.STRING) Long policyApplicationId,
         boolean checked,
         String description,
         LocalDateTime createdAt) {
