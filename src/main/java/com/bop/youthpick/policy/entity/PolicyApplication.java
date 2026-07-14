@@ -60,4 +60,8 @@ public class PolicyApplication extends BaseEntity {
     /** 관리 해제 = soft delete. 재등록 시 행 재활성화(UNIQUE 충돌 방지) */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public void changeStatus(ApplicationStatus status) {
+        this.status = status;
+    }
 }
