@@ -23,6 +23,7 @@ import com.bop.youthpick.user.exception.UserError;
 import com.bop.youthpick.user.exception.UserException;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -246,6 +247,53 @@ class PolicyApplicationServiceTest {
                         () ->
                                 policyApplicationService.changeStatus(
                                         10L, otherUserId, ApplicationStatus.APPLIED))
+                .isInstanceOf(AuthException.class)
+                .extracting(ex -> ((AuthException) ex).getErrorCode())
+                .isEqualTo(AuthErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    void updateDetails_성공() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        owner, mock(Policy.class), ApplicationStatus.INTERESTED, "기존 메모", null);
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(existing));
+
+        LocalDateTime newEndAt = LocalDateTime.of(2026, 12, 31, 23, 59);
+        PolicyApplication result =
+                policyApplicationService.updateDetails(10L, USER_ID, "새 메모", newEndAt);
+
+        assertThat(result.getMemo()).isEqualTo("새 메모");
+        assertThat(result.getEndAt()).isEqualTo(newEndAt);
+    }
+
+    @Test
+    void updateDetails_대상이_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> policyApplicationService.updateDetails(10L, USER_ID, "메모", null))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);
+    }
+
+    @Test
+    void updateDetails_소유자가_아니면_FORBIDDEN_예외를_던진다() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(existing));
+
+        Long otherUserId = 999L;
+        assertThatThrownBy(
+                        () -> policyApplicationService.updateDetails(10L, otherUserId, "메모", null))
                 .isInstanceOf(AuthException.class)
                 .extracting(ex -> ((AuthException) ex).getErrorCode())
                 .isEqualTo(AuthErrorCode.FORBIDDEN);

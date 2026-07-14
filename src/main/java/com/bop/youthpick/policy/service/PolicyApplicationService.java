@@ -81,6 +81,14 @@ public class PolicyApplicationService {
         return application;
     }
 
+    @Transactional
+    public PolicyApplication updateDetails(Long id, Long userId, String memo, LocalDateTime endAt) {
+        PolicyApplication application = findActive(id);
+        verifyOwner(application, userId);
+        application.updateDetails(memo, endAt);
+        return application;
+    }
+
     @Transactional(readOnly = true)
     public Page<PolicyApplicationResponse> getApplications(Long userId, Pageable pageable) {
         return policyApplicationRepository

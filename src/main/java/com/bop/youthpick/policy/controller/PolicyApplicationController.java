@@ -4,6 +4,7 @@ import com.bop.youthpick.auth.service.CurrentUser;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.dto.RegisterPolicyApplicationRequest;
+import com.bop.youthpick.policy.dto.UpdatePolicyApplicationRequest;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.service.PolicyApplicationService;
@@ -70,6 +71,16 @@ public class PolicyApplicationController {
         PolicyApplication application =
                 policyApplicationService.changeStatus(
                         id, userId, ApplicationStatus.valueOf(status));
+        return ApiResponse.ok(PolicyApplicationResponse.from(application));
+    }
+
+    @PatchMapping("/{id}")
+    public ApiResponse<PolicyApplicationResponse> updateDetails(
+            @CurrentUser Long userId,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePolicyApplicationRequest request) {
+        PolicyApplication application =
+                policyApplicationService.updateDetails(id, userId, request.memo(), request.endAt());
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 

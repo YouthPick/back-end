@@ -76,6 +76,11 @@ public class PolicyApplication extends BaseEntity {
         this.status = status;
     }
 
+    public void updateDetails(String memo, LocalDateTime endAt) {
+        this.memo = memo;
+        this.endAt = endAt;
+    }
+
     /** soft-delete된 행을 UNIQUE(user, policy) 충돌 없이 재등록한다. */
     public void reactivate(ApplicationStatus status, String memo, LocalDateTime endAt) {
         this.status = status;

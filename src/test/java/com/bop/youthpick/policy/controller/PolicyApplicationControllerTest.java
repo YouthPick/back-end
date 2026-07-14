@@ -145,6 +145,57 @@ class PolicyApplicationControllerTest {
     }
 
     @Test
+    void updateDetails_유효한_요청이면_200과_수정된_신청관리를_반환한다() throws Exception {
+        PolicyApplication application =
+                PolicyApplication.register(
+                        mock(User.class),
+                        mock(Policy.class),
+                        ApplicationStatus.INTERESTED,
+                        "새 메모",
+                        null);
+        when(policyApplicationService.updateDetails(eq(10L), eq(1L), eq("새 메모"), any()))
+                .thenReturn(application);
+
+        String body =
+                """
+                {
+                    "memo": "새 메모",
+                    "endAt": "2026-12-31T23:59:00"
+                }
+                """;
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        patch("/api/applications/{id}", 10L)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(body))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.memo").value("새 메모")));
+    }
+
+    @Test
+    void updateDetails_memo가_500자를_초과하면_400과_C001을_반환한다() throws Exception {
+        String tooLongMemo = "a".repeat(501);
+        String body =
+                """
+                {
+                    "memo": "%s"
+                }
+                """
+                        .formatted(tooLongMemo);
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        patch("/api/applications/{id}", 10L)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(body))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
+    }
+
+    @Test
     void delete_성공하면_200을_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
