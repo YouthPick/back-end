@@ -137,7 +137,7 @@ class PolicyApplicationControllerTest {
                         mockMvc.perform(get("/api/applications"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data").isArray())
-                                .andExpect(jsonPath("$.meta.page").value(0))
+                                .andExpect(jsonPath("$.meta.page").value(1))
                                 .andExpect(jsonPath("$.meta.totalCount").value(0))
                                 .andExpect(jsonPath("$.meta.totalPages").value(0)));
     }

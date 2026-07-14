@@ -11,6 +11,12 @@ spring:
       # 스레드/DB 커넥션을 오래 붙잡지 않도록 한다.
       connect-timeout: 3s
       read-timeout: 5s
+  data:
+    web:
+      pageable:
+        # 프론트가 페이지 번호를 1부터 쓰므로(page=1이 첫 페이지) 맞춘다.
+        # PageMeta.from()도 응답의 page를 +1해서 요청/응답 모두 1-based로 통일한다.
+        one-indexed-parameters: true
 
 youthpick:
   auth:

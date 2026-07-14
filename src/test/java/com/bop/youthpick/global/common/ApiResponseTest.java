@@ -24,12 +24,14 @@ class ApiResponseTest {
 
     @Test
     void 페이지_응답은_meta에_page_totalCount_totalPages가_담긴다() throws Exception {
+        // PageRequest.of(1, 2)는 Spring Data 내부 규약상 0-based 두 번째 페이지 -> 응답 meta.page는
+        // 1-based로 변환되어 2가 된다.
         PageImpl<String> page = new PageImpl<>(List.of("a", "b"), PageRequest.of(1, 2), 5);
 
         String json = objectMapper.writeValueAsString(ApiResponse.ok(page.getContent(), page));
 
         JsonNode meta = objectMapper.readTree(json).get("meta");
-        assertThat(meta.get("page").asInt()).isEqualTo(1);
+        assertThat(meta.get("page").asInt()).isEqualTo(2);
         assertThat(meta.get("totalCount").asLong()).isEqualTo(5);
         assertThat(meta.get("totalPages").asInt()).isEqualTo(3);
     }

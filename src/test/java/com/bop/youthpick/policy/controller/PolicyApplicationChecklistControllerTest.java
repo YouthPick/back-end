@@ -109,7 +109,7 @@ class PolicyApplicationChecklistControllerTest {
                         mockMvc.perform(get("/api/checklists/application/{applicationId}", 1L))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data").isArray())
-                                .andExpect(jsonPath("$.meta.page").value(0))
+                                .andExpect(jsonPath("$.meta.page").value(1))
                                 .andExpect(jsonPath("$.meta.totalCount").value(0))
                                 .andExpect(jsonPath("$.meta.totalPages").value(0)));
     }
