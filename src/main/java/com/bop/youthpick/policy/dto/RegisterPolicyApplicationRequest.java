@@ -11,5 +11,5 @@ public record RegisterPolicyApplicationRequest(
         @NotBlank(message = "상태는 필수입니다.")
                 @Pattern(regexp = "INTERESTED|APPLIED|COMPLETED", message = "유효하지 않은 상태값입니다.")
                 String status,
-        @Size(max = 500, message = "메모는 500자를 초과할 수 없습니다.") String memo,
+        @Size(max = 2000, message = "메모는 2000자를 초과할 수 없습니다.") String memo,
         LocalDateTime endAt) {}

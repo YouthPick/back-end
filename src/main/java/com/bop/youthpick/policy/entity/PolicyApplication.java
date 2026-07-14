@@ -76,8 +76,11 @@ public class PolicyApplication extends BaseEntity {
         this.status = status;
     }
 
-    public void updateDetails(String memo, LocalDateTime endAt) {
+    public void updateMemo(String memo) {
         this.memo = memo;
+    }
+
+    public void updateEndAt(LocalDateTime endAt) {
         this.endAt = endAt;
     }
 

@@ -82,10 +82,18 @@ public class PolicyApplicationService {
     }
 
     @Transactional
-    public PolicyApplication updateDetails(Long id, Long userId, String memo, LocalDateTime endAt) {
+    public PolicyApplication updateMemo(Long id, Long userId, String memo) {
         PolicyApplication application = findActive(id);
         verifyOwner(application, userId);
-        application.updateDetails(memo, endAt);
+        application.updateMemo(memo);
+        return application;
+    }
+
+    @Transactional
+    public PolicyApplication updateEndAt(Long id, Long userId, LocalDateTime endAt) {
+        PolicyApplication application = findActive(id);
+        verifyOwner(application, userId);
+        application.updateEndAt(endAt);
         return application;
     }
 

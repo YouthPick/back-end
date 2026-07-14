@@ -4,18 +4,20 @@ import com.bop.youthpick.auth.service.CurrentUser;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.dto.RegisterPolicyApplicationRequest;
-import com.bop.youthpick.policy.dto.UpdatePolicyApplicationRequest;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.service.PolicyApplicationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -74,13 +76,24 @@ public class PolicyApplicationController {
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 
-    @PatchMapping("/{id}")
-    public ApiResponse<PolicyApplicationResponse> updateDetails(
+    @PatchMapping("/{id}/memo")
+    public ApiResponse<PolicyApplicationResponse> updateMemo(
             @CurrentUser Long userId,
             @PathVariable Long id,
-            @Valid @RequestBody UpdatePolicyApplicationRequest request) {
-        PolicyApplication application =
-                policyApplicationService.updateDetails(id, userId, request.memo(), request.endAt());
+            @RequestParam(required = false, defaultValue = "")
+                    @Size(max = 2000, message = "메모는 2000자를 초과할 수 없습니다.")
+                    String memo) {
+        PolicyApplication application = policyApplicationService.updateMemo(id, userId, memo);
+        return ApiResponse.ok(PolicyApplicationResponse.from(application));
+    }
+
+    @PatchMapping("/{id}/end-at")
+    public ApiResponse<PolicyApplicationResponse> updateEndAt(
+            @CurrentUser Long userId,
+            @PathVariable Long id,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endAt) {
+        PolicyApplication application = policyApplicationService.updateEndAt(id, userId, endAt);
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 

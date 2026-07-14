@@ -253,7 +253,7 @@ class PolicyApplicationServiceTest {
     }
 
     @Test
-    void updateDetails_성공() {
+    void updateMemo_성공() {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
@@ -262,27 +262,24 @@ class PolicyApplicationServiceTest {
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
 
-        LocalDateTime newEndAt = LocalDateTime.of(2026, 12, 31, 23, 59);
-        PolicyApplication result =
-                policyApplicationService.updateDetails(10L, USER_ID, "새 메모", newEndAt);
+        PolicyApplication result = policyApplicationService.updateMemo(10L, USER_ID, "새 메모");
 
         assertThat(result.getMemo()).isEqualTo("새 메모");
-        assertThat(result.getEndAt()).isEqualTo(newEndAt);
     }
 
     @Test
-    void updateDetails_대상이_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
+    void updateMemo_대상이_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> policyApplicationService.updateDetails(10L, USER_ID, "메모", null))
+        assertThatThrownBy(() -> policyApplicationService.updateMemo(10L, USER_ID, "메모"))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);
     }
 
     @Test
-    void updateDetails_소유자가_아니면_FORBIDDEN_예외를_던진다() {
+    void updateMemo_소유자가_아니면_FORBIDDEN_예외를_던진다() {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
@@ -292,8 +289,70 @@ class PolicyApplicationServiceTest {
                 .thenReturn(Optional.of(existing));
 
         Long otherUserId = 999L;
-        assertThatThrownBy(
-                        () -> policyApplicationService.updateDetails(10L, otherUserId, "메모", null))
+        assertThatThrownBy(() -> policyApplicationService.updateMemo(10L, otherUserId, "메모"))
+                .isInstanceOf(AuthException.class)
+                .extracting(ex -> ((AuthException) ex).getErrorCode())
+                .isEqualTo(AuthErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    void updateEndAt_성공() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(existing));
+
+        LocalDateTime newEndAt = LocalDateTime.of(2026, 12, 31, 23, 59);
+        PolicyApplication result = policyApplicationService.updateEndAt(10L, USER_ID, newEndAt);
+
+        assertThat(result.getEndAt()).isEqualTo(newEndAt);
+    }
+
+    @Test
+    void updateEndAt_null이면_마감일을_비운다() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        owner,
+                        mock(Policy.class),
+                        ApplicationStatus.INTERESTED,
+                        null,
+                        LocalDateTime.of(2026, 12, 31, 23, 59));
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(existing));
+
+        PolicyApplication result = policyApplicationService.updateEndAt(10L, USER_ID, null);
+
+        assertThat(result.getEndAt()).isNull();
+    }
+
+    @Test
+    void updateEndAt_대상이_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> policyApplicationService.updateEndAt(10L, USER_ID, null))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);
+    }
+
+    @Test
+    void updateEndAt_소유자가_아니면_FORBIDDEN_예외를_던진다() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(existing));
+
+        Long otherUserId = 999L;
+        assertThatThrownBy(() -> policyApplicationService.updateEndAt(10L, otherUserId, null))
                 .isInstanceOf(AuthException.class)
                 .extracting(ex -> ((AuthException) ex).getErrorCode())
                 .isEqualTo(AuthErrorCode.FORBIDDEN);

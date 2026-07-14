@@ -19,6 +19,7 @@ import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.service.PolicyApplicationService;
 import com.bop.youthpick.user.entity.User;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -145,7 +146,7 @@ class PolicyApplicationControllerTest {
     }
 
     @Test
-    void updateDetails_유효한_요청이면_200과_수정된_신청관리를_반환한다() throws Exception {
+    void updateMemo_유효한_요청이면_200과_수정된_메모를_반환한다() throws Exception {
         PolicyApplication application =
                 PolicyApplication.register(
                         mock(User.class),
@@ -153,46 +154,68 @@ class PolicyApplicationControllerTest {
                         ApplicationStatus.INTERESTED,
                         "새 메모",
                         null);
-        when(policyApplicationService.updateDetails(eq(10L), eq(1L), eq("새 메모"), any()))
+        when(policyApplicationService.updateMemo(eq(10L), eq(1L), eq("새 메모")))
                 .thenReturn(application);
-
-        String body =
-                """
-                {
-                    "memo": "새 메모",
-                    "endAt": "2026-12-31T23:59:00"
-                }
-                """;
 
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        patch("/api/applications/{id}", 10L)
-                                                .contentType(MediaType.APPLICATION_JSON)
-                                                .content(body))
+                                        patch("/api/applications/{id}/memo", 10L)
+                                                .param("memo", "새 메모"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.memo").value("새 메모")));
     }
 
     @Test
-    void updateDetails_memo가_500자를_초과하면_400과_C001을_반환한다() throws Exception {
-        String tooLongMemo = "a".repeat(501);
-        String body =
-                """
-                {
-                    "memo": "%s"
-                }
-                """
-                        .formatted(tooLongMemo);
+    void updateMemo_2000자를_초과하면_400과_C001을_반환한다() throws Exception {
+        String tooLongMemo = "a".repeat(2001);
 
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        patch("/api/applications/{id}", 10L)
-                                                .contentType(MediaType.APPLICATION_JSON)
-                                                .content(body))
+                                        patch("/api/applications/{id}/memo", 10L)
+                                                .param("memo", tooLongMemo))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
+    }
+
+    @Test
+    void updateEndAt_유효한_요청이면_200과_수정된_마감일을_반환한다() throws Exception {
+        PolicyApplication application =
+                PolicyApplication.register(
+                        mock(User.class),
+                        mock(Policy.class),
+                        ApplicationStatus.INTERESTED,
+                        null,
+                        LocalDateTime.of(2026, 12, 31, 23, 59));
+        when(policyApplicationService.updateEndAt(eq(10L), eq(1L), any())).thenReturn(application);
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        patch("/api/applications/{id}/end-at", 10L)
+                                                .param("endAt", "2026-12-31T23:59:00"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.endAt").value("2026-12-31T23:59:00")));
+    }
+
+    @Test
+    void updateEndAt_파라미터를_생략하면_null로_비운다() throws Exception {
+        PolicyApplication application =
+                PolicyApplication.register(
+                        mock(User.class),
+                        mock(Policy.class),
+                        ApplicationStatus.INTERESTED,
+                        null,
+                        null);
+        when(policyApplicationService.updateEndAt(eq(10L), eq(1L), eq(null)))
+                .thenReturn(application);
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(patch("/api/applications/{id}/end-at", 10L))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.endAt").doesNotExist()));
     }
 
     @Test
