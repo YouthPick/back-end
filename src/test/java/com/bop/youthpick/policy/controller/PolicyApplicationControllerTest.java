@@ -128,6 +128,27 @@ class PolicyApplicationControllerTest {
     }
 
     @Test
+    void endAt_형식이_잘못되면_400과_C001을_반환한다() throws Exception {
+        String body =
+                """
+                {
+                    "policyId": 2,
+                    "status": "INTERESTED",
+                    "endAt": "not-a-date"
+                }
+                """;
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        post("/api/applications")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(body))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
+    }
+
+    @Test
     void getApplications_사용자의_신청관리_목록을_반환한다() throws Exception {
         Page<PolicyApplicationResponse> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
         when(policyApplicationService.getApplications(eq(1L), any())).thenReturn(page);
@@ -198,6 +219,15 @@ class PolicyApplicationControllerTest {
     }
 
     @Test
+    void changeStatus_status_파라미터를_생략하면_400과_C001을_반환한다() throws Exception {
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(patch("/api/applications/{id}/status", 10L))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
+    }
+
+    @Test
     void updateMemo_유효한_요청이면_200과_수정된_메모를_반환한다() throws Exception {
         PolicyApplication application =
                 PolicyApplication.register(
@@ -229,6 +259,33 @@ class PolicyApplicationControllerTest {
                                                 .param("memo", tooLongMemo))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
+    }
+
+    @Test
+    void updateMemo_파라미터를_생략하면_400과_C001을_반환한다() throws Exception {
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(patch("/api/applications/{id}/memo", 10L))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
+    }
+
+    @Test
+    void updateMemo_빈_문자열이면_메모를_비운다() throws Exception {
+        PolicyApplication application =
+                PolicyApplication.register(
+                        mock(User.class),
+                        mock(Policy.class),
+                        ApplicationStatus.INTERESTED,
+                        "",
+                        null);
+        when(policyApplicationService.updateMemo(eq(10L), eq(1L), eq(""))).thenReturn(application);
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(patch("/api/applications/{id}/memo", 10L).param("memo", ""))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.memo").value("")));
     }
 
     @Test
@@ -268,6 +325,17 @@ class PolicyApplicationControllerTest {
                         mockMvc.perform(patch("/api/applications/{id}/end-at", 10L))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.endAt").doesNotExist()));
+    }
+
+    @Test
+    void updateEndAt_형식이_잘못되면_400과_C001을_반환한다() throws Exception {
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        patch("/api/applications/{id}/end-at", 10L)
+                                                .param("endAt", "not-a-date"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
     }
 
     @Test

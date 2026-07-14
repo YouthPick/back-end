@@ -8,10 +8,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * 전역 예외 처리. 모든 컨트롤러 예외를 여기서 {@link ErrorResponse}로 변환한다. 컨트롤러는 try-catch로 에러 응답을 직접 만들지 않는다(여기로
@@ -60,6 +63,44 @@ public class GlobalExceptionHandler {
         ErrorCode errorCode = GlobalErrorCode.INVALID_INPUT_VALUE;
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ErrorResponse.of(errorCode, details));
+    }
+
+    // 필수 @RequestParam이 누락된 경우
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingServletRequestParameter(
+            MissingServletRequestParameterException exception) {
+        ErrorResponse.FieldErrorDetail detail =
+                new ErrorResponse.FieldErrorDetail(
+                        exception.getParameterName(),
+                        "",
+                        exception.getParameterName() + "는 필수입니다.");
+
+        ErrorCode errorCode = GlobalErrorCode.INVALID_INPUT_VALUE;
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ErrorResponse.of(errorCode, List.of(detail)));
+    }
+
+    // @RequestParam 값이 대상 타입(LocalDateTime 등)으로 변환되지 않는 경우
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
+            MethodArgumentTypeMismatchException exception) {
+        ErrorResponse.FieldErrorDetail detail =
+                new ErrorResponse.FieldErrorDetail(
+                        exception.getName(),
+                        exception.getValue() == null ? "" : exception.getValue().toString(),
+                        "유효하지 않은 형식입니다.");
+
+        ErrorCode errorCode = GlobalErrorCode.INVALID_INPUT_VALUE;
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ErrorResponse.of(errorCode, List.of(detail)));
+    }
+
+    // 요청 body의 JSON을 파싱하지 못한 경우 (필드 타입 불일치, 깨진 JSON 등)
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException exception) {
+        ErrorCode errorCode = GlobalErrorCode.INVALID_INPUT_VALUE;
+        return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.of(errorCode));
     }
 
     // 우리가 정의하는 비즈니스 에러

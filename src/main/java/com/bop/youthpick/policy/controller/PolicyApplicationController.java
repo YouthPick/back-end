@@ -82,9 +82,7 @@ public class PolicyApplicationController {
     public ApiResponse<PolicyApplicationResponse> updateMemo(
             @CurrentUser Long userId,
             @PathVariable Long id,
-            @RequestParam(required = false, defaultValue = "")
-                    @Size(max = 2000, message = "메모는 2000자를 초과할 수 없습니다.")
-                    String memo) {
+            @RequestParam @Size(max = 2000, message = "메모는 2000자를 초과할 수 없습니다.") String memo) {
         PolicyApplication application = policyApplicationService.updateMemo(id, userId, memo);
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
