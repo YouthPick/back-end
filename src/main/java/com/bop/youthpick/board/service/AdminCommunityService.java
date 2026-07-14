@@ -11,11 +11,13 @@ import com.bop.youthpick.board.repository.AdminCommunityPostSpecifications;
 import com.bop.youthpick.board.repository.AttachmentRepository;
 import com.bop.youthpick.board.repository.CommentRepository;
 import com.bop.youthpick.board.repository.PostRepository;
+import jakarta.persistence.criteria.JoinType;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,12 +36,21 @@ public class AdminCommunityService {
             LocalDate startDate,
             LocalDate endDate,
             Pageable pageable) {
-        return postRepository
-                .findAll(
-                        AdminCommunityPostSpecifications.filter(
-                                category, authorId, startDate, endDate),
-                        pageable)
-                .map(AdminCommunityPostResponse::from);
+        Specification<Post> spec =
+                AdminCommunityPostSpecifications.filter(category, authorId, startDate, endDate)
+                        .and(fetchUser());
+        return postRepository.findAll(spec, pageable).map(AdminCommunityPostResponse::from);
+    }
+
+    // 목록 페이지당(기본 20건) User 조회 N+1을 막기 위해 작성자를 함께 fetch한다.
+    // count 쿼리(select type=Long)에는 fetch를 적용하지 않는다 — to-one 연관관계라 row 중복은 없다.
+    private Specification<Post> fetchUser() {
+        return (root, query, cb) -> {
+            if (Long.class != query.getResultType()) {
+                root.fetch("user", JoinType.LEFT);
+            }
+            return cb.conjunction();
+        };
     }
 
     @Transactional(readOnly = true)
