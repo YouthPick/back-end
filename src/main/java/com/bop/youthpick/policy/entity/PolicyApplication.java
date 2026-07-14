@@ -20,8 +20,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 사용자별 정책 신청 진행관리 (관심 → 준비중 → 신청완료 → 종료). 기존 favorite_policies를 흡수 — status=INTERESTED가 즐겨찾기.
- * UNIQUE(user, policy)로 같은 정책 중복 등록 방지.
+ * 사용자별 정책 신청 진행관리 (관심 → 신청 → 완료). 기존 favorite_policies를 흡수 — status=INTERESTED가 즐겨찾기. UNIQUE(user,
+ * policy)로 같은 정책 중복 등록 방지.
  */
 @Entity
 @Table(

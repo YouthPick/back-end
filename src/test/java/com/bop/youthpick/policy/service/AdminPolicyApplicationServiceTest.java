@@ -74,7 +74,7 @@ class AdminPolicyApplicationServiceTest {
 
     @Test
     void 체크리스트를_조회한다() {
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
+        when(policyApplicationRepository.findById(APPLICATION_ID))
                 .thenReturn(Optional.of(mock(PolicyApplication.class)));
         ApplicationChecklist item = mock(ApplicationChecklist.class);
         PolicyApplication application = mock(PolicyApplication.class);
@@ -83,8 +83,7 @@ class AdminPolicyApplicationServiceTest {
         when(application.getId()).thenReturn(APPLICATION_ID);
         when(item.isChecked()).thenReturn(true);
         when(item.getContent()).thenReturn("주민등록등본 제출");
-        when(applicationChecklistRepository.findByApplicationIdAndDeletedAtIsNullOrderByIdAsc(
-                        APPLICATION_ID))
+        when(applicationChecklistRepository.findByApplicationId(APPLICATION_ID))
                 .thenReturn(List.of(item));
 
         List<?> result = adminPolicyApplicationService.getChecklist(APPLICATION_ID);
@@ -94,7 +93,7 @@ class AdminPolicyApplicationServiceTest {
 
     @Test
     void 체크리스트_조회_대상이_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID)).thenReturn(Optional.empty());
+        when(policyApplicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> adminPolicyApplicationService.getChecklist(APPLICATION_ID))
                 .isInstanceOf(CustomException.class)
@@ -105,22 +104,22 @@ class AdminPolicyApplicationServiceTest {
     @Test
     void 상태를_변경한다() {
         PolicyApplication application = mockApplication();
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
+        when(policyApplicationRepository.findById(APPLICATION_ID))
                 .thenReturn(Optional.of(application));
-        when(application.getStatus()).thenReturn(ApplicationStatus.SUBMITTED);
+        when(application.getStatus()).thenReturn(ApplicationStatus.APPLIED);
 
-        var result = adminPolicyApplicationService.updateStatus(APPLICATION_ID, "SUBMITTED");
+        var result = adminPolicyApplicationService.updateStatus(APPLICATION_ID, "APPLIED");
 
-        verify(application).changeStatus(ApplicationStatus.SUBMITTED);
-        assertThat(result.status()).isEqualTo(ApplicationStatus.SUBMITTED);
+        verify(application).changeStatus(ApplicationStatus.APPLIED);
+        assertThat(result.status()).isEqualTo(ApplicationStatus.APPLIED);
     }
 
     @Test
     void 상태_변경_대상이_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID)).thenReturn(Optional.empty());
+        when(policyApplicationRepository.findById(APPLICATION_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(
-                        () -> adminPolicyApplicationService.updateStatus(APPLICATION_ID, "SUBMITTED"))
+                        () -> adminPolicyApplicationService.updateStatus(APPLICATION_ID, "APPLIED"))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);

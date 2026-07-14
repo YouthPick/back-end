@@ -2,7 +2,6 @@ package com.bop.youthpick.policy.repository;
 
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.PolicyApplication;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -21,31 +20,10 @@ public final class AdminPolicyApplicationSpecifications {
             LocalDate deadlineStart,
             LocalDate deadlineEnd) {
         return Specification.allOf(
-                notDeleted(),
-                fetchPolicyAndUser(),
                 userIdEquals(userId),
                 policyNameContains(policyName),
                 statusEquals(status),
                 deadlineBetween(deadlineStart, deadlineEnd));
-    }
-
-    /** 관리 해제(soft delete)된 신청은 목록에서 제외한다. */
-    private static Specification<PolicyApplication> notDeleted() {
-        return (root, query, cb) -> cb.isNull(root.get("deletedAt"));
-    }
-
-    /**
-     * 목록 응답이 row마다 policy/user를 lazy 조회하는 N+1을 막기 위해 fetch join을 건다. count 쿼리(resultType=Long)에는
-     * fetch가 의미 없고 오류를 유발할 수 있어 content 쿼리에만 적용한다.
-     */
-    private static Specification<PolicyApplication> fetchPolicyAndUser() {
-        return (root, query, cb) -> {
-            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
-                root.fetch("policy", JoinType.LEFT);
-                root.fetch("user", JoinType.LEFT);
-            }
-            return cb.conjunction();
-        };
     }
 
     private static Specification<PolicyApplication> userIdEquals(Long userId) {

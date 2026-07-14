@@ -52,10 +52,10 @@ class AdminPolicyApplicationSpecificationsTest {
                 newApplication(
                         user,
                         housingPolicy,
-                        ApplicationStatus.SUBMITTED,
+                        ApplicationStatus.APPLIED,
                         LocalDateTime.of(2026, 6, 1, 0, 0)));
         policyApplicationRepository.save(
-                newApplication(user, educationPolicy, ApplicationStatus.CLOSED, null));
+                newApplication(user, educationPolicy, ApplicationStatus.COMPLETED, null));
     }
 
     private Policy newPolicy(String policyNo, String title) {
@@ -101,10 +101,10 @@ class AdminPolicyApplicationSpecificationsTest {
         List<PolicyApplication> result =
                 policyApplicationRepository.findAll(
                         AdminPolicyApplicationSpecifications.filter(
-                                null, null, "CLOSED", null, null));
+                                null, null, "COMPLETED", null, null));
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getStatus()).isEqualTo(ApplicationStatus.CLOSED);
+        assertThat(result.get(0).getStatus()).isEqualTo(ApplicationStatus.COMPLETED);
     }
 
     @Test

@@ -57,14 +57,14 @@ class AdminPolicyApplicationControllerTest {
 
         mockMvc.perform(get("/api/v1/admin/policy-applications"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].id").value("1"))
+                .andExpect(jsonPath("$.data[0].id").value(1))
                 .andExpect(jsonPath("$.data[0].policyName").value("정책명"))
                 .andExpect(jsonPath("$.meta.totalCount").value(1));
     }
 
     @Test
     void status_필터가_허용값이_아니면_400과_C001을_반환한다() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/policy-applications").param("status", "UNKNOWN"))
+        mockMvc.perform(get("/api/v1/admin/policy-applications").param("status", "CLOSED"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
     }
@@ -79,7 +79,7 @@ class AdminPolicyApplicationControllerTest {
 
         mockMvc.perform(get("/api/v1/admin/policy-applications/{applicationId}/checklist", 1L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].id").value("100"))
+                .andExpect(jsonPath("$.data[0].id").value(100))
                 .andExpect(jsonPath("$.data[0].checked").value(true));
     }
 
@@ -95,13 +95,13 @@ class AdminPolicyApplicationControllerTest {
 
     @Test
     void 상태_변경이_유효하면_200을_반환한다() throws Exception {
-        when(adminPolicyApplicationService.updateStatus(eq(1L), eq("SUBMITTED")))
+        when(adminPolicyApplicationService.updateStatus(eq(1L), eq("APPLIED")))
                 .thenReturn(APPLICATION_RESPONSE);
 
         mockMvc.perform(
                         patch("/api/v1/admin/policy-applications/{applicationId}/status", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"status\":\"SUBMITTED\"}"))
+                                .content("{\"status\":\"APPLIED\"}"))
                 .andExpect(status().isOk());
     }
 
@@ -110,20 +110,20 @@ class AdminPolicyApplicationControllerTest {
         mockMvc.perform(
                         patch("/api/v1/admin/policy-applications/{applicationId}/status", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"status\":\"UNKNOWN\"}"))
+                                .content("{\"status\":\"CLOSED\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
     }
 
     @Test
     void 상태_변경_대상이_없으면_404와_P004를_반환한다() throws Exception {
-        when(adminPolicyApplicationService.updateStatus(eq(1L), eq("SUBMITTED")))
+        when(adminPolicyApplicationService.updateStatus(eq(1L), eq("APPLIED")))
                 .thenThrow(new CustomException(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
 
         mockMvc.perform(
                         patch("/api/v1/admin/policy-applications/{applicationId}/status", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"status\":\"SUBMITTED\"}"))
+                                .content("{\"status\":\"APPLIED\"}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("P004"));
     }
