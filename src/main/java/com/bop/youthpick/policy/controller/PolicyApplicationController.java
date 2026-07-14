@@ -87,6 +87,11 @@ public class PolicyApplicationController {
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 
+    /**
+     * memo와 달리 endAt은 생략 시 필수 에러가 아니라 마감일 초기화(clear)로 동작한다. LocalDateTime처럼 String이 아닌 타입은 Spring이
+     * "파라미터 생략"과 "빈 문자열(endAt=)"을 바인딩 단계에서 이미 null로 합쳐 버려 required=true로는 이 둘을 구분할 수 없다(둘 다 "필수값
+     * 없음" 에러가 됨) — 그래서 memo처럼 필수로 강제하지 않고 의도적으로 생략=초기화로 둔다.
+     */
     @PatchMapping("/{id}/end-at")
     public ApiResponse<PolicyApplicationResponse> updateEndAt(
             @CurrentUser Long userId,

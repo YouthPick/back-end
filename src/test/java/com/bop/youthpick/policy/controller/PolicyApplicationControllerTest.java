@@ -1,8 +1,10 @@
 package com.bop.youthpick.policy.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -22,12 +24,14 @@ import com.bop.youthpick.user.entity.User;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -161,6 +165,29 @@ class PolicyApplicationControllerTest {
                                 .andExpect(jsonPath("$.meta.page").value(1))
                                 .andExpect(jsonPath("$.meta.totalCount").value(0))
                                 .andExpect(jsonPath("$.meta.totalPages").value(0)));
+    }
+
+    @Test
+    void getApplications_page가_0이거나_음수여도_첫_페이지로_보정된다() throws Exception {
+        Page<PolicyApplicationResponse> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+        when(policyApplicationService.getApplications(eq(1L), any())).thenReturn(page);
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(get("/api/applications").param("page", "0"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.meta.page").value(1)));
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(get("/api/applications").param("page", "-5"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.meta.page").value(1)));
+
+        verify(policyApplicationService, times(2))
+                .getApplications(eq(1L), pageableCaptor.capture());
+        assertThat(pageableCaptor.getAllValues())
+                .allSatisfy(pageable -> assertThat(pageable.getPageNumber()).isZero());
     }
 
     @Test
@@ -309,7 +336,28 @@ class PolicyApplicationControllerTest {
     }
 
     @Test
-    void updateEndAt_파라미터를_생략하면_null로_비운다() throws Exception {
+    void updateEndAt_빈_문자열이면_마감일을_비운다() throws Exception {
+        PolicyApplication application =
+                PolicyApplication.register(
+                        mock(User.class),
+                        mock(Policy.class),
+                        ApplicationStatus.INTERESTED,
+                        null,
+                        null);
+        when(policyApplicationService.updateEndAt(eq(10L), eq(1L), eq(null)))
+                .thenReturn(application);
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        patch("/api/applications/{id}/end-at", 10L)
+                                                .param("endAt", ""))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.endAt").doesNotExist()));
+    }
+
+    @Test
+    void updateEndAt_파라미터를_생략해도_마감일을_비운다() throws Exception {
         PolicyApplication application =
                 PolicyApplication.register(
                         mock(User.class),
