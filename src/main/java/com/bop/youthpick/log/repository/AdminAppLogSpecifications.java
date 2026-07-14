@@ -24,7 +24,8 @@ public final class AdminAppLogSpecifications {
         if (logLevel == null || logLevel.isBlank()) {
             return null;
         }
-        return (root, query, cb) -> cb.equal(root.get("level"), logLevel);
+        // level은 enum이 아니라 자유 문자열 컬럼이라 적재 값의 대소문자를 보장할 수 없어 대소문자 무시 비교한다.
+        return (root, query, cb) -> cb.equal(cb.upper(root.get("level")), logLevel.toUpperCase());
     }
 
     private static Specification<AppLog> keywordContains(String keyword) {

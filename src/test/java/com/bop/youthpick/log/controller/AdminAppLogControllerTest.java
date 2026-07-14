@@ -1,6 +1,7 @@
 package com.bop.youthpick.log.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -62,5 +63,14 @@ class AdminAppLogControllerTest {
         mockMvc.perform(get("/api/v1/admin/application-logs").param("logLevel", "TRACE"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    void logLevel이_빈_문자열이면_400이_아니라_필터_없이_조회한다() throws Exception {
+        when(adminAppLogService.search(eq(""), isNull(), isNull(), isNull(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(get("/api/v1/admin/application-logs").param("logLevel", ""))
+                .andExpect(status().isOk());
     }
 }

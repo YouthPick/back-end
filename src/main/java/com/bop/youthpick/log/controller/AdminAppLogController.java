@@ -29,7 +29,7 @@ public class AdminAppLogController {
     public ApiResponse<List<ApplicationLogResponse>> list(
             @RequestParam(required = false)
                     @Pattern(
-                            regexp = "ERROR|WARN|INFO|DEBUG",
+                            regexp = "ERROR|WARN|INFO|DEBUG|^$",
                             message = "logLevel은 ERROR, WARN, INFO, DEBUG 중 하나여야 합니다.")
                     String logLevel,
             @RequestParam(required = false) String keyword,
