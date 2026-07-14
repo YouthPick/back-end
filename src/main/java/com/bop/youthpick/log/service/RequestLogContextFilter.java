@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.apache.logging.log4j.ThreadContext;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -18,6 +19,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public class RequestLogContextFilter extends OncePerRequestFilter {
 
+    private static final String FORWARDED_FOR_HEADER = "X-Forwarded-For";
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -25,7 +28,7 @@ public class RequestLogContextFilter extends OncePerRequestFilter {
         ThreadContext.put("traceId", UUID.randomUUID().toString());
         ThreadContext.put("method", request.getMethod());
         ThreadContext.put("uri", request.getRequestURI());
-        ThreadContext.put("ip", request.getRemoteAddr());
+        ThreadContext.put("ip", clientIp(request));
         Long userId = currentUserId();
         if (userId != null) {
             ThreadContext.put("userId", String.valueOf(userId));
@@ -45,5 +48,14 @@ public class RequestLogContextFilter extends OncePerRequestFilter {
         return authentication.getPrincipal() instanceof AuthPrincipal principal
                 ? principal.userId()
                 : null;
+    }
+
+    /** 리버스 프록시/로드밸런서 뒤에서는 소켓 IP 대신 X-Forwarded-For의 첫 값(원 클라이언트 IP)을 우선한다. */
+    private String clientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader(FORWARDED_FOR_HEADER);
+        if (StringUtils.hasText(forwardedFor)) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

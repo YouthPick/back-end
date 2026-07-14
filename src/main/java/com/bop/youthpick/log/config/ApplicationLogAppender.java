@@ -66,8 +66,13 @@ public final class ApplicationLogAppender extends AbstractAppender {
             throws SQLException {
         if (value == null || value.isBlank()) {
             statement.setNull(index, Types.BIGINT);
-        } else {
+            return;
+        }
+        try {
             statement.setLong(index, Long.parseLong(value));
+        } catch (NumberFormatException e) {
+            LOGGER.warn("user_id MDC 값이 숫자가 아니라 NULL로 적재합니다: {}", value);
+            statement.setNull(index, Types.BIGINT);
         }
     }
 
