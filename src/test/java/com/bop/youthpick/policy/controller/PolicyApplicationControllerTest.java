@@ -77,6 +77,37 @@ class PolicyApplicationControllerTest {
     }
 
     @Test
+    void 등록시_PREPARING도_유효한_상태값이다() throws Exception {
+        PolicyApplication application =
+                PolicyApplication.register(
+                        mock(User.class),
+                        mock(Policy.class),
+                        ApplicationStatus.PREPARING,
+                        null,
+                        null);
+        when(policyApplicationService.register(
+                        eq(1L), eq(2L), eq(ApplicationStatus.PREPARING), any(), any()))
+                .thenReturn(application);
+
+        String body =
+                """
+                {
+                    "policyId": 2,
+                    "status": "PREPARING"
+                }
+                """;
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        post("/api/applications")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(body))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.data.status").value("PREPARING")));
+    }
+
+    @Test
     void status값이_유효하지_않으면_400과_C001을_반환한다() throws Exception {
         String body =
                 """
@@ -132,6 +163,27 @@ class PolicyApplicationControllerTest {
                                 .andExpect(jsonPath("$.data.status").value("APPLIED")));
 
         verify(policyApplicationService).changeStatus(10L, 1L, ApplicationStatus.APPLIED);
+    }
+
+    @Test
+    void changeStatus_PREPARING도_유효한_상태값이다() throws Exception {
+        PolicyApplication application =
+                PolicyApplication.register(
+                        mock(User.class),
+                        mock(Policy.class),
+                        ApplicationStatus.PREPARING,
+                        null,
+                        null);
+        when(policyApplicationService.changeStatus(10L, 1L, ApplicationStatus.PREPARING))
+                .thenReturn(application);
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        patch("/api/applications/{id}/status", 10L)
+                                                .param("status", "PREPARING"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.status").value("PREPARING")));
     }
 
     @Test

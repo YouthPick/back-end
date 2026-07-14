@@ -68,7 +68,9 @@ public class PolicyApplicationController {
             @PathVariable Long id,
             @RequestParam
                     @NotBlank(message = "상태는 필수입니다.")
-                    @Pattern(regexp = "INTERESTED|APPLIED|COMPLETED", message = "유효하지 않은 상태값입니다.")
+                    @Pattern(
+                            regexp = "INTERESTED|PREPARING|APPLIED|COMPLETED",
+                            message = "유효하지 않은 상태값입니다.")
                     String status) {
         PolicyApplication application =
                 policyApplicationService.changeStatus(
