@@ -2,6 +2,7 @@ package com.bop.youthpick.policy.repository;
 
 import com.bop.youthpick.policy.dto.PolicySyncSnapshot;
 import com.bop.youthpick.policy.entity.Policy;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,4 +14,6 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
             "select new com.bop.youthpick.policy.dto.PolicySyncSnapshot("
                     + "p.policyNo, p.lastModifiedAt, p.visibility) from Policy p")
     List<PolicySyncSnapshot> findSyncSnapshots();
+
+    List<Policy> findByPolicyNoIn(Collection<String> policyNos);
 }
