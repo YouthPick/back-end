@@ -238,4 +238,35 @@ public class Policy extends BaseEntity {
     /** API 응답 원문 JSON — 스키마 진화 시 백필용 보험 */
     @Column(name = "raw_payload", columnDefinition = "LONGTEXT")
     private String rawPayload;
+
+    /** 관리자 soft delete 시각. {@link #visibility}(배치의 재노출 가능한 상태 전환)와는 독립적이다. */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    public void changeVisibility(PolicyVisibility visibility) {
+        this.visibility = visibility;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void updateDetails(
+            String title,
+            String organizationName,
+            String description,
+            String category,
+            String middleCategory,
+            LocalDate applicationStartDate,
+            LocalDate applicationEndDate,
+            String applicationUrl) {
+        this.title = title;
+        this.organizationName = organizationName;
+        this.description = description;
+        this.category = category;
+        this.middleCategory = middleCategory;
+        this.applicationStartDate = applicationStartDate;
+        this.applicationEndDate = applicationEndDate;
+        this.applicationUrl = applicationUrl;
+    }
 }
