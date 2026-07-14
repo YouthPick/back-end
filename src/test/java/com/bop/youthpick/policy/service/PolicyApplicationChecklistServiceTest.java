@@ -182,6 +182,37 @@ class PolicyApplicationChecklistServiceTest {
     }
 
     @Test
+    void uncheck_상위_신청관리가_삭제되었으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
+        PolicyApplication deletedApplication = application();
+        deletedApplication.delete();
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(deletedApplication, "제출 서류 준비");
+        checklist.check();
+        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+                .thenReturn(Optional.of(checklist));
+
+        assertThatThrownBy(() -> checklistService.uncheck(5L, USER_ID))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
+    }
+
+    @Test
+    void delete_상위_신청관리가_삭제되었으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
+        PolicyApplication deletedApplication = application();
+        deletedApplication.delete();
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(deletedApplication, "제출 서류 준비");
+        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+                .thenReturn(Optional.of(checklist));
+
+        assertThatThrownBy(() -> checklistService.delete(5L, USER_ID))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
+    }
+
+    @Test
     void check_소유자가_아니면_FORBIDDEN_예외를_던진다() {
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application(), "제출 서류 준비");

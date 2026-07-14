@@ -147,6 +147,33 @@ class PolicyApplicationChecklistControllerTest {
         verify(checklistService).delete(5L, 1L);
     }
 
+    @Test
+    void getByApplication_applicationId가_숫자가_아니면_400과_C001을_반환한다() throws Exception {
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(get("/api/checklists/application/{applicationId}", "abc"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
+    }
+
+    @Test
+    void check_id가_숫자가_아니면_400과_C001을_반환한다() throws Exception {
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(patch("/api/checklists/{id}/check", "abc"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
+    }
+
+    @Test
+    void delete_id가_숫자가_아니면_400과_C001을_반환한다() throws Exception {
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(delete("/api/checklists/{id}", "abc"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
+    }
+
     /**
      * addFilters=false로 시큐리티 필터 체인(JwtAuthenticationFilter 포함)을 건너뛰므로, SecurityContextHolder를 직접
      * 채워 @CurrentUser를 해석시킨다.
