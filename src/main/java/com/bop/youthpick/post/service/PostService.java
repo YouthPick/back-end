@@ -60,6 +60,13 @@ public class PostService {
         return PostDetailResponse.from(post);
     }
 
+    @Transactional
+    public void delete(Long userId, Long postId) {
+        Post post = findPost(postId);
+        validateAuthor(post, userId);
+        post.softDelete();
+    }
+
     private User findUser(Long userId) {
         return userRepository
                 .findById(userId)
