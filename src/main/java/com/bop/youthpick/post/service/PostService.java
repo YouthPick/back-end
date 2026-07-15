@@ -7,6 +7,7 @@ import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.post.dto.PostCreateRequest;
 import com.bop.youthpick.post.dto.PostDetailResponse;
 import com.bop.youthpick.post.dto.PostSummaryResponse;
+import com.bop.youthpick.post.dto.PostUpdateRequest;
 import com.bop.youthpick.post.entity.Post;
 import com.bop.youthpick.post.entity.PostCategory;
 import com.bop.youthpick.post.exception.BoardErrorCode;
@@ -49,6 +50,16 @@ public class PostService {
         return PostDetailResponse.from(findPost(postId));
     }
 
+    @Transactional
+    public PostDetailResponse update(Long userId, Long postId, PostUpdateRequest request) {
+        Post post = findPost(postId);
+        validateAuthor(post, userId);
+        PostCategory category = PostCategory.valueOf(request.category());
+        Policy policy = resolvePolicy(category, request.policyId());
+        post.update(policy, category, request.title(), request.content());
+        return PostDetailResponse.from(post);
+    }
+
     private User findUser(Long userId) {
         return userRepository
                 .findById(userId)
@@ -74,5 +85,11 @@ public class PostService {
         return policyRepository
                 .findById(policyId)
                 .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
+    }
+
+    private void validateAuthor(Post post, Long userId) {
+        if (!post.getUser().getId().equals(userId)) {
+            throw new BoardException(BoardErrorCode.POST_ACCESS_DENIED);
+        }
     }
 }

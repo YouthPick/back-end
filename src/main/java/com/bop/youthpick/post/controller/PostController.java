@@ -5,6 +5,7 @@ import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.post.dto.PostCreateRequest;
 import com.bop.youthpick.post.dto.PostDetailResponse;
 import com.bop.youthpick.post.dto.PostSummaryResponse;
+import com.bop.youthpick.post.dto.PostUpdateRequest;
 import com.bop.youthpick.post.service.PostService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,5 +49,13 @@ public class PostController {
     @GetMapping("/{postId}")
     public ApiResponse<PostDetailResponse> findById(@PathVariable Long postId) {
         return ApiResponse.ok(postService.findById(postId));
+    }
+
+    @PutMapping("/{postId}")
+    public ApiResponse<PostDetailResponse> update(
+            @CurrentUser Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody PostUpdateRequest request) {
+        return ApiResponse.ok(postService.update(userId, postId, request));
     }
 }
