@@ -25,3 +25,8 @@ youthpick:
   sync:
     # 온통청년 API 키 — 코드/로그 노출 금지, .env.example 참고
     api-key: ${YOUTH_API_KEY:}
+    scheduler:
+      # 기본 off(안전 기본값) — 실행하려는 환경(배포 prod 등)이 각자 true로 켠다. flyway.enabled와 같은 방식.
+      enabled: false
+      # 새벽 4시: 온통청년 갱신 반영 + 트래픽 최저 시간대
+      cron: "0 0 4 * * *"
