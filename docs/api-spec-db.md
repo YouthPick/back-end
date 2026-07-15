@@ -14,6 +14,7 @@
 | 액세스 토큰 재발급 | POST | `/api/v1/auth/token/refresh` | 비회원 | AUTH | 확정 | 쿠키: `refresh_token`(요청 body 없음) | body: `{accessToken, tokenType, expiresIn}`, `Set-Cookie: refresh_token`(HttpOnly, 재발급값으로 교체) |
 | 프로필 선택지 조회 | GET | `/api/v1/meta/profile-options` | 비회원 | ONB | 확정 |  |  |
 | 정책 수집 이력 목록 | GET | `/api/v1/admin/policy-sync-jobs` | 관리자 | SYNC | 확정 |  |  |
+| 정책 수집 요약 조회 | GET | `/api/v1/admin/policy-sync-jobs/summary` | 관리자 | SYNC | 확정 |  | body: `{activeCount, missingCount, parseErrorCount, dbFailCount}` — `parseErrorCount`/`dbFailCount`는 정책 수집 배치 파이프라인 미구현으로 항상 0 |
 | 맞춤정책 조회 | GET | `/api/v1/me/recommended-policies` | 회원 | REC | 확정 |  |  |
 | 회원 탈퇴 | DELETE | `/api/v1/auth/me` | 회원 | AUTH | 확정 |  |  |
 | 정책 상세 조회 | GET | `/api/v1/policies/{policyId}` | 비회원 | SEARCH | 확정 |  |  |
