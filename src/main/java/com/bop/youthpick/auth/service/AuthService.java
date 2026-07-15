@@ -4,7 +4,9 @@ import com.bop.youthpick.auth.dto.OAuthUserInfo;
 import com.bop.youthpick.auth.dto.TokenResponse;
 import com.bop.youthpick.auth.exception.AuthErrorCode;
 import com.bop.youthpick.auth.exception.AuthException;
+import com.bop.youthpick.user.entity.LoginHistory;
 import com.bop.youthpick.user.entity.User;
+import com.bop.youthpick.user.repository.LoginHistoryRepository;
 import com.bop.youthpick.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import java.util.UUID;
@@ -29,6 +31,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenStore refreshTokenStore;
+    private final LoginHistoryRepository loginHistoryRepository;
 
     public String buildAuthorizationUrl(String registrationId) {
         OAuthProvider provider = OAuthProvider.from(registrationId);
@@ -70,6 +73,7 @@ public class AuthService {
         OAuthUserInfo userInfo = oAuthClient.fetchUserInfo(provider, accessToken);
 
         User user = findOrCreateUser(provider, userInfo);
+        loginHistoryRepository.save(LoginHistory.create(user));
         return issueTokens(user);
     }
 

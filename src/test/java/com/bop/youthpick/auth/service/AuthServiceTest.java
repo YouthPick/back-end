@@ -13,7 +13,9 @@ import static org.mockito.Mockito.when;
 import com.bop.youthpick.auth.dto.OAuthUserInfo;
 import com.bop.youthpick.auth.dto.TokenResponse;
 import com.bop.youthpick.auth.exception.AuthException;
+import com.bop.youthpick.user.entity.LoginHistory;
 import com.bop.youthpick.user.entity.User;
+import com.bop.youthpick.user.repository.LoginHistoryRepository;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -36,6 +38,7 @@ class AuthServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private RefreshTokenStore refreshTokenStore;
+    @Mock private LoginHistoryRepository loginHistoryRepository;
 
     private AuthService authService;
 
@@ -54,7 +57,8 @@ class AuthServiceTest {
                         oAuthStateStore,
                         userRepository,
                         jwtTokenProvider,
-                        refreshTokenStore);
+                        refreshTokenStore,
+                        loginHistoryRepository);
     }
 
     @Test
@@ -83,6 +87,7 @@ class AuthServiceTest {
                 .isInstanceOf(AuthException.class);
 
         verify(oAuthClient, never()).exchangeCodeForAccessToken(any(), any(), any(), any(), any());
+        verify(loginHistoryRepository, never()).save(any());
     }
 
     @Test
@@ -110,6 +115,7 @@ class AuthServiceTest {
 
         verify(userRepository).save(any(User.class));
         verify(refreshTokenStore).save(savedUser.getId(), "jwt-refresh", Duration.ofDays(14));
+        verify(loginHistoryRepository).save(any(LoginHistory.class));
         assertThat(tokens.accessToken()).isEqualTo("jwt-access");
         assertThat(tokens.refreshToken()).isEqualTo("jwt-refresh");
         assertThat(tokens.expiresIn()).isEqualTo(1800L);
@@ -139,6 +145,7 @@ class AuthServiceTest {
         authService.login("google", "code", "state-value");
 
         verify(userRepository, never()).save(any());
+        verify(loginHistoryRepository).save(any(LoginHistory.class));
     }
 
     @Test
@@ -213,6 +220,7 @@ class AuthServiceTest {
         assertThat(tokens.accessToken()).isEqualTo("jwt-access");
         verify(userRepository, org.mockito.Mockito.times(2))
                 .findByProviderAndProviderId("GOOGLE", "provider-id-1");
+        verify(loginHistoryRepository).save(any(LoginHistory.class));
     }
 
     @Test
