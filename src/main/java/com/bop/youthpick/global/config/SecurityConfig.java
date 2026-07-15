@@ -72,6 +72,11 @@ public class SecurityConfig {
                                         "/api/v1/policies/**",
                                         "/api/v1/health")
                                 .permitAll()
+                                // 게시글 조회는 공개, 생성·수정·삭제는 회원 전용
+                                .requestMatchers(HttpMethod.GET, "/api/v1/posts/**")
+                                .permitAll()
+                                .requestMatchers("/api/v1/posts/**")
+                                .authenticated()
                                 // 회원 전용 — 로그인 상태 조회/로그아웃, 회원 탈퇴(컨트롤러 미구현, 경로만 선점),
                                 // 마이페이지(관심정책/추천/읽음/프로필), 최근 본 정책, 챗봇 프로필 동의
                                 .requestMatchers(

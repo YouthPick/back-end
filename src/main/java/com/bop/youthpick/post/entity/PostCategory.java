@@ -1,4 +1,4 @@
-package com.bop.youthpick.board.entity;
+package com.bop.youthpick.post.entity;
 
 public enum PostCategory {
     QUESTION,
