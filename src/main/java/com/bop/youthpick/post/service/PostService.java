@@ -6,6 +6,7 @@ import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.post.dto.PostCreateRequest;
 import com.bop.youthpick.post.dto.PostDetailResponse;
+import com.bop.youthpick.post.dto.PostSummaryResponse;
 import com.bop.youthpick.post.entity.Post;
 import com.bop.youthpick.post.entity.PostCategory;
 import com.bop.youthpick.post.exception.BoardErrorCode;
@@ -16,6 +17,8 @@ import com.bop.youthpick.user.exception.UserError;
 import com.bop.youthpick.user.exception.UserException;
 import com.bop.youthpick.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,10 +39,26 @@ public class PostService {
         return PostDetailResponse.from(postRepository.save(post));
     }
 
+    @Transactional(readOnly = true)
+    public Page<PostSummaryResponse> findAll(Pageable pageable) {
+        return postRepository.findAllByDeletedAtIsNull(pageable).map(PostSummaryResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public PostDetailResponse findById(Long postId) {
+        return PostDetailResponse.from(findPost(postId));
+    }
+
     private User findUser(Long userId) {
         return userRepository
                 .findById(userId)
                 .orElseThrow(() -> new UserException(UserError.USER_NOT_FOUND));
+    }
+
+    private Post findPost(Long postId) {
+        return postRepository
+                .findByIdAndDeletedAtIsNull(postId)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.POST_NOT_FOUND));
     }
 
     private Policy resolvePolicy(PostCategory category, Long policyId) {

@@ -4,11 +4,19 @@ import com.bop.youthpick.auth.service.CurrentUser;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.post.dto.PostCreateRequest;
 import com.bop.youthpick.post.dto.PostDetailResponse;
+import com.bop.youthpick.post.dto.PostSummaryResponse;
 import com.bop.youthpick.post.service.PostService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,5 +34,18 @@ public class PostController {
             @CurrentUser Long userId, @Valid @RequestBody PostCreateRequest request) {
         PostDetailResponse response = postService.create(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
+    }
+
+    @GetMapping
+    public ApiResponse<List<PostSummaryResponse>> findAll(
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+                    Pageable pageable) {
+        Page<PostSummaryResponse> page = postService.findAll(pageable);
+        return ApiResponse.ok(page.getContent(), page);
+    }
+
+    @GetMapping("/{postId}")
+    public ApiResponse<PostDetailResponse> findById(@PathVariable Long postId) {
+        return ApiResponse.ok(postService.findById(postId));
     }
 }
