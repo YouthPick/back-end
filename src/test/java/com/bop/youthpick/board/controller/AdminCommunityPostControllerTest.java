@@ -55,7 +55,7 @@ class AdminCommunityPostControllerTest {
                         isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/admin/community/posts"))
+        mockMvc.perform(get("/api/v1/admin/community-posts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value(1))
                 .andExpect(jsonPath("$.data[0].authorName").value("닉네임"))
@@ -64,7 +64,7 @@ class AdminCommunityPostControllerTest {
 
     @Test
     void category_필터가_허용값이_아니면_400과_C001을_반환한다() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/community/posts").param("category", "NOTICE"))
+        mockMvc.perform(get("/api/v1/admin/community-posts").param("category", "NOTICE"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
     }
@@ -77,7 +77,7 @@ class AdminCommunityPostControllerTest {
                                 new AdminCommunityCommentResponse(
                                         2L, 1L, null, "닉네임", "댓글", LocalDateTime.now(), null)));
 
-        mockMvc.perform(get("/api/v1/admin/community/posts/{postId}/comments", 1L))
+        mockMvc.perform(get("/api/v1/admin/community-posts/{postId}/comments", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value(2));
     }
@@ -87,7 +87,7 @@ class AdminCommunityPostControllerTest {
         when(adminCommunityService.getComments(1L))
                 .thenThrow(new BoardException(BoardErrorCode.POST_NOT_FOUND));
 
-        mockMvc.perform(get("/api/v1/admin/community/posts/{postId}/comments", 1L))
+        mockMvc.perform(get("/api/v1/admin/community-posts/{postId}/comments", 1L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("B001"));
     }
@@ -104,7 +104,7 @@ class AdminCommunityPostControllerTest {
                                         1024L,
                                         LocalDateTime.now())));
 
-        mockMvc.perform(get("/api/v1/admin/community/posts/{postId}/attachments", 1L))
+        mockMvc.perform(get("/api/v1/admin/community-posts/{postId}/attachments", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value(3))
                 .andExpect(jsonPath("$.data[0].fileKey").value("https://example.com/file.pdf"));
@@ -125,7 +125,7 @@ class AdminCommunityPostControllerTest {
                         LocalDateTime.now());
         when(adminCommunityService.deletePost(1L)).thenReturn(deleted);
 
-        mockMvc.perform(delete("/api/v1/admin/community/posts/{postId}", 1L))
+        mockMvc.perform(delete("/api/v1/admin/community-posts/{postId}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.deletedAt").exists());
     }
@@ -135,7 +135,7 @@ class AdminCommunityPostControllerTest {
         when(adminCommunityService.deletePost(eq(1L)))
                 .thenThrow(new BoardException(BoardErrorCode.POST_NOT_FOUND));
 
-        mockMvc.perform(delete("/api/v1/admin/community/posts/{postId}", 1L))
+        mockMvc.perform(delete("/api/v1/admin/community-posts/{postId}", 1L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("B001"));
     }
