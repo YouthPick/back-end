@@ -280,11 +280,12 @@ CREATE TABLE policy_batch_history (
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '정책 수집 배치 이력 (FK 없음 — 독립 이력)';
 
 -- ------------------------------------------------------------
--- 12. app_logs — 앱 에러/요청 로그 (ERDCloud `로그`)
+-- 12. application_logs — 앱 에러/요청 로그 (ERDCloud `로그`)
 --     VARCHAR 길이 누락 정정, user_id NULL 허용(비로그인/배치),
 --     FK 없음 — 로그는 유저 삭제와 무관하게 보존
+--     V4 마이그레이션에서 app_logs → application_logs로 개명(ERD 물리명 기준)
 -- ------------------------------------------------------------
-CREATE TABLE app_logs (
+CREATE TABLE application_logs (
     id                BIGINT       NOT NULL AUTO_INCREMENT,
     level             VARCHAR(10)  NOT NULL COMMENT 'INFO | WARN | ERROR',
     message           TEXT         NOT NULL,
@@ -298,7 +299,7 @@ CREATE TABLE app_logs (
     user_id           BIGINT       NULL COMMENT '비로그인/배치 = NULL. FK 안 걺',
     created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    KEY idx_app_logs_created (created_at)
+    KEY idx_application_logs_created (created_at)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT '앱 로그 (기한 지나면 삭제)';
 
 -- ------------------------------------------------------------

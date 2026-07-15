@@ -2,6 +2,7 @@ package com.bop.youthpick.global.config;
 
 import com.bop.youthpick.auth.service.JwtAuthenticationFilter;
 import com.bop.youthpick.auth.service.JwtTokenProvider;
+import com.bop.youthpick.log.service.RequestLogContextFilter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -87,6 +88,7 @@ public class SecurityConfig {
         http.addFilterBefore(
                 new JwtAuthenticationFilter(jwtTokenProvider),
                 UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(new RequestLogContextFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
     }
