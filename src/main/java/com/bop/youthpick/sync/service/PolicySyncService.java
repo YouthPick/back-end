@@ -11,6 +11,7 @@ import com.bop.youthpick.sync.dto.PolicyWriteResult;
 import com.bop.youthpick.sync.dto.YouthPolicyItem;
 import com.bop.youthpick.sync.entity.BatchMode;
 import com.bop.youthpick.sync.entity.PolicyBatchHistory;
+import com.bop.youthpick.sync.exception.PolicySyncException;
 import com.bop.youthpick.sync.repository.PolicyBatchHistoryRepository;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PolicySyncService {
 
+    private final PolicySyncLock policySyncLock;
     private final PolicyApiClient policyApiClient;
     private final PolicyMapper policyMapper;
     private final PolicyUpsertWriter policyUpsertWriter;
@@ -42,8 +44,22 @@ public class PolicySyncService {
      * SUCCEEDED. fetch가 실패하면 DB에 손대지 않고 FAILED 기록 후 예외를 다시 던진다.
      *
      * <p>이 메서드 자체는 트랜잭션이 아니다 — 커밋 단위는 Writer의 청크와 이력 save 각각이다.
+     *
+     * <p>중복 실행은 Redis 락으로 거부한다. 거부된 시도는 회차가 아니므로 이력을 남기지 않는다.
      */
     public PolicyBatchHistory runFullSync() {
+        String lockToken =
+                policySyncLock
+                        .tryAcquire()
+                        .orElseThrow(() -> new PolicySyncException("정책 수집이 이미 실행 중 — 중복 실행 거부"));
+        try {
+            return doRunFullSync();
+        } finally {
+            policySyncLock.release(lockToken);
+        }
+    }
+
+    private PolicyBatchHistory doRunFullSync() {
         PolicyBatchHistory history =
                 historyRepository.save(PolicyBatchHistory.request(BatchMode.FULL));
         history.start();
@@ -119,6 +135,7 @@ public class PolicySyncService {
         return new SyncPlan(upserts, missingPolicyNos, unchangedCount);
     }
 
+    // 앞으로 Insert/Delete할 정책들(신규+변경), 앞으로 누락 처리 할 정책번호들, 아무것도 안할 건수(이력 기록용)
     private record SyncPlan(
             List<PolicyUpsertItem> upserts, List<String> missingPolicyNos, int unchangedCount) {}
 }

@@ -3,6 +3,8 @@ package com.bop.youthpick.sync.service;
 import static com.bop.youthpick.policy.entity.PolicyFixture.policy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bop.youthpick.global.config.JpaAuditingConfig;
@@ -21,7 +23,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -55,12 +59,18 @@ class PolicySyncServiceTest {
     private static final ObjectMapper OM = new ObjectMapper();
 
     @MockitoBean private PolicyApiClient policyApiClient;
+    @MockitoBean private PolicySyncLock policySyncLock;
 
     @Autowired private PolicySyncService policySyncService;
     @Autowired private PolicyRepository policyRepository;
     @Autowired private PolicyRegionRepository policyRegionRepository;
     @Autowired private RegionRepository regionRepository;
     @Autowired private PolicyBatchHistoryRepository historyRepository;
+
+    @BeforeEach
+    void acquireLockByDefault() {
+        when(policySyncLock.tryAcquire()).thenReturn(Optional.of("test-token"));
+    }
 
     @AfterEach
     void cleanUp() {
@@ -131,6 +141,20 @@ class PolicySyncServiceTest {
         Policy kept = policyRepository.findByPolicyNoIn(List.of("P-KEEP")).getFirst();
         assertThat(kept.getMissingCount()).isZero(); // 어제 데이터 그대로 — 누락 처리도 안 함
         assertThat(kept.getVisibility()).isEqualTo(PolicyVisibility.VISIBLE);
+        verify(policySyncLock).release("test-token"); // 실패해도 락은 반드시 해제
+    }
+
+    @Test
+    void 락_획득에_실패하면_이력도_남기지_않고_아무_작업_없이_예외를_던진다() {
+        when(policySyncLock.tryAcquire()).thenReturn(Optional.empty());
+
+        assertThatThrownBy(policySyncService::runFullSync)
+                .isInstanceOf(PolicySyncException.class)
+                .hasMessageContaining("이미 실행 중");
+
+        assertThat(historyRepository.count()).isZero(); // 거부된 시도는 회차가 아니다
+        verify(policyApiClient, never()).fetchAll();
+        verify(policySyncLock, never()).release(org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test
