@@ -36,7 +36,7 @@ public enum UserErrorCode implements ErrorCode {
 | `C` | 공통(common) | | `U` | 사용자(user) |
 | `A` | 인증/인가(auth) | | `P` | 정책(policy) |
 | `S` | 서버(server) | | `F` | 즐겨찾기(favorite) |
-| | | | `D` | 자가진단(diagnosis) |
+| `B` | 커뮤니티(board) | | `D` | 자가진단(diagnosis) |
 
 ## 규칙
 

@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLRestriction;
 
 /** 신청관리별 준비 체크리스트 (제출서류 등). */
 @Entity
@@ -24,6 +25,7 @@ import lombok.NoArgsConstructor;
                 @Index(
                         name = "idx_policy_application_checklists_app",
                         columnList = "application_id"))
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ApplicationChecklist extends BaseEntity {

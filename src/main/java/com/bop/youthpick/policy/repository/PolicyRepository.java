@@ -5,9 +5,11 @@ import com.bop.youthpick.policy.entity.Policy;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
-public interface PolicyRepository extends JpaRepository<Policy, Long> {
+public interface PolicyRepository
+        extends JpaRepository<Policy, Long>, JpaSpecificationExecutor<Policy> {
 
     /** 배치 비교용 전체 스냅샷 — HIDDEN 포함 (제외 이유는 {@link PolicySyncSnapshot} 참고). */
     @Query(

@@ -415,4 +415,35 @@ public class Policy extends BaseEntity {
         policy.rawPayload = rawPayload;
         return policy;
     }
+
+    /** 관리자 soft delete 시각. {@link #visibility}(배치의 재노출 가능한 상태 전환)와는 독립적이다. */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    public void changeVisibility(PolicyVisibility visibility) {
+        this.visibility = visibility;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void updateDetails(
+            String title,
+            String organizationName,
+            String description,
+            String category,
+            String middleCategory,
+            LocalDate applicationStartDate,
+            LocalDate applicationEndDate,
+            String applicationUrl) {
+        this.title = title;
+        this.organizationName = organizationName;
+        this.description = description;
+        this.category = category;
+        this.middleCategory = middleCategory;
+        this.applicationStartDate = applicationStartDate;
+        this.applicationEndDate = applicationEndDate;
+        this.applicationUrl = applicationUrl;
+    }
 }
