@@ -61,6 +61,10 @@ class PolicySyncServiceTest {
     @MockitoBean private PolicyApiClient policyApiClient;
     @MockitoBean private PolicySyncLock policySyncLock;
 
+    // @DataJpaTest 슬라이스에는 Boot의 applicationTaskExecutor가 없다. 목으로 두면
+    // 기본은 "실행 안 됨"이고, 필요한 테스트만 runInline()으로 현재 스레드 실행을 흉내낸다.
+    @MockitoBean private org.springframework.core.task.TaskExecutor taskExecutor;
+
     @Autowired private PolicySyncService policySyncService;
     @Autowired private PolicyRepository policyRepository;
     @Autowired private PolicyRegionRepository policyRegionRepository;
@@ -177,6 +181,62 @@ class PolicySyncServiceTest {
         Policy back = policyRepository.findByPolicyNoIn(List.of("P-BACK")).getFirst();
         assertThat(back.getVisibility()).isEqualTo(PolicyVisibility.VISIBLE);
         assertThat(back.getMissingCount()).isZero();
+    }
+
+    @Test
+    void 수동_실행은_락_거부시_409용_CustomException을_던지고_아무_작업도_하지_않는다() {
+        when(policySyncLock.tryAcquire()).thenReturn(Optional.empty());
+
+        assertThatThrownBy(policySyncService::startFullSyncAsync)
+                .isInstanceOf(com.bop.youthpick.global.error.CustomException.class)
+                .satisfies(
+                        e ->
+                                assertThat(
+                                                ((com.bop.youthpick.global.error.CustomException) e)
+                                                        .getErrorCode())
+                                        .isEqualTo(
+                                                com.bop.youthpick.sync.exception.SyncErrorCode
+                                                        .SYNC_ALREADY_RUNNING));
+
+        assertThat(historyRepository.count()).isZero();
+        verify(taskExecutor, never()).execute(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void 수동_실행은_백그라운드에서_배치를_수행하고_락을_해제한다() {
+        runInline();
+        when(policyApiClient.fetchAll()).thenReturn(List.of());
+
+        policySyncService.startFullSyncAsync();
+
+        assertThat(historyRepository.findAll())
+                .singleElement()
+                .satisfies(h -> assertThat(h.getStatus()).isEqualTo(BatchStatus.SUCCEEDED));
+        verify(policySyncLock).release("test-token");
+    }
+
+    @Test
+    void 수동_실행의_백그라운드_실패는_밖으로_던지지_않고_FAILED_이력과_락_해제만_남긴다() {
+        runInline();
+        when(policyApiClient.fetchAll()).thenThrow(new PolicySyncException("페이지 요청 3회 실패"));
+
+        policySyncService.startFullSyncAsync(); // 202는 이미 나간 뒤 — 예외가 여기로 나오면 안 된다
+
+        assertThat(historyRepository.findAll())
+                .singleElement()
+                .satisfies(h -> assertThat(h.getStatus()).isEqualTo(BatchStatus.FAILED));
+        verify(policySyncLock).release("test-token");
+    }
+
+    /** 목 executor가 제출된 작업을 현재 스레드에서 즉시 실행하게 한다. */
+    private void runInline() {
+        org.mockito.Mockito.doAnswer(
+                        inv -> {
+                            ((Runnable) inv.getArgument(0)).run();
+                            return null;
+                        })
+                .when(taskExecutor)
+                .execute(org.mockito.ArgumentMatchers.any(Runnable.class));
     }
 
     private static YouthPolicyItem item(String json) throws IOException {

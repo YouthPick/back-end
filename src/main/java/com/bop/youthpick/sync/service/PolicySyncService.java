@@ -1,5 +1,6 @@
 package com.bop.youthpick.sync.service;
 
+import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicySyncSnapshot;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyVisibility;
@@ -12,6 +13,7 @@ import com.bop.youthpick.sync.dto.YouthPolicyItem;
 import com.bop.youthpick.sync.entity.BatchMode;
 import com.bop.youthpick.sync.entity.PolicyBatchHistory;
 import com.bop.youthpick.sync.exception.PolicySyncException;
+import com.bop.youthpick.sync.exception.SyncErrorCode;
 import com.bop.youthpick.sync.repository.PolicyBatchHistoryRepository;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -23,6 +25,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 
 /** 온통청년 정책 전량 수집 배치. 상세 흐름: docs/2026-06-29-데이터수집-배치-설계.md (팀 루트 저장소) */
@@ -32,6 +35,7 @@ import org.springframework.stereotype.Service;
 public class PolicySyncService {
 
     private final PolicySyncLock policySyncLock;
+    private final TaskExecutor taskExecutor;
     private final PolicyApiClient policyApiClient;
     private final PolicyMapper policyMapper;
     private final PolicyUpsertWriter policyUpsertWriter;
@@ -57,6 +61,27 @@ public class PolicySyncService {
         } finally {
             policySyncLock.release(lockToken);
         }
+    }
+
+    /**
+     * 관리자 수동 실행. 락은 이 스레드에서 동기로 획득해 즉시 202/409를 판정할 수 있게 하고, 수십 초짜리 실행 본체는 백그라운드로 넘긴다(HTTP 응답이 배치를
+     * 기다리면 타임아웃). 백그라운드 실패는 이력(FAILED)에 이미 남으므로 로그만 남긴다 — 202가 나간 뒤라 받을 사람도 없다.
+     */
+    public void startFullSyncAsync() {
+        String lockToken =
+                policySyncLock
+                        .tryAcquire()
+                        .orElseThrow(() -> new CustomException(SyncErrorCode.SYNC_ALREADY_RUNNING));
+        taskExecutor.execute(
+                () -> {
+                    try {
+                        doRunFullSync();
+                    } catch (RuntimeException e) {
+                        log.error("정책 수집 수동 실행 실패 — 상세는 policy_batch_history 참조", e);
+                    } finally {
+                        policySyncLock.release(lockToken);
+                    }
+                });
     }
 
     private PolicyBatchHistory doRunFullSync() {
