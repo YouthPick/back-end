@@ -54,9 +54,11 @@ public class AuthController {
     /**
      * refresh token은 더 이상 body가 아니라 {@link RefreshTokenCookieSupport#COOKIE_NAME} 쿠키로 받는다. 쿠키만으로
      * 동작해 preflight 없는 단순 요청(cross-site form 등)도 도달할 수 있으므로, Origin 헤더가 있는데 허용 목록에 없으면 거부한다.
+     * refresh token 자체는 재발급(rotate)하지 않고 발급 시점의 만료 기간까지 그대로 재사용하므로, access token만 새로 내려주고 쿠키는 다시
+     * 설정하지 않는다.
      */
     @PostMapping("/token/refresh")
-    public ResponseEntity<ApiResponse<AccessTokenResponse>> refresh(
+    public ApiResponse<AccessTokenResponse> refresh(
             @CookieValue(name = RefreshTokenCookieSupport.COOKIE_NAME, required = false)
                     String refreshToken,
             @RequestHeader(value = HttpHeaders.ORIGIN, required = false) String origin) {
@@ -65,7 +67,7 @@ public class AuthController {
             throw new AuthException(AuthErrorCode.INVALID_REFRESH_TOKEN);
         }
         TokenResponse tokens = authService.refresh(refreshToken);
-        return withRefreshCookie(tokens);
+        return ApiResponse.ok(AccessTokenResponse.from(tokens));
     }
 
     @PostMapping("/logout")
