@@ -5,6 +5,10 @@ spring:
     # 기본 비활성(안전 기본값) — MySQL을 쓰는 프로필(local, 추후 prod)이 각자 true로 켠다.
     # test는 H2 + ddl-auto(create-drop)라 꺼진 기본값을 그대로 쓴다.
     enabled: false
+    # DDL(migration)과 데이터 적재(seed)를 폴더로 분리. 버전(V{n})은 두 폴더에 걸쳐 하나의 순서를 공유한다.
+    locations:
+      - classpath:db/migration
+      - classpath:db/seed
   http:
     client:
       # OAuthClient·PolicyApiClient 등 자동구성된 RestClient.Builder에 전역 적용. provider가 응답이 없을 때
