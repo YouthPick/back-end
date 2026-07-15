@@ -83,7 +83,7 @@ class AdminPolicyApplicationServiceTest {
         when(application.getId()).thenReturn(APPLICATION_ID);
         when(item.isChecked()).thenReturn(true);
         when(item.getContent()).thenReturn("주민등록등본 제출");
-        when(applicationChecklistRepository.findByApplicationId(APPLICATION_ID))
+        when(applicationChecklistRepository.findByApplicationIdOrderByIdAsc(APPLICATION_ID))
                 .thenReturn(List.of(item));
 
         List<?> result = adminPolicyApplicationService.getChecklist(APPLICATION_ID);
@@ -123,5 +123,19 @@ class AdminPolicyApplicationServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND);
+    }
+
+    @Test
+    void 유효하지_않은_상태값이면_INVALID_APPLICATION_STATUS_예외를_던진다() {
+        when(policyApplicationRepository.findById(APPLICATION_ID))
+                .thenReturn(Optional.of(mock(PolicyApplication.class)));
+
+        assertThatThrownBy(
+                        () ->
+                                adminPolicyApplicationService.updateStatus(
+                                        APPLICATION_ID, "INVALID_STATUS"))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.INVALID_APPLICATION_STATUS);
     }
 }

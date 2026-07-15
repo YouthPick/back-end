@@ -1,12 +1,15 @@
 package com.bop.youthpick.policy.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bop.youthpick.global.config.JpaAuditingConfig;
+import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.entity.PolicyVisibility;
+import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.time.LocalDate;
@@ -143,5 +146,37 @@ class AdminPolicyApplicationSpecificationsTest {
                         AdminPolicyApplicationSpecifications.filter(null, null, null, null, null));
 
         assertThat(result).hasSize(3);
+    }
+
+    @Test
+    void 관리_해제된_신청은_목록에서_제외된다() {
+        PolicyApplication target =
+                policyApplicationRepository
+                        .findAll(
+                                AdminPolicyApplicationSpecifications.filter(
+                                        null, null, "COMPLETED", null, null))
+                        .get(0);
+        ReflectionTestUtils.setField(target, "deletedAt", LocalDateTime.now());
+        entityManager.persistAndFlush(target);
+        entityManager.clear();
+
+        List<PolicyApplication> result =
+                policyApplicationRepository.findAll(
+                        AdminPolicyApplicationSpecifications.filter(null, null, null, null, null));
+
+        assertThat(result).hasSize(2);
+        assertThat(result)
+                .noneMatch(application -> application.getStatus() == ApplicationStatus.COMPLETED);
+    }
+
+    @Test
+    void 잘못된_상태값이면_INVALID_APPLICATION_STATUS_예외를_던진다() {
+        assertThatThrownBy(
+                        () ->
+                                AdminPolicyApplicationSpecifications.filter(
+                                        null, null, "INVALID_STATUS", null, null))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.INVALID_APPLICATION_STATUS);
     }
 }

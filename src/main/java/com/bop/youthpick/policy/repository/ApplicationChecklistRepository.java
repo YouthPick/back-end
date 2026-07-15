@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ApplicationChecklistRepository extends JpaRepository<ApplicationChecklist, Long> {
 
-    List<ApplicationChecklist> findByApplicationId(Long applicationId);
+    List<ApplicationChecklist> findByApplicationIdOrderByIdAsc(Long applicationId);
 }

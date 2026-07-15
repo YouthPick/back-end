@@ -43,7 +43,9 @@ public class AdminPolicyApplicationService {
     @Transactional(readOnly = true)
     public List<ApplicationChecklistItemResponse> getChecklist(Long applicationId) {
         findApplication(applicationId);
-        return applicationChecklistRepository.findByApplicationId(applicationId).stream()
+        return applicationChecklistRepository
+                .findByApplicationIdOrderByIdAsc(applicationId)
+                .stream()
                 .map(ApplicationChecklistItemResponse::from)
                 .toList();
     }
@@ -51,7 +53,7 @@ public class AdminPolicyApplicationService {
     @Transactional
     public AdminPolicyApplicationResponse updateStatus(Long applicationId, String status) {
         PolicyApplication application = findApplication(applicationId);
-        application.changeStatus(ApplicationStatus.valueOf(status));
+        application.changeStatus(parseStatus(status));
         return AdminPolicyApplicationResponse.from(application);
     }
 
@@ -60,5 +62,13 @@ public class AdminPolicyApplicationService {
                 .findById(applicationId)
                 .orElseThrow(
                         () -> new CustomException(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
+    }
+
+    private ApplicationStatus parseStatus(String status) {
+        try {
+            return ApplicationStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(PolicyErrorCode.INVALID_APPLICATION_STATUS);
+        }
     }
 }
