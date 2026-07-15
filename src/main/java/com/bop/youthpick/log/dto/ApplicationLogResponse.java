@@ -1,6 +1,6 @@
 package com.bop.youthpick.log.dto;
 
-import com.bop.youthpick.log.entity.AppLog;
+import com.bop.youthpick.log.entity.ApplicationLog;
 import java.time.LocalDateTime;
 
 public record ApplicationLogResponse(
@@ -16,7 +16,7 @@ public record ApplicationLogResponse(
         String exceptionMessage,
         String stackTrace,
         LocalDateTime createdAt) {
-    public static ApplicationLogResponse from(AppLog appLog) {
+    public static ApplicationLogResponse from(ApplicationLog appLog) {
         return new ApplicationLogResponse(
                 appLog.getId(),
                 appLog.getUserId(),
