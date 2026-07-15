@@ -5,6 +5,7 @@ import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Fetch;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -46,25 +47,33 @@ public final class AdminPolicyApplicationSpecifications {
             return null;
         }
         String pattern = "%" + policyName.toLowerCase() + "%";
-        return (root, query, cb) -> cb.like(cb.lower(policyJoin(root).get("title")), pattern);
+        return (root, query, cb) ->
+                cb.like(cb.lower(policyJoin(root, query).get("title")), pattern);
     }
 
     /** 목록 조회(content 쿼리)에서만 policy/user를 LEFT fetch join해 응답 매핑 시 N+1을 없앤다(count 쿼리는 건너뛴다). */
     private static Specification<PolicyApplication> fetchPolicyAndUser() {
         return (root, query, cb) -> {
-            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
-                policyJoin(root);
+            if (!isCountQuery(query)) {
+                policyJoin(root, query);
                 root.fetch("user", JoinType.LEFT);
             }
             return cb.conjunction();
         };
     }
 
+    private static boolean isCountQuery(CriteriaQuery<?> query) {
+        return query.getResultType() == Long.class || query.getResultType() == long.class;
+    }
+
     /**
      * policyNameContains의 필터 join과 fetchPolicyAndUser의 fetch join이 동일한 "policy" 경로를 공유하도록 재사용한다.
+     * count 쿼리에서는 fetch가 허용되지 않으므로 일반 join으로, content 쿼리에서는 fetch join으로 만든다(Fetch는 Join도 구현하므로
+     * 필터링에도 그대로 쓸 수 있다).
      */
     @SuppressWarnings("unchecked")
-    private static Join<PolicyApplication, Policy> policyJoin(Root<PolicyApplication> root) {
+    private static Join<PolicyApplication, Policy> policyJoin(
+            Root<PolicyApplication> root, CriteriaQuery<?> query) {
         for (Fetch<PolicyApplication, ?> fetch : root.getFetches()) {
             if (fetch.getAttribute().getName().equals("policy")) {
                 return (Join<PolicyApplication, Policy>) fetch;
@@ -75,7 +84,11 @@ public final class AdminPolicyApplicationSpecifications {
                 return (Join<PolicyApplication, Policy>) join;
             }
         }
-        return root.join("policy", JoinType.LEFT);
+        if (isCountQuery(query)) {
+            return root.join("policy", JoinType.LEFT);
+        }
+        return (Join<PolicyApplication, Policy>)
+                root.<PolicyApplication, Policy>fetch("policy", JoinType.LEFT);
     }
 
     private static Specification<PolicyApplication> statusEquals(String status) {

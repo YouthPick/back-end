@@ -15,6 +15,7 @@ import com.bop.youthpick.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeanUtils;
@@ -167,6 +168,23 @@ class AdminPolicyApplicationSpecificationsTest {
         assertThat(result).hasSize(2);
         assertThat(result)
                 .noneMatch(application -> application.getStatus() == ApplicationStatus.COMPLETED);
+    }
+
+    @Test
+    void policyName_필터가_없어도_policy와_user가_fetch된다() {
+        entityManager.clear();
+
+        List<PolicyApplication> result =
+                policyApplicationRepository.findAll(
+                        AdminPolicyApplicationSpecifications.filter(null, null, null, null, null));
+
+        assertThat(result).isNotEmpty();
+        assertThat(result)
+                .allSatisfy(
+                        application -> {
+                            assertThat(Hibernate.isInitialized(application.getPolicy())).isTrue();
+                            assertThat(Hibernate.isInitialized(application.getUser())).isTrue();
+                        });
     }
 
     @Test
