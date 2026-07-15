@@ -52,7 +52,7 @@ public class PolicyApplicationChecklistService {
         findActiveApplication(applicationId, userId);
 
         return applicationChecklistRepository
-                .findByApplication_IdAndDeletedAtIsNull(applicationId, pageable)
+                .findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(applicationId, pageable)
                 .map(PolicyApplicationChecklistResponse::from);
     }
 

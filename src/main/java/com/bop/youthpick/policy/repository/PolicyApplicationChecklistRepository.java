@@ -14,7 +14,8 @@ public interface PolicyApplicationChecklistRepository
 
     Optional<PolicyApplicationChecklist> findByIdAndDeletedAtIsNull(Long id);
 
-    Page<PolicyApplicationChecklist> findByApplication_IdAndDeletedAtIsNull(
+    /** 체크리스트 노출 순서를 id 오름차순(등록 순서)으로 고정한다. */
+    Page<PolicyApplicationChecklist> findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(
             Long applicationId, Pageable pageable);
 
     @Modifying(flushAutomatically = true)

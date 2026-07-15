@@ -261,7 +261,7 @@ class PolicyApplicationChecklistServiceTest {
         Page<PolicyApplicationChecklist> page = new PageImpl<>(List.of(checklist), pageable, 1);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
                 .thenReturn(Optional.of(application));
-        when(applicationChecklistRepository.findByApplication_IdAndDeletedAtIsNull(
+        when(applicationChecklistRepository.findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(
                         APPLICATION_ID, pageable))
                 .thenReturn(page);
 
