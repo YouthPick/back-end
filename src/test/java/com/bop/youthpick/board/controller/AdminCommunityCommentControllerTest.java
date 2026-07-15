@@ -32,7 +32,7 @@ class AdminCommunityCommentControllerTest {
                         2L, 1L, null, "닉네임", "댓글", LocalDateTime.now(), LocalDateTime.now());
         when(adminCommunityService.deleteComment(2L)).thenReturn(deleted);
 
-        mockMvc.perform(delete("/api/v1/admin/community/comments/{commentId}", 2L))
+        mockMvc.perform(delete("/api/v1/admin/community-comments/{commentId}", 2L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.deletedAt").exists());
     }
@@ -42,7 +42,7 @@ class AdminCommunityCommentControllerTest {
         when(adminCommunityService.deleteComment(2L))
                 .thenThrow(new BoardException(BoardErrorCode.COMMENT_NOT_FOUND));
 
-        mockMvc.perform(delete("/api/v1/admin/community/comments/{commentId}", 2L))
+        mockMvc.perform(delete("/api/v1/admin/community-comments/{commentId}", 2L))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("B002"));
     }

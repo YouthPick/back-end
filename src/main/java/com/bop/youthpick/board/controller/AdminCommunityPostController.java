@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/admin/community/posts")
+@RequestMapping("/api/v1/admin/community-posts")
 @RequiredArgsConstructor
 @Validated
 public class AdminCommunityPostController {
