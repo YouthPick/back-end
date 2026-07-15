@@ -1,6 +1,6 @@
 package com.bop.youthpick.log.repository;
 
-import com.bop.youthpick.log.entity.AppLog;
+import com.bop.youthpick.log.entity.ApplicationLog;
 import jakarta.persistence.criteria.Predicate;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ public final class AdminAppLogSpecifications {
 
     private AdminAppLogSpecifications() {}
 
-    public static Specification<AppLog> filter(
+    public static Specification<ApplicationLog> filter(
             String logLevel, String keyword, LocalDate startDate, LocalDate endDate) {
         return Specification.allOf(
                 levelEquals(logLevel),
@@ -20,7 +20,7 @@ public final class AdminAppLogSpecifications {
                 createdBetween(startDate, endDate));
     }
 
-    private static Specification<AppLog> levelEquals(String logLevel) {
+    private static Specification<ApplicationLog> levelEquals(String logLevel) {
         if (logLevel == null || logLevel.isBlank()) {
             return null;
         }
@@ -28,7 +28,7 @@ public final class AdminAppLogSpecifications {
         return (root, query, cb) -> cb.equal(cb.upper(root.get("level")), logLevel.toUpperCase());
     }
 
-    private static Specification<AppLog> keywordContains(String keyword) {
+    private static Specification<ApplicationLog> keywordContains(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return null;
         }
@@ -41,7 +41,8 @@ public final class AdminAppLogSpecifications {
     }
 
     /** createdAt이 [startDate, endDate] 날짜 범위 안에 있는 로그만 남긴다(KST 벽시계 시각 기준 직접 비교). */
-    private static Specification<AppLog> createdBetween(LocalDate startDate, LocalDate endDate) {
+    private static Specification<ApplicationLog> createdBetween(
+            LocalDate startDate, LocalDate endDate) {
         if (startDate == null && endDate == null) {
             return null;
         }

@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.bop.youthpick.log.entity.AppLog;
+import com.bop.youthpick.log.entity.ApplicationLog;
 import com.bop.youthpick.log.repository.AppLogRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,9 +32,9 @@ class AdminAppLogServiceTest {
 
     @Test
     void 목록_조회는_필터를_Specification으로_넘겨_페이지를_반환한다() {
-        AppLog appLog = mock(AppLog.class);
+        ApplicationLog appLog = mock(ApplicationLog.class);
         when(appLog.getId()).thenReturn(1L);
-        Page<AppLog> page = new PageImpl<>(List.of(appLog));
+        Page<ApplicationLog> page = new PageImpl<>(List.of(appLog));
         when(appLogRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(page);
 
