@@ -34,8 +34,8 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !(authentication.getPrincipal() instanceof AuthPrincipal principal)) {
-            CurrentUser annotation = parameter.getParameterAnnotation(CurrentUser.class);
-            if (annotation != null && !annotation.required()) {
+            // supportsParameter가 @CurrentUser 파라미터만 통과시키므로 annotation은 항상 존재한다.
+            if (!parameter.getParameterAnnotation(CurrentUser.class).required()) {
                 return null;
             }
             throw new AuthException(AuthErrorCode.UNAUTHORIZED);
