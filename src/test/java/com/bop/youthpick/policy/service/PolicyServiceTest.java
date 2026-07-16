@@ -33,7 +33,7 @@ class PolicyServiceTest {
 
     @Mock private PolicyRepository policyRepository;
     @Mock private PolicyRegionRepository policyRegionRepository;
-    @Mock private RecentPolicyViewService recentPolicyViewService;
+    @Mock private PolicyRecentViewService policyRecentViewService;
 
     private PolicyService policyService;
 
@@ -41,7 +41,7 @@ class PolicyServiceTest {
     void setUp() {
         policyService =
                 new PolicyService(
-                        policyRepository, policyRegionRepository, recentPolicyViewService);
+                        policyRepository, policyRegionRepository, policyRecentViewService);
     }
 
     @Test
@@ -68,7 +68,7 @@ class PolicyServiceTest {
         assertThatThrownBy(() -> policyService.getDetail(99L, 1L))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", PolicyErrorCode.POLICY_NOT_FOUND);
-        verify(recentPolicyViewService, never()).record(1L, null);
+        verify(policyRecentViewService, never()).record(1L, null);
     }
 
     @Test
@@ -80,7 +80,7 @@ class PolicyServiceTest {
 
         policyService.getDetail(1L, 7L);
 
-        verify(recentPolicyViewService).record(7L, policy);
+        verify(policyRecentViewService).record(7L, policy);
     }
 
     @Test
@@ -90,7 +90,7 @@ class PolicyServiceTest {
                 .thenReturn(Optional.of(policy));
         when(policyRegionRepository.findByPolicyIdIn(anyList())).thenReturn(List.of());
         doThrow(new DataAccessResourceFailureException("DB 연결 실패"))
-                .when(recentPolicyViewService)
+                .when(policyRecentViewService)
                 .record(7L, policy);
 
         PolicyDetailResponse response = policyService.getDetail(1L, 7L);
@@ -108,7 +108,7 @@ class PolicyServiceTest {
 
         policyService.getDetail(1L, null);
 
-        verify(recentPolicyViewService, never()).record(null, policy);
+        verify(policyRecentViewService, never()).record(null, policy);
     }
 
     private Policy newPolicy(Long id, String title) {

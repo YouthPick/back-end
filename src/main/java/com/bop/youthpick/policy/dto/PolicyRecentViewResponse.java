@@ -1,12 +1,12 @@
 package com.bop.youthpick.policy.dto;
 
 import com.bop.youthpick.policy.entity.Policy;
-import com.bop.youthpick.policy.entity.RecentPolicyView;
+import com.bop.youthpick.policy.entity.PolicyRecentView;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /** 최근 본 정책 목록의 카드 응답. */
-public record RecentPolicyResponse(
+public record PolicyRecentViewResponse(
         Long policyId,
         String title,
         String description,
@@ -18,9 +18,9 @@ public record RecentPolicyResponse(
         String applicationUrl,
         LocalDateTime viewedAt) {
 
-    public static RecentPolicyResponse from(RecentPolicyView view) {
+    public static PolicyRecentViewResponse from(PolicyRecentView view) {
         Policy policy = view.getPolicy();
-        return new RecentPolicyResponse(
+        return new PolicyRecentViewResponse(
                 policy.getId(),
                 policy.getTitle(),
                 policy.getDescription(),

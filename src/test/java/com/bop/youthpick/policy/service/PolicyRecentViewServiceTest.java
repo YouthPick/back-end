@@ -7,10 +7,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bop.youthpick.policy.dto.RecentPolicyResponse;
+import com.bop.youthpick.policy.dto.PolicyRecentViewResponse;
 import com.bop.youthpick.policy.entity.Policy;
-import com.bop.youthpick.policy.entity.RecentPolicyView;
-import com.bop.youthpick.policy.repository.RecentPolicyViewRepository;
+import com.bop.youthpick.policy.entity.PolicyRecentView;
+import com.bop.youthpick.policy.repository.PolicyRecentViewRepository;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.time.LocalDateTime;
@@ -30,59 +30,59 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class RecentPolicyViewServiceTest {
+class PolicyRecentViewServiceTest {
 
-    @Mock private RecentPolicyViewRepository recentPolicyViewRepository;
+    @Mock private PolicyRecentViewRepository policyRecentViewRepository;
     @Mock private UserRepository userRepository;
 
-    private RecentPolicyViewService recentPolicyViewService;
+    private PolicyRecentViewService policyRecentViewService;
 
     private final User user = User.createSocialUser("google", "pid", null, null);
     private final Policy policy = newPolicy(10L, "청년 월세 지원");
 
     @BeforeEach
     void setUp() {
-        recentPolicyViewService =
-                new RecentPolicyViewService(recentPolicyViewRepository, userRepository);
+        policyRecentViewService =
+                new PolicyRecentViewService(policyRecentViewRepository, userRepository);
     }
 
     @Test
     void 처음_본_정책이면_새_기록을_저장한다() {
-        when(recentPolicyViewRepository.findByUserIdAndPolicyId(1L, 10L))
+        when(policyRecentViewRepository.findByUserIdAndPolicyId(1L, 10L))
                 .thenReturn(Optional.empty());
         when(userRepository.getReferenceById(1L)).thenReturn(user);
 
-        recentPolicyViewService.record(1L, policy);
+        policyRecentViewService.record(1L, policy);
 
-        ArgumentCaptor<RecentPolicyView> captor = ArgumentCaptor.forClass(RecentPolicyView.class);
-        verify(recentPolicyViewRepository).save(captor.capture());
+        ArgumentCaptor<PolicyRecentView> captor = ArgumentCaptor.forClass(PolicyRecentView.class);
+        verify(policyRecentViewRepository).save(captor.capture());
         assertThat(captor.getValue().getPolicy()).isEqualTo(policy);
         assertThat(captor.getValue().getViewedAt()).isNotNull();
     }
 
     @Test
     void 이미_본_정책이면_새_기록_없이_viewedAt만_갱신한다() {
-        RecentPolicyView existing = RecentPolicyView.create(user, policy);
+        PolicyRecentView existing = PolicyRecentView.create(user, policy);
         LocalDateTime oldViewedAt = LocalDateTime.now().minusDays(3);
         ReflectionTestUtils.setField(existing, "viewedAt", oldViewedAt);
-        when(recentPolicyViewRepository.findByUserIdAndPolicyId(1L, 10L))
+        when(policyRecentViewRepository.findByUserIdAndPolicyId(1L, 10L))
                 .thenReturn(Optional.of(existing));
 
-        recentPolicyViewService.record(1L, policy);
+        policyRecentViewService.record(1L, policy);
 
-        verify(recentPolicyViewRepository, never()).save(any());
+        verify(policyRecentViewRepository, never()).save(any());
         assertThat(existing.getViewedAt()).isAfter(oldViewedAt);
     }
 
     @Test
     void 최근_본_목록을_카드_응답으로_변환한다() {
-        RecentPolicyView view = RecentPolicyView.create(user, policy);
-        Page<RecentPolicyView> page = new PageImpl<>(List.of(view));
-        when(recentPolicyViewRepository.findVisibleByUserId(eq(1L), any(Pageable.class)))
+        PolicyRecentView view = PolicyRecentView.create(user, policy);
+        Page<PolicyRecentView> page = new PageImpl<>(List.of(view));
+        when(policyRecentViewRepository.findVisibleByUserId(eq(1L), any(Pageable.class)))
                 .thenReturn(page);
 
-        Page<RecentPolicyResponse> result =
-                recentPolicyViewService.getRecentPolicies(1L, PageRequest.of(0, 20));
+        Page<PolicyRecentViewResponse> result =
+                policyRecentViewService.getRecentPolicies(1L, PageRequest.of(0, 20));
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).policyId()).isEqualTo(10L);

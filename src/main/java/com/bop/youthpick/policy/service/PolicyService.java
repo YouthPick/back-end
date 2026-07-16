@@ -24,7 +24,7 @@ public class PolicyService {
 
     private final PolicyRepository policyRepository;
     private final PolicyRegionRepository policyRegionRepository;
-    private final RecentPolicyViewService recentPolicyViewService;
+    private final PolicyRecentViewService policyRecentViewService;
 
     /**
      * 정책 상세 조회. 삭제(soft delete)·숨김 정책은 존재하지 않는 것으로 취급한다. 로그인 사용자({@code userId != null})의 조회는 최근 본
@@ -39,7 +39,7 @@ public class PolicyService {
 
         if (userId != null) {
             try {
-                recentPolicyViewService.record(userId, policy);
+                policyRecentViewService.record(userId, policy);
             } catch (RuntimeException e) {
                 log.warn(
                         "최근 본 정책 기록에 실패했습니다. 조회는 정상 진행합니다. userId={}, policyId={}",

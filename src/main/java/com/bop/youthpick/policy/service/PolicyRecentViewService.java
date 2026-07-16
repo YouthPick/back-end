@@ -1,9 +1,9 @@
 package com.bop.youthpick.policy.service;
 
-import com.bop.youthpick.policy.dto.RecentPolicyResponse;
+import com.bop.youthpick.policy.dto.PolicyRecentViewResponse;
 import com.bop.youthpick.policy.entity.Policy;
-import com.bop.youthpick.policy.entity.RecentPolicyView;
-import com.bop.youthpick.policy.repository.RecentPolicyViewRepository;
+import com.bop.youthpick.policy.entity.PolicyRecentView;
+import com.bop.youthpick.policy.repository.PolicyRecentViewRepository;
 import com.bop.youthpick.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,9 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class RecentPolicyViewService {
+public class PolicyRecentViewService {
 
-    private final RecentPolicyViewRepository recentPolicyViewRepository;
+    private final PolicyRecentViewRepository policyRecentViewRepository;
     private final UserRepository userRepository;
 
     /**
@@ -25,20 +25,20 @@ public class RecentPolicyViewService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(Long userId, Policy policy) {
-        recentPolicyViewRepository
+        policyRecentViewRepository
                 .findByUserIdAndPolicyId(userId, policy.getId())
                 .ifPresentOrElse(
-                        RecentPolicyView::touch,
+                        PolicyRecentView::touch,
                         () ->
-                                recentPolicyViewRepository.save(
-                                        RecentPolicyView.create(
+                                policyRecentViewRepository.save(
+                                        PolicyRecentView.create(
                                                 userRepository.getReferenceById(userId), policy)));
     }
 
     @Transactional(readOnly = true)
-    public Page<RecentPolicyResponse> getRecentPolicies(Long userId, Pageable pageable) {
-        return recentPolicyViewRepository
+    public Page<PolicyRecentViewResponse> getRecentPolicies(Long userId, Pageable pageable) {
+        return policyRecentViewRepository
                 .findVisibleByUserId(userId, pageable)
-                .map(RecentPolicyResponse::from);
+                .map(PolicyRecentViewResponse::from);
     }
 }

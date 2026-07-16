@@ -8,8 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bop.youthpick.auth.dto.AuthPrincipal;
-import com.bop.youthpick.policy.dto.RecentPolicyResponse;
-import com.bop.youthpick.policy.service.RecentPolicyViewService;
+import com.bop.youthpick.policy.dto.PolicyRecentViewResponse;
+import com.bop.youthpick.policy.service.PolicyRecentViewService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,13 +28,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(controllers = RecentPolicyViewController.class)
+@WebMvcTest(controllers = PolicyRecentViewController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class RecentPolicyViewControllerTest {
+class PolicyRecentViewControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @MockitoBean private RecentPolicyViewService recentPolicyViewService;
+    @MockitoBean private PolicyRecentViewService policyRecentViewService;
 
     @AfterEach
     void clearContext() {
@@ -43,8 +43,8 @@ class RecentPolicyViewControllerTest {
 
     @Test
     void 최근_본_정책_목록은_200과_페이지_데이터를_반환한다() throws Exception {
-        RecentPolicyResponse response =
-                new RecentPolicyResponse(
+        PolicyRecentViewResponse response =
+                new PolicyRecentViewResponse(
                         10L,
                         "청년 월세 지원",
                         "설명",
@@ -55,8 +55,8 @@ class RecentPolicyViewControllerTest {
                         LocalDate.of(2026, 12, 31),
                         "https://example.com",
                         LocalDateTime.of(2026, 7, 16, 12, 0));
-        Page<RecentPolicyResponse> page = new PageImpl<>(List.of(response));
-        when(recentPolicyViewService.getRecentPolicies(eq(1L), any(Pageable.class)))
+        Page<PolicyRecentViewResponse> page = new PageImpl<>(List.of(response));
+        when(policyRecentViewService.getRecentPolicies(eq(1L), any(Pageable.class)))
                 .thenReturn(page);
         authenticateAs(1L);
 

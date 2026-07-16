@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bop.youthpick.global.config.JpaAuditingConfig;
 import com.bop.youthpick.policy.entity.Policy;
+import com.bop.youthpick.policy.entity.PolicyRecentView;
 import com.bop.youthpick.policy.entity.PolicyVisibility;
-import com.bop.youthpick.policy.entity.RecentPolicyView;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.time.LocalDateTime;
@@ -21,9 +21,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
 @Import(JpaAuditingConfig.class)
-class RecentPolicyViewRepositoryTest {
+class PolicyRecentViewRepositoryTest {
 
-    @Autowired private RecentPolicyViewRepository recentPolicyViewRepository;
+    @Autowired private PolicyRecentViewRepository policyRecentViewRepository;
     @Autowired private PolicyRepository policyRepository;
     @Autowired private UserRepository userRepository;
 
@@ -46,8 +46,8 @@ class RecentPolicyViewRepositoryTest {
         saveView(hidden, LocalDateTime.now());
         saveView(deleted, LocalDateTime.now());
 
-        Page<RecentPolicyView> page =
-                recentPolicyViewRepository.findVisibleByUserId(user.getId(), PageRequest.of(0, 20));
+        Page<PolicyRecentView> page =
+                policyRecentViewRepository.findVisibleByUserId(user.getId(), PageRequest.of(0, 20));
 
         assertThat(page.getTotalElements()).isEqualTo(2);
         assertThat(page.getContent())
@@ -59,10 +59,10 @@ class RecentPolicyViewRepositoryTest {
     void 다른_사용자의_기록은_조회되지_않는다() {
         User other = userRepository.save(User.createSocialUser("google", "pid-2", null, null));
         Policy policy = savePolicy("P001", PolicyVisibility.VISIBLE, null);
-        recentPolicyViewRepository.save(RecentPolicyView.create(other, policy));
+        policyRecentViewRepository.save(PolicyRecentView.create(other, policy));
 
-        Page<RecentPolicyView> page =
-                recentPolicyViewRepository.findVisibleByUserId(user.getId(), PageRequest.of(0, 20));
+        Page<PolicyRecentView> page =
+                policyRecentViewRepository.findVisibleByUserId(user.getId(), PageRequest.of(0, 20));
 
         assertThat(page.getTotalElements()).isZero();
     }
@@ -78,8 +78,8 @@ class RecentPolicyViewRepositoryTest {
     }
 
     private void saveView(Policy policy, LocalDateTime viewedAt) {
-        RecentPolicyView view = RecentPolicyView.create(user, policy);
+        PolicyRecentView view = PolicyRecentView.create(user, policy);
         ReflectionTestUtils.setField(view, "viewedAt", viewedAt);
-        recentPolicyViewRepository.save(view);
+        policyRecentViewRepository.save(view);
     }
 }

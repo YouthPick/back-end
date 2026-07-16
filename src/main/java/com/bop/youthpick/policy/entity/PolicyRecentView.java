@@ -24,18 +24,18 @@ import lombok.NoArgsConstructor;
  */
 @Entity
 @Table(
-        name = "recent_policy_views",
+        name = "policy_recent_views",
         uniqueConstraints =
                 @UniqueConstraint(
-                        name = "uk_recent_policy_views_user_policy",
+                        name = "uk_policy_recent_views_user_policy",
                         columnNames = {"user_id", "policy_id"}),
         indexes =
                 @Index(
-                        name = "idx_recent_policy_views_user_viewed",
+                        name = "idx_policy_recent_views_user_viewed",
                         columnList = "user_id, viewed_at"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RecentPolicyView extends BaseEntity {
+public class PolicyRecentView extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,8 +53,8 @@ public class RecentPolicyView extends BaseEntity {
     @Column(name = "viewed_at", nullable = false)
     private LocalDateTime viewedAt;
 
-    public static RecentPolicyView create(User user, Policy policy) {
-        RecentPolicyView view = new RecentPolicyView();
+    public static PolicyRecentView create(User user, Policy policy) {
+        PolicyRecentView view = new PolicyRecentView();
         view.user = user;
         view.policy = policy;
         view.viewedAt = LocalDateTime.now();
