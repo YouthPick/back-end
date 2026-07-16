@@ -60,7 +60,7 @@ class PolicyRecentViewControllerTest {
                 .thenReturn(page);
         authenticateAs(1L);
 
-        mockMvc.perform(get("/api/v1/recent-policies"))
+        mockMvc.perform(get("/api/v1/policy-recent-views"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].policyId").value(10))
                 .andExpect(jsonPath("$.data[0].title").value("청년 월세 지원"))
@@ -69,7 +69,7 @@ class PolicyRecentViewControllerTest {
 
     @Test
     void 미인증_요청이면_401과_A001을_반환한다() throws Exception {
-        mockMvc.perform(get("/api/v1/recent-policies"))
+        mockMvc.perform(get("/api/v1/policy-recent-views"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("A001"));
     }

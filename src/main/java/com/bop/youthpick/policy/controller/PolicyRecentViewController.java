@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/recent-policies")
+@RequestMapping("/api/v1/policy-recent-views")
 @RequiredArgsConstructor
 public class PolicyRecentViewController {
 

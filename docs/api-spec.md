@@ -33,7 +33,7 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 | 정책 검색 | 검색어 제안 | `GET` | `/api/v1/policies/search-suggestions` | 비회원 | query: keyword 선택 |
 | 정책 검색 | 정책 상세 조회 | `GET` | `/api/v1/policies/{policyId}` | 비회원 | path: policyId |
 | 맞춤 추천 | 맞춤정책 조회 | `GET` | `/api/v1/recommended-policies` | 회원 | query: region 선택, category 선택, keyword 선택 |
-| 최근 본 정책 | 최근 본 정책 목록 | `GET` | `/api/v1/recent-policies` | 회원 | query: page 기본 0, size 기본 20 |
+| 최근 본 정책 | 최근 본 정책 목록 | `GET` | `/api/v1/policy-recent-views` | 회원 | query: page 기본 0, size 기본 20 |
 | 관심 정책 | 관심정책 목록 | `GET` | `/api/v1/policy-applications` | 회원 | 없음 |
 | 관심 정책 | 관심정책 등록 | `PUT` | `/api/v1/policy-applications/{policyId}` | 회원 | path: policyId |
 | 관심 정책 | 관심정책 해제 | `DELETE` | `/api/v1/policy-applications/{policyId}` | 회원 | path: policyId |
@@ -208,7 +208,7 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 항목 | 내용 |
 |---|---|
 | 메서드 | `GET` |
-| 경로 | `/api/v1/recent-policies` |
+| 경로 | `/api/v1/policy-recent-views` |
 | 권한 | 회원 |
 | 파라미터 | query: page 기본 0, size 기본 20 |
 

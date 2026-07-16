@@ -79,7 +79,7 @@ public class SecurityConfig {
                                         "/api/v1/auth/logout",
                                         "/api/v1/users",
                                         "/api/v1/me/**",
-                                        "/api/v1/recent-policies",
+                                        "/api/v1/policy-recent-views",
                                         "/api/v1/policy-chat/profile-consent")
                                 .authenticated()
                                 // 명세에 없는 나머지 경로(구현 중인 다른 도메인 등)는 개발 편의상 열어 둔다.
