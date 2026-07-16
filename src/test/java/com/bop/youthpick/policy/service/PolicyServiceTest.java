@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyDetailResponse;
+import com.bop.youthpick.policy.dto.RegionResponse;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyRegion;
 import com.bop.youthpick.policy.entity.PolicyVisibility;
@@ -45,18 +46,18 @@ class PolicyServiceTest {
     }
 
     @Test
-    void 노출_중인_정책이면_상세와_지역코드를_반환한다() {
+    void 노출_중인_정책이면_상세와_지역을_이름까지_반환한다() {
         Policy policy = newPolicy(1L, "청년 월세 지원");
         when(policyRepository.findByIdAndVisibilityAndDeletedAtIsNull(1L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.of(policy));
         when(policyRegionRepository.findByPolicyIdIn(List.of(1L)))
-                .thenReturn(List.of(newPolicyRegion(policy, "11110")));
+                .thenReturn(List.of(newPolicyRegion(policy, "11680", "서울특별시", "강남구")));
 
         PolicyDetailResponse response = policyService.getDetail(1L, null);
 
         assertThat(response.id()).isEqualTo(1L);
         assertThat(response.title()).isEqualTo("청년 월세 지원");
-        assertThat(response.regionCodes()).containsExactly("11110");
+        assertThat(response.regions()).containsExactly(new RegionResponse("11680", "서울특별시", "강남구"));
     }
 
     @Test
@@ -119,9 +120,12 @@ class PolicyServiceTest {
         return policy;
     }
 
-    private PolicyRegion newPolicyRegion(Policy policy, String regionCode) {
+    private PolicyRegion newPolicyRegion(
+            Policy policy, String regionCode, String sidoName, String name) {
         Region region = BeanUtils.instantiateClass(Region.class);
         ReflectionTestUtils.setField(region, "code", regionCode);
+        ReflectionTestUtils.setField(region, "sidoName", sidoName);
+        ReflectionTestUtils.setField(region, "name", name);
         return PolicyRegion.create(policy, region);
     }
 }

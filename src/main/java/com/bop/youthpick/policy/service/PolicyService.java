@@ -2,6 +2,7 @@ package com.bop.youthpick.policy.service;
 
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyDetailResponse;
+import com.bop.youthpick.policy.dto.RegionResponse;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyVisibility;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
@@ -49,10 +50,10 @@ public class PolicyService {
             }
         }
 
-        List<String> regionCodes =
+        List<RegionResponse> regions =
                 policyRegionRepository.findByPolicyIdIn(List.of(policyId)).stream()
-                        .map(policyRegion -> policyRegion.getRegion().getCode())
+                        .map(policyRegion -> RegionResponse.from(policyRegion.getRegion()))
                         .toList();
-        return PolicyDetailResponse.from(policy, regionCodes);
+        return PolicyDetailResponse.from(policy, regions);
     }
 }

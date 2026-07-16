@@ -37,9 +37,9 @@ public record PolicyDetailResponse(
         String submissionDocuments,
         String screeningMethod,
         int viewCount,
-        List<String> regionCodes) {
+        List<RegionResponse> regions) {
 
-    public static PolicyDetailResponse from(Policy policy, List<String> regionCodes) {
+    public static PolicyDetailResponse from(Policy policy, List<RegionResponse> regions) {
         return new PolicyDetailResponse(
                 policy.getId(),
                 policy.getPolicyNo(),
@@ -72,6 +72,6 @@ public record PolicyDetailResponse(
                 policy.getSubmissionDocuments(),
                 policy.getScreeningMethod(),
                 policy.getViewCount(),
-                regionCodes);
+                regions);
     }
 }
