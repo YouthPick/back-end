@@ -73,12 +73,13 @@ public class SecurityConfig {
                                         "/api/v1/health")
                                 .permitAll()
                                 // 회원 전용 — 로그인 상태 조회/로그아웃, 회원 탈퇴(컨트롤러 미구현, 경로만 선점),
-                                // 마이페이지(관심정책/추천/읽음/프로필), 챗봇 프로필 동의
+                                // 마이페이지(관심정책/추천/읽음/프로필), 최근 본 정책, 챗봇 프로필 동의
                                 .requestMatchers(
                                         "/api/v1/auth/me",
                                         "/api/v1/auth/logout",
                                         "/api/v1/users",
                                         "/api/v1/me/**",
+                                        "/api/v1/recent-policies",
                                         "/api/v1/policy-chat/profile-consent")
                                 .authenticated()
                                 // 명세에 없는 나머지 경로(구현 중인 다른 도메인 등)는 개발 편의상 열어 둔다.

@@ -33,6 +33,7 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 | 정책 검색 | 검색어 제안 | `GET` | `/api/v1/policies/search-suggestions` | 비회원 | query: keyword 선택 |
 | 정책 검색 | 정책 상세 조회 | `GET` | `/api/v1/policies/{policyId}` | 비회원 | path: policyId |
 | 맞춤 추천 | 맞춤정책 조회 | `GET` | `/api/v1/recommended-policies` | 회원 | query: region 선택, category 선택, keyword 선택 |
+| 최근 본 정책 | 최근 본 정책 목록 | `GET` | `/api/v1/recent-policies` | 회원 | query: page 기본 0, size 기본 20 |
 | 관심 정책 | 관심정책 목록 | `GET` | `/api/v1/policy-applications` | 회원 | 없음 |
 | 관심 정책 | 관심정책 등록 | `PUT` | `/api/v1/policy-applications/{policyId}` | 회원 | path: policyId |
 | 관심 정책 | 관심정책 해제 | `DELETE` | `/api/v1/policy-applications/{policyId}` | 회원 | path: policyId |
@@ -176,7 +177,7 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 
 ### 정책 상세 조회
 
-단일 정책의 상세 정보를 조회한다.
+단일 정책의 상세 정보를 조회한다. 삭제·숨김 처리된 정책은 404(`P001`)로 응답한다. 로그인 사용자(access token 포함 요청)가 조회하면 해당 정책이 최근 본 정책으로 기록된다.
 
 | 항목 | 내용 |
 |---|---|
@@ -197,6 +198,19 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 경로 | `/api/v1/recommended-policies` |
 | 권한 | 회원 |
 | 파라미터 | query: region 선택, category 선택, keyword 선택 |
+
+## 최근 본 정책
+
+### 최근 본 정책 목록
+
+로그인 사용자가 최근에 상세 조회한 정책 목록을 마지막 조회 시각 내림차순으로 조회한다. 같은 정책을 다시 보면 기록이 늘어나지 않고 조회 시각만 갱신되며, 사용자당 최대 50건까지 보관된다. 삭제·숨김 처리된 정책은 목록에서 제외된다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `GET` |
+| 경로 | `/api/v1/recent-policies` |
+| 권한 | 회원 |
+| 파라미터 | query: page 기본 0, size 기본 20 |
 
 ## 관심 정책
 

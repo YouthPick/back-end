@@ -61,8 +61,34 @@ class CurrentUserArgumentResolverTest {
                 .isInstanceOf(AuthException.class);
     }
 
+    @Test
+    void required가_false면_인증되지_않아도_null을_반환한다() throws Exception {
+        Object resolved = resolver.resolveArgument(optionalUserIdParameter(), null, null, null);
+
+        assertThat(resolved).isNull();
+    }
+
+    @Test
+    void required가_false여도_인증된_요청이면_userId를_반환한다() throws Exception {
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        new AuthPrincipal(1L, "USER"),
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        Object resolved = resolver.resolveArgument(optionalUserIdParameter(), null, null, null);
+
+        assertThat(resolved).isEqualTo(1L);
+    }
+
     private MethodParameter annotatedUserIdParameter() throws Exception {
         Method method = TestController.class.getMethod("withCurrentUser", Long.class);
+        return new MethodParameter(method, 0);
+    }
+
+    private MethodParameter optionalUserIdParameter() throws Exception {
+        Method method = TestController.class.getMethod("withOptionalCurrentUser", Long.class);
         return new MethodParameter(method, 0);
     }
 
@@ -73,6 +99,8 @@ class CurrentUserArgumentResolverTest {
 
     private static class TestController {
         public void withCurrentUser(@CurrentUser Long userId) {}
+
+        public void withOptionalCurrentUser(@CurrentUser(required = false) Long userId) {}
 
         public void withoutCurrentUser(Long userId) {}
     }
