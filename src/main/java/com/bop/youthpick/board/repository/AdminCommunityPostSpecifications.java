@@ -1,7 +1,7 @@
 package com.bop.youthpick.board.repository;
 
-import com.bop.youthpick.board.entity.Post;
-import com.bop.youthpick.board.entity.PostCategory;
+import com.bop.youthpick.post.entity.Post;
+import com.bop.youthpick.post.entity.PostCategory;
 import jakarta.persistence.criteria.Predicate;
 import java.time.LocalDate;
 import java.util.ArrayList;

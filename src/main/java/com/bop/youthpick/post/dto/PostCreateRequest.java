@@ -14,4 +14,4 @@ public record PostCreateRequest(
         @NotBlank(message = "제목은 필수입니다.") @Size(max = 100, message = "제목은 100자 이하여야 합니다.")
                 String title,
         @NotBlank(message = "내용은 필수입니다.") String content,
-        @Positive(message = "정책 ID는 양수여야 합니다.") Long policyId) {} //필수값이 아님. 잡담은 유무 다 가능
+        @Positive(message = "정책 ID는 양수여야 합니다.") Long policyId) {} // 필수값이 아님. 잡담은 유무 다 가능

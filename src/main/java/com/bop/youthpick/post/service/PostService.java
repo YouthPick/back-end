@@ -33,15 +33,15 @@ public class PostService {
 
     @Transactional
     public PostDetailResponse create(Long userId, PostCreateRequest request) {
-        User user = findUser(userId); //userId는 그냥 맘대로 정한 변수명? 아니면 컬럼명을 카멜케이스로 쓴거? findUser는 쿼리메서드?
+        User user = findUser(userId); // userId는 그냥 맘대로 정한 변수명? 아니면 컬럼명을 카멜케이스로 쓴거? findUser는 쿼리메서드?
         PostCategory category = PostCategory.valueOf(request.category());
-        //valueOf()는 모든 enum이 제공받는 정적 메서드. 문자열과 이름이 일치하는 enum 값을 찾아줌
+        // valueOf()는 모든 enum이 제공받는 정적 메서드. 문자열과 이름이 일치하는 enum 값을 찾아줌
 
         Policy policy = resolvePolicy(category, request.policyId());
         Post post = Post.create(user, policy, category, request.title(), request.content());
-        //request record로 선언됐으면 거기 안에 있는 변수들을 메서드로 쓰면 자동으로 똑같이 반환해줌
+        // request record로 선언됐으면 거기 안에 있는 변수들을 메서드로 쓰면 자동으로 똑같이 반환해줌
         return PostDetailResponse.from(postRepository.save(post));
-        //from도 누가준 선물인지 모르겠어.. 암튼 위에서 받은 Post객체를 레포지토리에 저장해서 디테일리스폰스 객체로 보내준다는뜻같음
+        // from도 누가준 선물인지 모르겠어.. 암튼 위에서 받은 Post객체를 레포지토리에 저장해서 디테일리스폰스 객체로 보내준다는뜻같음
     }
 
     @Transactional(readOnly = true)
@@ -62,7 +62,7 @@ public class PostService {
         Policy policy = resolvePolicy(category, request.policyId());
         post.update(policy, category, request.title(), request.content());
         return PostDetailResponse.from(post);
-    }//PostDetailRequest가 record라면 Java가 이 메서드들(category() 등)을 자동으로 만듦
+    } // PostDetailRequest가 record라면 Java가 이 메서드들(category() 등)을 자동으로 만듦
 
     @Transactional
     public void delete(Long userId, Long postId) {
@@ -87,8 +87,8 @@ public class PostService {
         if (category == PostCategory.FREE) {
             if (policyId != null) {
                 return policyRepository
-                    .findById(policyId)
-                    .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
+                        .findById(policyId)
+                        .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
             }
             return null;
         }

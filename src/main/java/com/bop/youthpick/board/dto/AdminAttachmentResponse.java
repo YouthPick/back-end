@@ -1,6 +1,6 @@
 package com.bop.youthpick.board.dto;
 
-import com.bop.youthpick.board.entity.Attachment;
+import com.bop.youthpick.post.entity.Attachment;
 import java.time.LocalDateTime;
 
 public record AdminAttachmentResponse(

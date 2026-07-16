@@ -27,18 +27,16 @@ public class PostController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<PostDetailResponse>> create(
-            @CurrentUser Long userId,
-            @Valid @RequestBody PostCreateRequest request
-    ) {
+            @CurrentUser Long userId, @Valid @RequestBody PostCreateRequest request) {
         PostDetailResponse response = postService.create(userId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response)); //성공했을때 http status 201
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(response)); // 성공했을때 http status 201
     }
 
     @GetMapping
-    public ApiResponse<List<PostSummaryResponse>> findAll( //리스폰스엔티티로 감싸야함 수정필요
+    public ApiResponse<List<PostSummaryResponse>> findAll( // 리스폰스엔티티로 감싸야함 수정필요
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
                     Pageable pageable) {
-
 
         Page<PostSummaryResponse> page = postService.findAll(pageable);
         return ApiResponse.ok(page.getContent(), page);
@@ -63,4 +61,3 @@ public class PostController {
         return ApiResponse.ok(null);
     }
 }
-

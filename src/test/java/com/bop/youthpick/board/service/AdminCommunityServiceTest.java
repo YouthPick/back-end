@@ -8,12 +8,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bop.youthpick.board.entity.Comment;
-import com.bop.youthpick.board.entity.Post;
 import com.bop.youthpick.board.exception.BoardErrorCode;
 import com.bop.youthpick.board.exception.BoardException;
 import com.bop.youthpick.board.repository.AttachmentRepository;
 import com.bop.youthpick.board.repository.CommentRepository;
-import com.bop.youthpick.board.repository.PostRepository;
+import com.bop.youthpick.post.entity.Post;
+import com.bop.youthpick.post.repository.PostRepository;
 import com.bop.youthpick.user.entity.User;
 import java.util.List;
 import java.util.Optional;

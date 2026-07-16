@@ -12,10 +12,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.bop.youthpick.board.dto.AdminAttachmentResponse;
 import com.bop.youthpick.board.dto.AdminCommunityCommentResponse;
 import com.bop.youthpick.board.dto.AdminCommunityPostResponse;
-import com.bop.youthpick.board.entity.PostCategory;
 import com.bop.youthpick.board.exception.BoardErrorCode;
 import com.bop.youthpick.board.exception.BoardException;
 import com.bop.youthpick.board.service.AdminCommunityService;
+import com.bop.youthpick.post.entity.PostCategory;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;

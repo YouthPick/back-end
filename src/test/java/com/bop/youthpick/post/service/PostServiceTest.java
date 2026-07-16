@@ -49,7 +49,7 @@ class PostServiceTest {
     void 자유글을_생성한다() {
         User user = user(1L);
         PostCreateRequest request = new PostCreateRequest("FREE", "제목", "내용", null);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
         when(postRepository.save(any(Post.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -66,7 +66,7 @@ class PostServiceTest {
         User user = user(1L);
         Policy policy = policy(10L, "청년 정책");
         PostCreateRequest request = new PostCreateRequest("REVIEW", "후기", "내용", 10L);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
         when(policyRepository.findById(10L)).thenReturn(Optional.of(policy));
         when(postRepository.save(any(Post.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
