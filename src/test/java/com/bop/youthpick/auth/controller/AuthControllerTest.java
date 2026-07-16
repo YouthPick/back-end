@@ -89,10 +89,9 @@ class AuthControllerTest {
     }
 
     @Test
-    void refresh_쿠키가_있으면_재발급하고_새_refresh_token을_쿠키로_내려간다() throws Exception {
+    void refresh_쿠키가_있으면_access_token만_재발급하고_refresh_쿠키는_다시_내려가지_않는다() throws Exception {
         when(authService.refresh("old-refresh-token"))
-                .thenReturn(TokenResponse.of("new-access", "new-refresh", 1800));
-        stubIssuedCookie();
+                .thenReturn(TokenResponse.of("new-access", "old-refresh-token", 1800));
 
         mockMvc.perform(
                         post("/api/v1/auth/token/refresh")
@@ -103,7 +102,9 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken").value("new-access"))
                 .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
-                .andExpect(cookie().value(RefreshTokenCookieSupport.COOKIE_NAME, "new-refresh"));
+                .andExpect(cookie().doesNotExist(RefreshTokenCookieSupport.COOKIE_NAME));
+
+        verify(refreshTokenCookieSupport, never()).issue(anyString());
     }
 
     @Test

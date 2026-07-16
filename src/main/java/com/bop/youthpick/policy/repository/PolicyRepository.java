@@ -2,6 +2,7 @@ package com.bop.youthpick.policy.repository;
 
 import com.bop.youthpick.policy.dto.PolicySyncSnapshot;
 import com.bop.youthpick.policy.entity.Policy;
+import com.bop.youthpick.policy.entity.PolicyVisibility;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,4 +19,6 @@ public interface PolicyRepository
     List<PolicySyncSnapshot> findSyncSnapshots();
 
     List<Policy> findByPolicyNoIn(Collection<String> policyNos);
+
+    long countByVisibilityAndDeletedAtIsNull(PolicyVisibility visibility);
 }

@@ -188,15 +188,17 @@ public ApiResponse<AuthUserResponse> me(@CurrentUser Long userId) { ... }
 Claims claims = jwtTokenProvider.validateRefreshToken(refreshToken);   // ① JWT 자체 검증
 Long userId = jwtTokenProvider.getUserId(claims);
 ...
-boolean rotated = refreshTokenStore.rotate(userId, refreshToken, newRefreshToken, ttl); // ② Redis 대조 + 교체
-if (!rotated) throw new AuthException(AuthErrorCode.INVALID_REFRESH_TOKEN);
+if (!refreshTokenStore.matches(userId, refreshToken)) {                // ② Redis 대조
+    throw new AuthException(AuthErrorCode.INVALID_REFRESH_TOKEN);
+}
+String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());
 ```
 
-JWT는 서명이 유효하고 만료 전이면 그 자체로는 "위조되지 않았다"만 증명할 뿐, "아직 살아있는(로그아웃되지 않은, 이미 한 번 쓰이지 않은) 토큰인가"는 증명하지 못한다. 그래서 [`RefreshTokenStore.rotate(...)`](../src/main/java/com/bop/youthpick/auth/service/RefreshTokenStore.java)가 Redis에 저장된 해시와 제출된 토큰의 해시를 **Lua 스크립트로 원자적으로 대조 후 교체**한다.
+JWT는 서명이 유효하고 만료 전이면 그 자체로는 "위조되지 않았다"만 증명할 뿐, "아직 살아있는(로그아웃되지 않은) 토큰인가"는 증명하지 못한다. 그래서 [`RefreshTokenStore.matches(...)`](../src/main/java/com/bop/youthpick/auth/service/RefreshTokenStore.java)가 Redis에 저장된 해시와 제출된 토큰의 해시를 대조한다.
 
-- 일치하면 새 refresh token 해시로 교체(재사용 방지를 위한 rotate) → 성공.
-- 불일치(이미 로그아웃됨/이미 재발급에 쓰여서 폐기됨)면 거부.
-- "대조"와 "교체"를 하나의 Lua 스크립트로 묶은 이유는 동시에 같은 refresh token으로 두 번 재발급 요청이 와도 **하나만 성공**하게 만들기 위해서다(따로 하면 둘 다 대조를 통과한 뒤 각자 교체해버리는 race condition이 생긴다).
+- 일치하면 access token만 새로 발급 → 성공.
+- 불일치(이미 로그아웃됨)면 거부.
+- refresh token 자체는 재발급(rotate)하지 않는다. 최초 로그인 시점에 저장된 값과 TTL을 그대로 유지하고, 응답도 access token만 body로 내려주며 `Set-Cookie`는 다시 내려주지 않는다(쿠키 값이 바뀌지 않았으므로).
 
 `AuthController.refresh()`는 더 이상 요청 body로 refreshToken을 받지 않고 `@CookieValue`로 `refresh_token` 쿠키에서 읽는다. 쿠키만으로 동작하면 preflight 없는 단순 요청(cross-site `<form>` 제출 등)도 쿠키를 자동으로 실어 도달할 수 있어서, `Origin` 헤더가 있는데 `SecurityConfig.ALLOWED_ORIGINS`에 없으면 서비스 호출 전에 `AuthErrorCode.FORBIDDEN`(403 `A008`)으로 거부한다(헤더 자체가 없으면 통과 — 브라우저가 아닌 클라이언트를 막지 않기 위해서다).
 
@@ -228,7 +230,7 @@ flowchart TB
 | 보안 필터 체인/인가 규칙 정의 | [`SecurityConfig`](../src/main/java/com/bop/youthpick/global/config/SecurityConfig.java) |
 | JWT Bearer 헤더 해석 필터 | [`JwtAuthenticationFilter`](../src/main/java/com/bop/youthpick/auth/service/JwtAuthenticationFilter.java) |
 | JWT 발급/검증 | [`JwtTokenProvider`](../src/main/java/com/bop/youthpick/auth/service/JwtTokenProvider.java) |
-| Redis 기반 refresh token 저장/원자적 rotate | [`RefreshTokenStore`](../src/main/java/com/bop/youthpick/auth/service/RefreshTokenStore.java) |
+| Redis 기반 refresh token 저장/대조(rotate 없음) | [`RefreshTokenStore`](../src/main/java/com/bop/youthpick/auth/service/RefreshTokenStore.java) |
 | refresh token HttpOnly 쿠키 발급/삭제 | [`RefreshTokenCookieSupport`](../src/main/java/com/bop/youthpick/auth/service/RefreshTokenCookieSupport.java) / [`RefreshCookieProperties`](../src/main/java/com/bop/youthpick/auth/service/RefreshCookieProperties.java) |
 | 인증 principal DTO | [`AuthPrincipal`](../src/main/java/com/bop/youthpick/auth/dto/AuthPrincipal.java) |
 | 인증 실패(401) 처리 | [`RestAuthenticationEntryPoint`](../src/main/java/com/bop/youthpick/global/config/RestAuthenticationEntryPoint.java) |
