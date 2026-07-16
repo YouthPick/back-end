@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.bop.youthpick.auth.dto.AuthPrincipal;
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyDetailResponse;
+import com.bop.youthpick.policy.dto.RegionResponse;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.service.PolicyService;
 import java.time.LocalDate;
@@ -67,7 +68,7 @@ class PolicyControllerTest {
                     null,
                     null,
                     0,
-                    List.of("11110"));
+                    List.of(new RegionResponse("11680", "서울특별시", "강남구")));
 
     @AfterEach
     void clearContext() {
@@ -82,7 +83,9 @@ class PolicyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.title").value("청년 월세 지원"))
-                .andExpect(jsonPath("$.data.regionCodes[0]").value("11110"));
+                .andExpect(jsonPath("$.data.regions[0].regionCode").value("11680"))
+                .andExpect(jsonPath("$.data.regions[0].provinceName").value("서울특별시"))
+                .andExpect(jsonPath("$.data.regions[0].districtName").value("강남구"));
     }
 
     @Test
