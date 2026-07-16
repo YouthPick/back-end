@@ -1,6 +1,6 @@
 package com.bop.youthpick.board.repository;
 
-import com.bop.youthpick.board.entity.Attachment;
+import com.bop.youthpick.post.entity.Attachment;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
