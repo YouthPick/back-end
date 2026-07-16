@@ -9,6 +9,8 @@ import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,15 +20,17 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PolicyService {
 
+    private static final Logger log = LoggerFactory.getLogger(PolicyService.class);
+
     private final PolicyRepository policyRepository;
     private final PolicyRegionRepository policyRegionRepository;
     private final RecentPolicyViewService recentPolicyViewService;
 
     /**
      * 정책 상세 조회. 삭제(soft delete)·숨김 정책은 존재하지 않는 것으로 취급한다. 로그인 사용자({@code userId != null})의 조회는 최근 본
-     * 정책으로 기록한다.
+     * 정책으로 기록하되, 기록은 부가 동작이라 실패해도 조회는 정상 응답한다.
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public PolicyDetailResponse getDetail(Long policyId, @Nullable Long userId) {
         Policy policy =
                 policyRepository
@@ -34,7 +38,15 @@ public class PolicyService {
                         .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
 
         if (userId != null) {
-            recentPolicyViewService.record(userId, policy);
+            try {
+                recentPolicyViewService.record(userId, policy);
+            } catch (RuntimeException e) {
+                log.warn(
+                        "최근 본 정책 기록에 실패했습니다. 조회는 정상 진행합니다. userId={}, policyId={}",
+                        userId,
+                        policyId,
+                        e);
+            }
         }
 
         List<String> regionCodes =

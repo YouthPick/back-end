@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 최근 본 정책 — 로그인 사용자가 정책 상세를 조회한 기록. 같은 정책을 다시 보면 행을 늘리지 않고 {@link #touch()}로 viewed_at만 갱신한다
- * (UNIQUE(user, policy)). 사용자당 보관 상한을 넘는 오래된 기록은 서비스가 삭제한다.
+ * (UNIQUE(user, policy)).
  */
 @Entity
 @Table(

@@ -51,7 +51,6 @@ class RecentPolicyViewServiceTest {
         when(recentPolicyViewRepository.findByUserIdAndPolicyId(1L, 10L))
                 .thenReturn(Optional.empty());
         when(userRepository.getReferenceById(1L)).thenReturn(user);
-        when(recentPolicyViewRepository.countByUserId(1L)).thenReturn(1L);
 
         recentPolicyViewService.record(1L, policy);
 
@@ -68,44 +67,11 @@ class RecentPolicyViewServiceTest {
         ReflectionTestUtils.setField(existing, "viewedAt", oldViewedAt);
         when(recentPolicyViewRepository.findByUserIdAndPolicyId(1L, 10L))
                 .thenReturn(Optional.of(existing));
-        when(recentPolicyViewRepository.countByUserId(1L)).thenReturn(1L);
 
         recentPolicyViewService.record(1L, policy);
 
         verify(recentPolicyViewRepository, never()).save(any());
         assertThat(existing.getViewedAt()).isAfter(oldViewedAt);
-    }
-
-    @Test
-    void 보관_상한을_넘으면_오래된_기록부터_삭제한다() {
-        when(recentPolicyViewRepository.findByUserIdAndPolicyId(1L, 10L))
-                .thenReturn(Optional.empty());
-        when(userRepository.getReferenceById(1L)).thenReturn(user);
-        long overCount = RecentPolicyViewService.MAX_RECENT_VIEWS + 2L;
-        when(recentPolicyViewRepository.countByUserId(1L)).thenReturn(overCount);
-        List<RecentPolicyView> oldest =
-                List.of(
-                        RecentPolicyView.create(user, policy),
-                        RecentPolicyView.create(user, policy));
-        when(recentPolicyViewRepository.findByUserIdOrderByViewedAtAsc(1L, PageRequest.of(0, 2)))
-                .thenReturn(oldest);
-
-        recentPolicyViewService.record(1L, policy);
-
-        verify(recentPolicyViewRepository).deleteAll(oldest);
-    }
-
-    @Test
-    void 보관_상한_이내면_삭제하지_않는다() {
-        when(recentPolicyViewRepository.findByUserIdAndPolicyId(1L, 10L))
-                .thenReturn(Optional.empty());
-        when(userRepository.getReferenceById(1L)).thenReturn(user);
-        when(recentPolicyViewRepository.countByUserId(1L))
-                .thenReturn((long) RecentPolicyViewService.MAX_RECENT_VIEWS);
-
-        recentPolicyViewService.record(1L, policy);
-
-        verify(recentPolicyViewRepository, never()).deleteAll(any());
     }
 
     @Test
