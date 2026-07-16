@@ -16,14 +16,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/posts")
@@ -34,15 +27,19 @@ public class PostController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<PostDetailResponse>> create(
-            @CurrentUser Long userId, @Valid @RequestBody PostCreateRequest request) {
+            @CurrentUser Long userId,
+            @Valid @RequestBody PostCreateRequest request
+    ) {
         PostDetailResponse response = postService.create(userId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response)); //성공했을때 http status 201
     }
 
     @GetMapping
-    public ApiResponse<List<PostSummaryResponse>> findAll(
+    public ApiResponse<List<PostSummaryResponse>> findAll( //리스폰스엔티티로 감싸야함 수정필요
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
                     Pageable pageable) {
+
+
         Page<PostSummaryResponse> page = postService.findAll(pageable);
         return ApiResponse.ok(page.getContent(), page);
     }
@@ -52,7 +49,7 @@ public class PostController {
         return ApiResponse.ok(postService.findById(postId));
     }
 
-    @PutMapping("/{postId}")
+    @PatchMapping("/{postId}")
     public ApiResponse<PostDetailResponse> update(
             @CurrentUser Long userId,
             @PathVariable Long postId,
@@ -66,3 +63,4 @@ public class PostController {
         return ApiResponse.ok(null);
     }
 }
+

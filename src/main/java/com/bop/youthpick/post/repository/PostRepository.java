@@ -9,8 +9,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    @EntityGraph(attributePaths = {"user", "policy"})
-    Optional<Post> findByIdAndDeletedAtIsNull(Long id);
+    @EntityGraph(attributePaths = {"user", "policy"}) //jpql을 써서 구현하는 방법도 있음
+    Optional<Post> findByIdAndDeletedAtIsNull(Long id); //쿼리메서드
 
     @EntityGraph(attributePaths = {"user", "policy"})
     Page<Post> findAllByDeletedAtIsNull(Pageable pageable);
