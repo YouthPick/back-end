@@ -32,6 +32,8 @@ youthpick:
       # SameSite=Lax로도 쿠키가 정상 전송된다(운영은 application.yml의 SameSite=None+Secure 기본값을 쓴다).
       secure: false
       same-site: Lax
+  sync:
+    startup-on-empty: true   # policies 비어 있으면 앱 시작 시 초기 수집 1회 (기본 off)
   oauth:
     # provider 콘솔에 등록하는 redirect_uri와 동일해야 하는 프론트엔드 콜백 라우트
     frontend-callback-uri: ${OAUTH_FRONTEND_CALLBACK_URI:http://localhost:3000/oauth/callback}

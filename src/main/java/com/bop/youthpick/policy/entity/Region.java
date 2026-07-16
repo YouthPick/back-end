@@ -24,4 +24,12 @@ public class Region {
 
     @Column(length = 50, nullable = false)
     private String name;
+
+    public static Region create(String code, String sidoName, String name) {
+        Region region = new Region();
+        region.code = code;
+        region.sidoName = sidoName;
+        region.name = name;
+        return region;
+    }
 }

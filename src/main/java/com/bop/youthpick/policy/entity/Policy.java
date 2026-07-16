@@ -235,9 +235,186 @@ public class Policy extends BaseEntity {
     @Column(length = 20, nullable = false)
     private PolicyVisibility visibility = PolicyVisibility.VISIBLE;
 
+    /** 수집에서 안 보인 연속 횟수 — 3회 도달 시 HIDDEN, 재등장 시 0 리셋 (V2, 기획 §6) */
+    @Column(name = "missing_count", nullable = false)
+    private int missingCount;
+
+    private static final int MISSING_THRESHOLD = 3;
+
+    /**
+     * id 없는 새 비영속 복사본. 청크 트랜잭션이 롤백돼도 IDENTITY가 이미 부여한 id는 엔티티 객체에 남으므로, 건별 재시도는 원본 재사용 대신 이 복사본으로
+     * INSERT해야 한다.
+     */
+    public static Policy copyOf(Policy source) {
+        Policy policy = new Policy();
+        policy.updateFrom(source);
+        return policy;
+    }
+
+    /** 이번 수집에서 안 보였음 — 연속 3회 도달 시 숨김 (즉시 숨김 금지, 기획 §6). */
+    public void markMissing() {
+        missingCount++;
+        if (missingCount >= MISSING_THRESHOLD) {
+            visibility = PolicyVisibility.HIDDEN;
+        }
+    }
+
+    /**
+     * 수집된 최신 내용으로 전 필드 갱신 + 누락 상태 리셋(재등장 포함). 필드 나열 순서 = 선언 순서 — {@link #create} 규약과 동일하게
+     * PolicyMapperTest/PolicyTest가 누락을 잡는다.
+     */
+    public void updateFrom(Policy source) {
+        this.policyNo = source.policyNo;
+        this.title = source.title;
+        this.description = source.description;
+        this.supportContent = source.supportContent;
+        this.keywords = source.keywords;
+        this.category = source.category;
+        this.middleCategory = source.middleCategory;
+        this.organizationName = source.organizationName;
+        this.minAge = source.minAge;
+        this.maxAge = source.maxAge;
+        this.jobCodes = source.jobCodes;
+        this.schoolCodes = source.schoolCodes;
+        this.incomeConditionCode = source.incomeConditionCode;
+        this.incomeMaxAmount = source.incomeMaxAmount;
+        this.incomeEtcContent = source.incomeEtcContent;
+        this.maritalStatusCode = source.maritalStatusCode;
+        this.majorCodes = source.majorCodes;
+        this.specializationCodes = source.specializationCodes;
+        this.additionalQualification = source.additionalQualification;
+        this.participationRestriction = source.participationRestriction;
+        this.applicationPeriodType = source.applicationPeriodType;
+        this.applicationPeriodRaw = source.applicationPeriodRaw;
+        this.applicationStartDate = source.applicationStartDate;
+        this.applicationEndDate = source.applicationEndDate;
+        this.businessPeriodBegin = source.businessPeriodBegin;
+        this.businessPeriodEnd = source.businessPeriodEnd;
+        this.businessPeriodEtc = source.businessPeriodEtc;
+        this.supportScaleCount = source.supportScaleCount;
+        this.firstComeFirstServed = source.firstComeFirstServed;
+        this.applicationUrl = source.applicationUrl;
+        this.referenceUrl1 = source.referenceUrl1;
+        this.referenceUrl2 = source.referenceUrl2;
+        this.applicationMethod = source.applicationMethod;
+        this.submissionDocuments = source.submissionDocuments;
+        this.screeningMethod = source.screeningMethod;
+        this.ageLimitFlag = source.ageLimitFlag;
+        this.incomeMinAmount = source.incomeMinAmount;
+        this.supportScaleLimit = source.supportScaleLimit;
+        this.operatingInstitutionName = source.operatingInstitutionName;
+        this.approvalStatusCode = source.approvalStatusCode;
+        this.etcMatters = source.etcMatters;
+        this.viewCount = source.viewCount;
+        this.firstRegisteredAt = source.firstRegisteredAt;
+        this.lastModifiedAt = source.lastModifiedAt;
+        this.rawPayload = source.rawPayload;
+        this.missingCount = 0;
+        this.visibility = PolicyVisibility.VISIBLE;
+    }
+
     /** API 응답 원문 JSON — 스키마 진화 시 백필용 보험 */
     @Column(name = "raw_payload", columnDefinition = "LONGTEXT")
     private String rawPayload;
+
+    /**
+     * 배치 전처리(PolicyMapper) 전용 생성 통로. 파라미터 순서 = 필드 선언 순서 — 인접 String이 많아 순서가 바뀌어도 컴파일은 통과하므로, 필드를
+     * 추가/삭제할 때 반드시 선언 순서를 유지하고 PolicyMapperTest의 전 필드 검증으로 확인한다.
+     */
+    public static Policy create(
+            String policyNo,
+            String title,
+            String description,
+            String supportContent,
+            String keywords,
+            String category,
+            String middleCategory,
+            String organizationName,
+            Integer minAge,
+            Integer maxAge,
+            String jobCodes,
+            String schoolCodes,
+            String incomeConditionCode,
+            Integer incomeMaxAmount,
+            String incomeEtcContent,
+            String maritalStatusCode,
+            String majorCodes,
+            String specializationCodes,
+            String additionalQualification,
+            String participationRestriction,
+            String applicationPeriodType,
+            String applicationPeriodRaw,
+            LocalDate applicationStartDate,
+            LocalDate applicationEndDate,
+            LocalDate businessPeriodBegin,
+            LocalDate businessPeriodEnd,
+            String businessPeriodEtc,
+            Integer supportScaleCount,
+            boolean firstComeFirstServed,
+            String applicationUrl,
+            String referenceUrl1,
+            String referenceUrl2,
+            String applicationMethod,
+            String submissionDocuments,
+            String screeningMethod,
+            String ageLimitFlag,
+            Integer incomeMinAmount,
+            Boolean supportScaleLimit,
+            String operatingInstitutionName,
+            String approvalStatusCode,
+            String etcMatters,
+            int viewCount,
+            LocalDateTime firstRegisteredAt,
+            LocalDateTime lastModifiedAt,
+            String rawPayload) {
+        Policy policy = new Policy();
+        policy.policyNo = policyNo;
+        policy.title = title;
+        policy.description = description;
+        policy.supportContent = supportContent;
+        policy.keywords = keywords;
+        policy.category = category;
+        policy.middleCategory = middleCategory;
+        policy.organizationName = organizationName;
+        policy.minAge = minAge;
+        policy.maxAge = maxAge;
+        policy.jobCodes = jobCodes;
+        policy.schoolCodes = schoolCodes;
+        policy.incomeConditionCode = incomeConditionCode;
+        policy.incomeMaxAmount = incomeMaxAmount;
+        policy.incomeEtcContent = incomeEtcContent;
+        policy.maritalStatusCode = maritalStatusCode;
+        policy.majorCodes = majorCodes;
+        policy.specializationCodes = specializationCodes;
+        policy.additionalQualification = additionalQualification;
+        policy.participationRestriction = participationRestriction;
+        policy.applicationPeriodType = applicationPeriodType;
+        policy.applicationPeriodRaw = applicationPeriodRaw;
+        policy.applicationStartDate = applicationStartDate;
+        policy.applicationEndDate = applicationEndDate;
+        policy.businessPeriodBegin = businessPeriodBegin;
+        policy.businessPeriodEnd = businessPeriodEnd;
+        policy.businessPeriodEtc = businessPeriodEtc;
+        policy.supportScaleCount = supportScaleCount;
+        policy.firstComeFirstServed = firstComeFirstServed;
+        policy.applicationUrl = applicationUrl;
+        policy.referenceUrl1 = referenceUrl1;
+        policy.referenceUrl2 = referenceUrl2;
+        policy.applicationMethod = applicationMethod;
+        policy.submissionDocuments = submissionDocuments;
+        policy.screeningMethod = screeningMethod;
+        policy.ageLimitFlag = ageLimitFlag;
+        policy.incomeMinAmount = incomeMinAmount;
+        policy.supportScaleLimit = supportScaleLimit;
+        policy.operatingInstitutionName = operatingInstitutionName;
+        policy.approvalStatusCode = approvalStatusCode;
+        policy.etcMatters = etcMatters;
+        policy.viewCount = viewCount;
+        policy.firstRegisteredAt = firstRegisteredAt;
+        policy.lastModifiedAt = lastModifiedAt;
+        policy.rawPayload = rawPayload;
+        return policy;
+    }
 
     /** 관리자 soft delete 시각. {@link #visibility}(배치의 재노출 가능한 상태 전환)와는 독립적이다. */
     @Column(name = "deleted_at")
