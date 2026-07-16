@@ -1,13 +1,11 @@
-# 로컬 개발용 인프라만 띄운다 (MySQL + Redis + Adminer).
+# 로컬 개발용 인프라만 띄운다 (MySQL + Redis).
 # backend/front 는 컨테이너화하지 않고 각자 로컬(IDE)에서 실행한다.
 #
 # 사용법: docker-compose.yml 파일과 같은 레벨의 패키지로 가서 아래 명령어 실행.
-#   docker compose up -d      # .env 를 자동으로 읽어 MySQL/Redis/Adminer 기동
+#   docker compose up -d      # .env 를 자동으로 읽어 MySQL/Redis 기동
 #   docker compose ps         # 상태 확인
 #   docker compose down       # 중지 (데이터는 볼륨에 보존)
 #   docker compose down -v    # 중지 + 데이터 볼륨 삭제(초기화)
-#
-# Adminer: http://localhost:8081 접속 후 시스템 MySQL, 서버 mysql, 위 DB_USERNAME/DB_PASSWORD로 로그인.
 
 services:
   mysql:
@@ -45,17 +43,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-
-  adminer:
-    image: adminer
-    container_name: youthpick-adminer
-    environment:
-      ADMINER_DEFAULT_SERVER: mysql
-    ports:
-      - "${ADMINER_PORT:-8081}:8080"
-    depends_on:
-      mysql:
-        condition: service_healthy
 
 volumes:
   youthpick-mysql-data:
