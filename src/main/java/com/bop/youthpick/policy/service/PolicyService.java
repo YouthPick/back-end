@@ -10,6 +10,7 @@ import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.policy.repository.RegionRepository;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -37,8 +38,8 @@ public class PolicyService {
     private final PolicyRecentViewService policyRecentViewService;
 
     /**
-     * 정책 목록(카드) 조회 (비회원 허용). 삭제·숨김 정책은 제외하고 최신순(id 내림차순, 서버 고정 정렬)으로 내린다. 지역 라벨은 페이지 단위 배치 조회(fetch
-     * join)로 조립해 N+1을 피한다.
+     * 정책 목록(카드) 조회 (비회원 허용). 삭제·숨김·신청 마감 지난 정책은 제외하고 최신순(id 내림차순, 서버 고정 정렬)으로 내린다. 지역 라벨은 페이지 단위 배치
+     * 조회(fetch join)로 조립해 N+1을 피한다.
      */
     @Transactional(readOnly = true)
     public Page<PolicyCardResponse> getCards(Pageable pageable) {
@@ -48,8 +49,7 @@ public class PolicyService {
                         pageable.getPageSize(),
                         Sort.by(Sort.Direction.DESC, "id"));
         Page<Policy> page =
-                policyRepository.findByVisibilityAndDeletedAtIsNull(
-                        PolicyVisibility.VISIBLE, sorted);
+                policyRepository.findCards(PolicyVisibility.VISIBLE, LocalDate.now(), sorted);
 
         List<Long> policyIds = page.getContent().stream().map(Policy::getId).toList();
         Map<Long, List<String>> sidoNamesByPolicyId =

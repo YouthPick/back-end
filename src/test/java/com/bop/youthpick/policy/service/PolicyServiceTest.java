@@ -2,6 +2,7 @@ package com.bop.youthpick.policy.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -21,6 +22,7 @@ import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.policy.repository.RegionRepository;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,8 +135,10 @@ class PolicyServiceTest {
         Policy multi = newPolicy(3L, "두 시도 정책");
         Policy nationwide = newPolicy(4L, "전국 정책");
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        when(policyRepository.findByVisibilityAndDeletedAtIsNull(
-                        eq(PolicyVisibility.VISIBLE), pageableCaptor.capture()))
+        when(policyRepository.findCards(
+                        eq(PolicyVisibility.VISIBLE),
+                        any(LocalDate.class),
+                        pageableCaptor.capture()))
                 .thenReturn(
                         new PageImpl<>(
                                 List.of(single, noRegion, multi, nationwide),
