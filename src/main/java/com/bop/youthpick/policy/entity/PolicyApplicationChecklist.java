@@ -53,6 +53,10 @@ public class PolicyApplicationChecklist extends BaseEntity {
         return checklist;
     }
 
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
     public void check() {
         this.checked = true;
     }

@@ -13,6 +13,7 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 | 사용자별 엔티티 경로 | `/me`, `/users/{userId}` 없이 엔티티 리소스명 사용 |
 | 프로필 엔티티 | `/api/v1/user-profiles` |
 | 정책 신청관리 엔티티 | `/api/v1/policy-applications` |
+| 정책 신청관리 체크리스트 엔티티 | `/api/v1/policy-application-checklists` |
 | 정책 배치 이력 엔티티 | `/api/v1/policy-batch-histories` |
 | 챗봇 API | FastAPI 직접 호출 경로이므로 Spring Boot 구현 대상과 분리 |
 
@@ -33,9 +34,17 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 | 정책 검색 | 검색어 제안 | `GET` | `/api/v1/policies/search-suggestions` | 비회원 | query: keyword 선택 |
 | 정책 검색 | 정책 상세 조회 | `GET` | `/api/v1/policies/{policyId}` | 비회원 | path: policyId |
 | 맞춤 추천 | 맞춤정책 조회 | `GET` | `/api/v1/recommended-policies` | 회원 | query: region 선택, category 선택, keyword 선택 |
-| 관심 정책 | 관심정책 목록 | `GET` | `/api/v1/policy-applications` | 회원 | 없음 |
-| 관심 정책 | 관심정책 등록 | `PUT` | `/api/v1/policy-applications/{policyId}` | 회원 | path: policyId |
-| 관심 정책 | 관심정책 해제 | `DELETE` | `/api/v1/policy-applications/{policyId}` | 회원 | path: policyId |
+| 신청관리 | 신청 등록 | `POST` | `/api/v1/policy-applications` | 회원 | body: policyId, status(INTERESTED\|PREPARING\|APPLIED\|COMPLETED), memo 선택, endAt 선택 |
+| 신청관리 | 신청 목록 조회 | `GET` | `/api/v1/policy-applications` | 회원 | query: page 기본 1, size 기본 20 |
+| 신청관리 | 상태 변경 | `PATCH` | `/api/v1/policy-applications/{id}/status` | 회원 | path: id. query: status(INTERESTED\|PREPARING\|APPLIED\|COMPLETED) |
+| 신청관리 | 메모 수정 | `PATCH` | `/api/v1/policy-applications/{id}/memo` | 회원 | path: id. query: memo (필수, 최대 2000자) |
+| 신청관리 | 마감일 수정 | `PATCH` | `/api/v1/policy-applications/{id}/end-at` | 회원 | path: id. query: endAt 선택(ISO-8601 date-time, 생략 시 마감일 초기화) |
+| 신청관리 | 신청 삭제 | `DELETE` | `/api/v1/policy-applications/{id}` | 회원 | path: id |
+| 신청관리 | 체크리스트 추가 | `POST` | `/api/v1/policy-application-checklists` | 회원 | body: applicationId, message |
+| 신청관리 | 체크리스트 조회 | `GET` | `/api/v1/policy-application-checklists/application/{applicationId}` | 회원 | path: applicationId. query: page 기본 1, size 기본 20 |
+| 신청관리 | 체크리스트 체크 | `PATCH` | `/api/v1/policy-application-checklists/{id}/check` | 회원 | path: id |
+| 신청관리 | 체크리스트 체크 해제 | `PATCH` | `/api/v1/policy-application-checklists/{id}/uncheck` | 회원 | path: id |
+| 신청관리 | 체크리스트 삭제 | `DELETE` | `/api/v1/policy-application-checklists/{id}` | 회원 | path: id |
 | 읽음 상태 | 읽음 상태 목록 조회 | `GET` | `/api/v1/policy-read-states` | 회원 | query: policyIds 반복 |
 | 읽음 상태 | 정책 읽음 처리 | `PUT` | `/api/v1/policy-read-states/{policyId}` | 회원 | path: policyId |
 | 정책 비교 | 정책 비교 생성 | `POST` | `/api/v1/policy-comparisons` | 비회원 | body: policyIds[] |
@@ -198,40 +207,130 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 권한 | 회원 |
 | 파라미터 | query: region 선택, category 선택, keyword 선택 |
 
-## 관심 정책
+## 신청관리
 
-### 관심정책 목록
+기존 즐겨찾기(관심 정책) 개념을 흡수한 정책 신청관리 엔티티다. 상태(`ApplicationStatus`: `INTERESTED`/`PREPARING`/`APPLIED`/`COMPLETED`)·메모·마감일과 하위 체크리스트를 함께 관리한다.
 
-로그인 사용자가 저장한 관심 정책 목록을 조회한다.
+### 신청 등록
+
+정책을 신청관리 목록에 등록한다. 이미 등록된(soft-delete 되지 않은) 항목이면 `P002` 충돌 에러를 반환하고, soft-delete된 항목이면 재활성화하면서 기존 체크리스트를 초기화한다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `POST` |
+| 경로 | `/api/v1/policy-applications` |
+| 권한 | 회원 |
+| 파라미터 | body: policyId, status(INTERESTED\|PREPARING\|APPLIED\|COMPLETED), memo 선택, endAt 선택 |
+
+### 신청 목록 조회
+
+로그인 사용자의 신청관리 목록을 조회한다.
 
 | 항목 | 내용 |
 |---|---|
 | 메서드 | `GET` |
 | 경로 | `/api/v1/policy-applications` |
 | 권한 | 회원 |
-| 파라미터 | 없음 |
+| 파라미터 | query: page 기본 1, size 기본 20 |
 
-### 관심정책 등록
+### 상태 변경
 
-특정 정책을 로그인 사용자의 관심 정책으로 저장한다.
+신청관리 항목의 상태를 변경한다.
 
 | 항목 | 내용 |
 |---|---|
-| 메서드 | `PUT` |
-| 경로 | `/api/v1/policy-applications/{policyId}` |
+| 메서드 | `PATCH` |
+| 경로 | `/api/v1/policy-applications/{id}/status` |
 | 권한 | 회원 |
-| 파라미터 | path: policyId |
+| 파라미터 | path: id. query: status(INTERESTED\|PREPARING\|APPLIED\|COMPLETED) |
 
-### 관심정책 해제
+### 메모 수정
 
-특정 정책을 로그인 사용자의 관심 정책 목록에서 제거한다.
+신청관리 항목의 개인 메모를 수정한다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `PATCH` |
+| 경로 | `/api/v1/policy-applications/{id}/memo` |
+| 권한 | 회원 |
+| 파라미터 | path: id. query: memo (필수, 최대 2000자) |
+
+### 마감일 수정
+
+신청관리 항목의 마감일(endAt)을 수정한다. endAt을 생략하면 필수값 오류가 아니라 마감일 초기화(clear)로 처리한다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `PATCH` |
+| 경로 | `/api/v1/policy-applications/{id}/end-at` |
+| 권한 | 회원 |
+| 파라미터 | path: id. query: endAt 선택(ISO-8601 date-time, 생략 시 마감일 초기화) |
+
+### 신청 삭제
+
+신청관리 항목을 삭제(soft-delete)한다.
 
 | 항목 | 내용 |
 |---|---|
 | 메서드 | `DELETE` |
-| 경로 | `/api/v1/policy-applications/{policyId}` |
+| 경로 | `/api/v1/policy-applications/{id}` |
 | 권한 | 회원 |
-| 파라미터 | path: policyId |
+| 파라미터 | path: id |
+
+### 체크리스트 추가
+
+신청관리 항목에 체크리스트 항목을 추가한다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `POST` |
+| 경로 | `/api/v1/policy-application-checklists` |
+| 권한 | 회원 |
+| 파라미터 | body: applicationId, message (필수, 최대 500자) |
+
+### 체크리스트 조회
+
+특정 신청관리 항목의 체크리스트 목록을 조회한다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `GET` |
+| 경로 | `/api/v1/policy-application-checklists/application/{applicationId}` |
+| 권한 | 회원 |
+| 파라미터 | path: applicationId. query: page 기본 1, size 기본 20 |
+
+### 체크리스트 체크
+
+체크리스트 항목을 체크 완료 상태로 표시한다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `PATCH` |
+| 경로 | `/api/v1/policy-application-checklists/{id}/check` |
+| 권한 | 회원 |
+| 파라미터 | path: id |
+
+### 체크리스트 체크 해제
+
+체크리스트 항목의 체크를 해제한다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `PATCH` |
+| 경로 | `/api/v1/policy-application-checklists/{id}/uncheck` |
+| 권한 | 회원 |
+| 파라미터 | path: id |
+
+### 체크리스트 삭제
+
+체크리스트 항목을 삭제(soft-delete)한다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `DELETE` |
+| 경로 | `/api/v1/policy-application-checklists/{id}` |
+| 권한 | 회원 |
+| 파라미터 | path: id |
 
 ## 읽음 상태
 
@@ -367,6 +466,6 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 
 사용자별 데이터는 JWT에서 얻은 사용자 식별자를 서비스 계층에서 사용한다. URL 경로는 `user-profiles`, `policy-applications`, `policy-read-states`처럼 엔티티 리소스를 직접 드러내고, 컨트롤러 내부에서 인증 principal과 매핑한다.
 
-`policy_applications`는 기존 즐겨찾기 개념을 흡수한 신청관리 엔티티다. 관심정책 등록과 해제는 별도 `favorites` 리소스보다 `policy-applications`의 생성/삭제 또는 상태 변경으로 구현하는 편이 현재 스키마와 맞다.
+`policy_applications`는 기존 즐겨찾기 개념을 흡수한 신청관리 엔티티다. 관심정책 등록·해제는 별도 `favorites` 리소스가 아니라 `policy-applications`의 생성/삭제와 상태 변경(`status`)으로 구현되어 있다. 신청관리 하위 체크리스트는 `policy_application_checklists` 엔티티로 별도 관리하며, 신청관리 삭제·재등록(soft-delete → reactivate) 시 체크리스트도 함께 초기화된다.
 
 `policy-batch-histories`는 정책 수집 작업 이력을 나타낸다. 수집 실행은 같은 컬렉션에 작업 요청을 생성하는 `POST /api/v1/policy-batch-histories`로 해석한다.

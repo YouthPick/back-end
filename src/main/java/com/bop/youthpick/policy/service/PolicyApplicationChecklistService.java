@@ -32,6 +32,13 @@ public class PolicyApplicationChecklistService {
     }
 
     @Transactional
+    public PolicyApplicationChecklist update(Long id, Long userId, String message) {
+        PolicyApplicationChecklist checklist = findActive(id, userId);
+        checklist.updateContent(message);
+        return checklist;
+    }
+
+    @Transactional
     public void check(Long id, Long userId) {
         findActive(id, userId).check();
     }

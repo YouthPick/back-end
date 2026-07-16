@@ -97,6 +97,57 @@ class PolicyApplicationChecklistServiceTest {
     }
 
     @Test
+    void update_체크리스트_내용을_수정한다() {
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(application(), "제출 서류 준비");
+        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+                .thenReturn(Optional.of(checklist));
+
+        PolicyApplicationChecklist result = checklistService.update(5L, USER_ID, "서류 다시 준비");
+
+        assertThat(result.getContent()).isEqualTo("서류 다시 준비");
+    }
+
+    @Test
+    void update_대상이_없으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
+        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> checklistService.update(5L, USER_ID, "수정"))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
+    }
+
+    @Test
+    void update_소유자가_아니면_FORBIDDEN_예외를_던진다() {
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(application(), "제출 서류 준비");
+        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+                .thenReturn(Optional.of(checklist));
+
+        assertThatThrownBy(() -> checklistService.update(5L, OTHER_USER_ID, "수정"))
+                .isInstanceOf(AuthException.class)
+                .extracting(ex -> ((AuthException) ex).getErrorCode())
+                .isEqualTo(AuthErrorCode.FORBIDDEN);
+    }
+
+    @Test
+    void update_상위_신청관리가_삭제되었으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
+        PolicyApplication deletedApplication = application();
+        deletedApplication.delete();
+        PolicyApplicationChecklist checklist =
+                PolicyApplicationChecklist.create(deletedApplication, "제출 서류 준비");
+        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+                .thenReturn(Optional.of(checklist));
+
+        assertThatThrownBy(() -> checklistService.update(5L, USER_ID, "수정"))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
+    }
+
+    @Test
     void check_체크상태로_변경한다() {
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application(), "제출 서류 준비");

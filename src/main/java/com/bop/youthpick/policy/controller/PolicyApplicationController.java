@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Validated
 @RestController
-@RequestMapping("/api/applications")
+@RequestMapping("/api/v1/policy-applications")
 @RequiredArgsConstructor
 public class PolicyApplicationController {
 

@@ -70,7 +70,7 @@ class PolicyApplicationChecklistControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        post("/api/checklists")
+                                        post("/api/v1/policy-application-checklists")
                                                 .contentType(MediaType.APPLICATION_JSON)
                                                 .content(body))
                                 .andExpect(status().isCreated())
@@ -91,7 +91,7 @@ class PolicyApplicationChecklistControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        post("/api/checklists")
+                                        post("/api/v1/policy-application-checklists")
                                                 .contentType(MediaType.APPLICATION_JSON)
                                                 .content(body))
                                 .andExpect(status().isBadRequest())
@@ -106,7 +106,10 @@ class PolicyApplicationChecklistControllerTest {
 
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(get("/api/checklists/application/{applicationId}", 1L))
+                        mockMvc.perform(
+                                        get(
+                                                "/api/v1/policy-application-checklists/application/{applicationId}",
+                                                1L))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data").isArray())
                                 .andExpect(jsonPath("$.meta.page").value(1))
@@ -115,10 +118,55 @@ class PolicyApplicationChecklistControllerTest {
     }
 
     @Test
+    void update_유효한_요청이면_200과_수정된_체크리스트를_반환한다() throws Exception {
+        PolicyApplicationChecklist updated = checklist();
+        updated.updateContent("서류 다시 준비");
+        when(checklistService.update(5L, 1L, "서류 다시 준비")).thenReturn(updated);
+
+        String body =
+                """
+                {
+                    "message": "서류 다시 준비"
+                }
+                """;
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        patch("/api/v1/policy-application-checklists/{id}", 5L)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(body))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.message").value("서류 다시 준비")));
+    }
+
+    @Test
+    void update_message가_비어있으면_400과_C001을_반환한다() throws Exception {
+        String body =
+                """
+                {
+                    "message": ""
+                }
+                """;
+
+        withAuthenticatedPrincipal(
+                () ->
+                        mockMvc.perform(
+                                        patch("/api/v1/policy-application-checklists/{id}", 5L)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(body))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.code").value("C001")));
+    }
+
+    @Test
     void check_성공하면_200과_체크_완료_메시지를_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(patch("/api/checklists/{id}/check", 5L))
+                        mockMvc.perform(
+                                        patch(
+                                                "/api/v1/policy-application-checklists/{id}/check",
+                                                5L))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.message").value("체크 완료")));
 
@@ -129,7 +177,10 @@ class PolicyApplicationChecklistControllerTest {
     void uncheck_성공하면_200과_체크_해제_완료_메시지를_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(patch("/api/checklists/{id}/uncheck", 5L))
+                        mockMvc.perform(
+                                        patch(
+                                                "/api/v1/policy-application-checklists/{id}/uncheck",
+                                                5L))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.message").value("체크 해제 완료")));
 
@@ -140,7 +191,7 @@ class PolicyApplicationChecklistControllerTest {
     void delete_성공하면_200과_체크리스트_삭제_완료_메시지를_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(delete("/api/checklists/{id}", 5L))
+                        mockMvc.perform(delete("/api/v1/policy-application-checklists/{id}", 5L))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.message").value("체크리스트 삭제 완료")));
 
@@ -151,7 +202,10 @@ class PolicyApplicationChecklistControllerTest {
     void getByApplication_applicationId가_숫자가_아니면_400과_C001을_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(get("/api/checklists/application/{applicationId}", "abc"))
+                        mockMvc.perform(
+                                        get(
+                                                "/api/v1/policy-application-checklists/application/{applicationId}",
+                                                "abc"))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
     }
@@ -160,7 +214,10 @@ class PolicyApplicationChecklistControllerTest {
     void check_id가_숫자가_아니면_400과_C001을_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(patch("/api/checklists/{id}/check", "abc"))
+                        mockMvc.perform(
+                                        patch(
+                                                "/api/v1/policy-application-checklists/{id}/check",
+                                                "abc"))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
     }
@@ -169,7 +226,7 @@ class PolicyApplicationChecklistControllerTest {
     void delete_id가_숫자가_아니면_400과_C001을_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(delete("/api/checklists/{id}", "abc"))
+                        mockMvc.perform(delete("/api/v1/policy-application-checklists/{id}", "abc"))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
     }

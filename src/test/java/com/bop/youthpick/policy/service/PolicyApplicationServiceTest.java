@@ -78,6 +78,100 @@ class PolicyApplicationServiceTest {
     }
 
     @Test
+    void 마감일을_지정하지_않으면_정책의_신청_마감일을_기본값으로_사용한다() {
+        Policy policy = mock(Policy.class);
+        when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 8, 31));
+        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+                .thenReturn(Optional.empty());
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
+        when(policyApplicationRepository.save(any(PolicyApplication.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        PolicyApplication result =
+                policyApplicationService.register(
+                        USER_ID, POLICY_ID, ApplicationStatus.INTERESTED, "메모", null);
+
+        assertThat(result.getEndAt()).isEqualTo(LocalDateTime.of(2026, 8, 31, 0, 0));
+    }
+
+    @Test
+    void 마감일을_직접_지정하면_정책_마감일_대신_그_값을_사용한다() {
+        Policy policy = mock(Policy.class);
+        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+                .thenReturn(Optional.empty());
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
+        when(policyApplicationRepository.save(any(PolicyApplication.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        LocalDateTime explicitEndAt = LocalDateTime.of(2026, 9, 15, 18, 0);
+        PolicyApplication result =
+                policyApplicationService.register(
+                        USER_ID, POLICY_ID, ApplicationStatus.INTERESTED, "메모", explicitEndAt);
+
+        assertThat(result.getEndAt()).isEqualTo(explicitEndAt);
+    }
+
+    @Test
+    void 마감일이_정책_마감일과_같으면_등록을_허용한다() {
+        Policy policy = mock(Policy.class);
+        when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 8, 31));
+        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+                .thenReturn(Optional.empty());
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
+        when(policyApplicationRepository.save(any(PolicyApplication.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        LocalDateTime sameDayEndAt = LocalDateTime.of(2026, 8, 31, 23, 59);
+        PolicyApplication result =
+                policyApplicationService.register(
+                        USER_ID, POLICY_ID, ApplicationStatus.INTERESTED, "메모", sameDayEndAt);
+
+        assertThat(result.getEndAt()).isEqualTo(sameDayEndAt);
+    }
+
+    @Test
+    void 마감일이_정책_마감일을_넘으면_END_AT_AFTER_POLICY_DEADLINE_예외를_던진다() {
+        Policy policy = mock(Policy.class);
+        when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 8, 31));
+        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+                .thenReturn(Optional.empty());
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
+
+        LocalDateTime tooLateEndAt = LocalDateTime.of(2026, 9, 1, 0, 0);
+        assertThatThrownBy(
+                        () ->
+                                policyApplicationService.register(
+                                        USER_ID,
+                                        POLICY_ID,
+                                        ApplicationStatus.INTERESTED,
+                                        "메모",
+                                        tooLateEndAt))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.END_AT_AFTER_POLICY_DEADLINE);
+    }
+
+    @Test
+    void 메모가_빈_문자열이면_null로_저장한다() {
+        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+                .thenReturn(Optional.empty());
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(mock(Policy.class)));
+        when(policyApplicationRepository.save(any(PolicyApplication.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        PolicyApplication result =
+                policyApplicationService.register(
+                        USER_ID, POLICY_ID, ApplicationStatus.INTERESTED, "   ", null);
+
+        assertThat(result.getMemo()).isNull();
+    }
+
+    @Test
     void 이미_등록된_행이_있으면_POLICY_ALREADY_EXISTS_예외를_던진다() {
         PolicyApplication existing =
                 PolicyApplication.register(
@@ -119,6 +213,24 @@ class PolicyApplicationServiceTest {
         assertThat(result.getStatus()).isEqualTo(ApplicationStatus.APPLIED);
         assertThat(result.getMemo()).isEqualTo("재등록");
         assertThat(result.isDeleted()).isFalse();
+    }
+
+    @Test
+    void soft_delete된_행을_재활성화할때_마감일을_지정하지_않으면_정책_마감일을_사용한다() {
+        Policy policy = mock(Policy.class);
+        when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 10, 1));
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        mock(User.class), policy, ApplicationStatus.INTERESTED, null, null);
+        existing.delete();
+        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+                .thenReturn(Optional.of(existing));
+
+        PolicyApplication result =
+                policyApplicationService.register(
+                        USER_ID, POLICY_ID, ApplicationStatus.APPLIED, "재등록", null);
+
+        assertThat(result.getEndAt()).isEqualTo(LocalDateTime.of(2026, 10, 1, 0, 0));
     }
 
     @Test
@@ -268,6 +380,21 @@ class PolicyApplicationServiceTest {
     }
 
     @Test
+    void updateMemo_빈_문자열이면_null로_비운다() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        owner, mock(Policy.class), ApplicationStatus.INTERESTED, "기존 메모", null);
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(existing));
+
+        PolicyApplication result = policyApplicationService.updateMemo(10L, USER_ID, "   ");
+
+        assertThat(result.getMemo()).isNull();
+    }
+
+    @Test
     void updateMemo_대상이_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.empty());
@@ -322,6 +449,46 @@ class PolicyApplicationServiceTest {
                         ApplicationStatus.INTERESTED,
                         null,
                         LocalDateTime.of(2026, 12, 31, 23, 59));
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(existing));
+
+        PolicyApplication result = policyApplicationService.updateEndAt(10L, USER_ID, null);
+
+        assertThat(result.getEndAt()).isNull();
+    }
+
+    @Test
+    void updateEndAt_정책_마감일을_넘으면_END_AT_AFTER_POLICY_DEADLINE_예외를_던진다() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
+        Policy policy = mock(Policy.class);
+        when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 8, 31));
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        owner, policy, ApplicationStatus.INTERESTED, null, null);
+        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(existing));
+
+        LocalDateTime tooLateEndAt = LocalDateTime.of(2026, 9, 1, 0, 0);
+        assertThatThrownBy(() -> policyApplicationService.updateEndAt(10L, USER_ID, tooLateEndAt))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.END_AT_AFTER_POLICY_DEADLINE);
+        assertThat(existing.getEndAt()).isNull();
+    }
+
+    @Test
+    void updateEndAt_null로_비울때는_정책_마감일_검증을_건너뛴다() {
+        User owner = mock(User.class);
+        when(owner.getId()).thenReturn(USER_ID);
+        Policy policy = mock(Policy.class);
+        PolicyApplication existing =
+                PolicyApplication.register(
+                        owner,
+                        policy,
+                        ApplicationStatus.INTERESTED,
+                        null,
+                        LocalDateTime.of(2026, 8, 1, 0, 0));
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
 

@@ -73,7 +73,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        post("/api/applications")
+                                        post("/api/v1/policy-applications")
                                                 .contentType(MediaType.APPLICATION_JSON)
                                                 .content(body))
                                 .andExpect(status().isCreated())
@@ -104,7 +104,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        post("/api/applications")
+                                        post("/api/v1/policy-applications")
                                                 .contentType(MediaType.APPLICATION_JSON)
                                                 .content(body))
                                 .andExpect(status().isCreated())
@@ -124,7 +124,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        post("/api/applications")
+                                        post("/api/v1/policy-applications")
                                                 .contentType(MediaType.APPLICATION_JSON)
                                                 .content(body))
                                 .andExpect(status().isBadRequest())
@@ -145,7 +145,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        post("/api/applications")
+                                        post("/api/v1/policy-applications")
                                                 .contentType(MediaType.APPLICATION_JSON)
                                                 .content(body))
                                 .andExpect(status().isBadRequest())
@@ -159,7 +159,7 @@ class PolicyApplicationControllerTest {
 
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(get("/api/applications"))
+                        mockMvc.perform(get("/api/v1/policy-applications"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data").isArray())
                                 .andExpect(jsonPath("$.meta.page").value(1))
@@ -175,12 +175,12 @@ class PolicyApplicationControllerTest {
 
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(get("/api/applications").param("page", "0"))
+                        mockMvc.perform(get("/api/v1/policy-applications").param("page", "0"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.meta.page").value(1)));
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(get("/api/applications").param("page", "-5"))
+                        mockMvc.perform(get("/api/v1/policy-applications").param("page", "-5"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.meta.page").value(1)));
 
@@ -205,7 +205,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        patch("/api/applications/{id}/status", 10L)
+                                        patch("/api/v1/policy-applications/{id}/status", 10L)
                                                 .param("status", "APPLIED"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.status").value("APPLIED")));
@@ -228,7 +228,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        patch("/api/applications/{id}/status", 10L)
+                                        patch("/api/v1/policy-applications/{id}/status", 10L)
                                                 .param("status", "PREPARING"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.status").value("PREPARING")));
@@ -239,7 +239,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        patch("/api/applications/{id}/status", 10L)
+                                        patch("/api/v1/policy-applications/{id}/status", 10L)
                                                 .param("status", "UNKNOWN"))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
@@ -249,7 +249,7 @@ class PolicyApplicationControllerTest {
     void changeStatus_status_파라미터를_생략하면_400과_C001을_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(patch("/api/applications/{id}/status", 10L))
+                        mockMvc.perform(patch("/api/v1/policy-applications/{id}/status", 10L))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
     }
@@ -269,7 +269,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        patch("/api/applications/{id}/memo", 10L)
+                                        patch("/api/v1/policy-applications/{id}/memo", 10L)
                                                 .param("memo", "새 메모"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.memo").value("새 메모")));
@@ -282,7 +282,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        patch("/api/applications/{id}/memo", 10L)
+                                        patch("/api/v1/policy-applications/{id}/memo", 10L)
                                                 .param("memo", tooLongMemo))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
@@ -292,7 +292,7 @@ class PolicyApplicationControllerTest {
     void updateMemo_파라미터를_생략하면_400과_C001을_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(patch("/api/applications/{id}/memo", 10L))
+                        mockMvc.perform(patch("/api/v1/policy-applications/{id}/memo", 10L))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
     }
@@ -310,7 +310,9 @@ class PolicyApplicationControllerTest {
 
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(patch("/api/applications/{id}/memo", 10L).param("memo", ""))
+                        mockMvc.perform(
+                                        patch("/api/v1/policy-applications/{id}/memo", 10L)
+                                                .param("memo", ""))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.memo").value("")));
     }
@@ -329,7 +331,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        patch("/api/applications/{id}/end-at", 10L)
+                                        patch("/api/v1/policy-applications/{id}/end-at", 10L)
                                                 .param("endAt", "2026-12-31T23:59:00"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.endAt").value("2026-12-31T23:59:00")));
@@ -350,7 +352,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        patch("/api/applications/{id}/end-at", 10L)
+                                        patch("/api/v1/policy-applications/{id}/end-at", 10L)
                                                 .param("endAt", ""))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.endAt").doesNotExist()));
@@ -370,7 +372,7 @@ class PolicyApplicationControllerTest {
 
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(patch("/api/applications/{id}/end-at", 10L))
+                        mockMvc.perform(patch("/api/v1/policy-applications/{id}/end-at", 10L))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.endAt").doesNotExist()));
     }
@@ -380,7 +382,7 @@ class PolicyApplicationControllerTest {
         withAuthenticatedPrincipal(
                 () ->
                         mockMvc.perform(
-                                        patch("/api/applications/{id}/end-at", 10L)
+                                        patch("/api/v1/policy-applications/{id}/end-at", 10L)
                                                 .param("endAt", "not-a-date"))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
@@ -390,7 +392,7 @@ class PolicyApplicationControllerTest {
     void delete_성공하면_200을_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(delete("/api/applications/{id}", 10L))
+                        mockMvc.perform(delete("/api/v1/policy-applications/{id}", 10L))
                                 .andExpect(status().isOk()));
 
         verify(policyApplicationService).delete(10L, 1L);

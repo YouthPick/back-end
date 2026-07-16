@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -43,12 +44,14 @@ public class PolicyApplicationService {
                 policyApplicationRepository
                         .findByUser_IdAndPolicy_Id(userId, policyId)
                         .orElse(null);
+        String normalizedMemo = blankToNull(memo);
 
         if (existing != null) {
             if (!existing.isDeleted()) {
                 throw new CustomException(PolicyErrorCode.POLICY_ALREADY_EXISTS);
             }
-            existing.reactivate(status, memo, endAt);
+            existing.reactivate(
+                    status, normalizedMemo, resolveEndAt(endAt, existing.getPolicy()));
             policyApplicationChecklistRepository.softDeleteAllByApplicationId(existing.getId());
             return existing;
         }
@@ -63,7 +66,8 @@ public class PolicyApplicationService {
                         .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
 
         PolicyApplication application =
-                PolicyApplication.register(user, policy, status, memo, endAt);
+                PolicyApplication.register(
+                        user, policy, status, normalizedMemo, resolveEndAt(endAt, policy));
         try {
             return policyApplicationRepository.save(application);
         } catch (DataIntegrityViolationException e) {
@@ -85,7 +89,7 @@ public class PolicyApplicationService {
     public PolicyApplication updateMemo(Long id, Long userId, String memo) {
         PolicyApplication application = findActive(id);
         verifyOwner(application, userId);
-        application.updateMemo(memo);
+        application.updateMemo(blankToNull(memo));
         return application;
     }
 
@@ -93,6 +97,9 @@ public class PolicyApplicationService {
     public PolicyApplication updateEndAt(Long id, Long userId, LocalDateTime endAt) {
         PolicyApplication application = findActive(id);
         verifyOwner(application, userId);
+        if (endAt != null) {
+            validateWithinPolicyDeadline(endAt, application.getPolicy());
+        }
         application.updateEndAt(endAt);
         return application;
     }
@@ -121,6 +128,33 @@ public class PolicyApplicationService {
     private void verifyOwner(PolicyApplication application, Long userId) {
         if (!application.getUser().getId().equals(userId)) {
             throw new AuthException(AuthErrorCode.FORBIDDEN);
+        }
+    }
+
+    /** 공백만 있거나 빈 문자열인 메모는 "메모 없음"과 같은 의미이므로 저장 시 null로 정규화한다. */
+    private static String blankToNull(String memo) {
+        return StringUtils.hasText(memo) ? memo : null;
+    }
+
+    /**
+     * 개인이 마감일을 지정하지 않으면(null) 정책 자체의 신청 마감일을 기본값으로 잡는다. 직접 지정한 경우엔 정책 마감일을 넘지 않는지
+     * 검증한다.
+     */
+    private static LocalDateTime resolveEndAt(LocalDateTime requestedEndAt, Policy policy) {
+        if (requestedEndAt == null) {
+            return policy.getApplicationEndDate() != null
+                    ? policy.getApplicationEndDate().atStartOfDay()
+                    : null;
+        }
+        validateWithinPolicyDeadline(requestedEndAt, policy);
+        return requestedEndAt;
+    }
+
+    /** 정책 자체의 신청 마감일이 알려져 있다면(null이 아니면), 개인 마감일이 그 날짜를 넘지 않아야 한다. */
+    private static void validateWithinPolicyDeadline(LocalDateTime endAt, Policy policy) {
+        if (policy.getApplicationEndDate() != null
+                && endAt.toLocalDate().isAfter(policy.getApplicationEndDate())) {
+            throw new CustomException(PolicyErrorCode.END_AT_AFTER_POLICY_DEADLINE);
         }
     }
 }

@@ -5,6 +5,7 @@ import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationChecklistMessageResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationChecklistResponse;
 import com.bop.youthpick.policy.dto.PolicyApplicationCreateChecklistRequest;
+import com.bop.youthpick.policy.dto.PolicyApplicationUpdateChecklistRequest;
 import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import com.bop.youthpick.policy.service.PolicyApplicationChecklistService;
 import jakarta.validation.Valid;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/checklists")
+@RequestMapping("/api/v1/policy-application-checklists")
 @RequiredArgsConstructor
 public class PolicyApplicationChecklistController {
 
@@ -49,6 +50,16 @@ public class PolicyApplicationChecklistController {
         Page<PolicyApplicationChecklistResponse> page =
                 checklistService.getByApplication(applicationId, userId, pageable);
         return ApiResponse.ok(page.getContent(), page);
+    }
+
+    @PatchMapping("/{id}")
+    public ApiResponse<PolicyApplicationChecklistResponse> update(
+            @CurrentUser Long userId,
+            @PathVariable Long id,
+            @Valid @RequestBody PolicyApplicationUpdateChecklistRequest request) {
+        PolicyApplicationChecklist checklist =
+                checklistService.update(id, userId, request.message());
+        return ApiResponse.ok(PolicyApplicationChecklistResponse.from(checklist));
     }
 
     @PatchMapping("/{id}/check")
