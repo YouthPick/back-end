@@ -13,6 +13,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -22,11 +23,15 @@ public class PolicyController {
 
     private final PolicyService policyService;
 
-    /** 정책 목록(카드) 조회 (비회원 허용). 최신순 서버 고정 정렬, meta에 page/totalCount/totalPages. */
+    /**
+     * 정책 목록(카드) 조회 (비회원 허용). 최신순 서버 고정 정렬, category(표준 5분류)는 선택 필터, meta에
+     * page/totalCount/totalPages.
+     */
     @GetMapping
     public ApiResponse<List<PolicyCardResponse>> getCards(
+            @RequestParam(required = false) String category,
             @PageableDefault(size = 20) Pageable pageable) {
-        Page<PolicyCardResponse> page = policyService.getCards(pageable);
+        Page<PolicyCardResponse> page = policyService.getCards(category, pageable);
         return ApiResponse.ok(page.getContent(), page);
     }
 

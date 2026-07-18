@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -138,6 +139,7 @@ class PolicyServiceTest {
         when(policyRepository.findCards(
                         eq(PolicyVisibility.VISIBLE),
                         any(LocalDate.class),
+                        isNull(),
                         pageableCaptor.capture()))
                 .thenReturn(
                         new PageImpl<>(
@@ -156,7 +158,7 @@ class PolicyServiceTest {
                                 newPolicyRegion(nationwide, "27110", "대구광역시", "중구")));
         when(regionRepository.countDistinctSidoNames()).thenReturn(3L);
 
-        Page<PolicyCardResponse> page = policyService.getCards(PageRequest.of(0, 20));
+        Page<PolicyCardResponse> page = policyService.getCards(null, PageRequest.of(0, 20));
 
         assertThat(pageableCaptor.getValue().getSort())
                 .isEqualTo(Sort.by(Sort.Direction.DESC, "id"));
