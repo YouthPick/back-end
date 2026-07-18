@@ -37,6 +37,21 @@ public class PolicyMapper {
     /** aplyPrdSeCd 상시 코드 — 신청기간 파싱 대상 아님 */
     private static final String ALWAYS_OPEN_CODE = "0057002";
 
+    /**
+     * 대분류(lclsfNm) 표준 5분류 매핑 — 키는 가운뎃점(·・･) 제거 기준 (#80). 원본에는 반각점(U+FF65) 구분자, 콤마 다중값('일자리,일자리'),
+     * 구명칭('참여권리')이 섞여 있다. 기존 데이터는 V8 마이그레이션이 같은 규칙으로 정리한다.
+     */
+    private static final Map<String, String> CATEGORY_BY_STRIPPED =
+            Map.ofEntries(
+                    Map.entry("일자리", "일자리"),
+                    Map.entry("주거", "주거"),
+                    Map.entry("교육", "교육·직업훈련"),
+                    Map.entry("교육직업훈련", "교육·직업훈련"),
+                    Map.entry("복지문화", "금융·복지·문화"),
+                    Map.entry("금융복지문화", "금융·복지·문화"),
+                    Map.entry("참여권리", "참여·기반"),
+                    Map.entry("참여기반", "참여·기반"));
+
     private static final DateTimeFormatter YMD = DateTimeFormatter.BASIC_ISO_DATE;
     private static final DateTimeFormatter DATE_TIME =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -53,7 +68,7 @@ public class PolicyMapper {
                 trimToNull(item.plcyExplnCn()),
                 trimToNull(item.plcySprtCn()),
                 trimToNull(item.plcyKywdNm()),
-                trimToNull(item.lclsfNm()),
+                normalizeCategory(plcyNo, item.lclsfNm()),
                 trimToNull(item.mclsfNm()),
                 organizationName(item),
                 toInt(plcyNo, "sprtTrgtMinAge", item.sprtTrgtMinAge()),
@@ -124,6 +139,21 @@ public class PolicyMapper {
             regions.add(region);
         }
         return regions;
+    }
+
+    /** 대분류 정규화: 콤마 다중값은 첫 값, 가운뎃점 변형 통일 후 표준 5분류로. 표준 외 값은 경고 + 원본 유지(조용히 사라지는 것 방지). */
+    String normalizeCategory(String plcyNo, String lclsfNm) {
+        String raw = trimToNull(lclsfNm);
+        if (raw == null) {
+            return null;
+        }
+        String first = raw.split(",")[0].trim();
+        String canonical = CATEGORY_BY_STRIPPED.get(first.replaceAll("[·・･]", ""));
+        if (canonical == null) {
+            log.warn("정책 {} 미지의 대분류 '{}' — 원본 유지 (분류 매핑표 갱신 필요)", plcyNo, first);
+            return first;
+        }
+        return canonical;
     }
 
     private record ApplyPeriod(LocalDate start, LocalDate end) {}
