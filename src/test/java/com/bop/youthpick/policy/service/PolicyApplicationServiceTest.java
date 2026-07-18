@@ -464,8 +464,7 @@ class PolicyApplicationServiceTest {
         Policy policy = mock(Policy.class);
         when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 8, 31));
         PolicyApplication existing =
-                PolicyApplication.register(
-                        owner, policy, ApplicationStatus.INTERESTED, null, null);
+                PolicyApplication.register(owner, policy, ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
 
