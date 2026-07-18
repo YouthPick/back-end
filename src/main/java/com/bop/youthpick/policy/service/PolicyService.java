@@ -38,18 +38,20 @@ public class PolicyService {
     private final PolicyRecentViewService policyRecentViewService;
 
     /**
-     * 정책 목록(카드) 조회 (비회원 허용). 삭제·숨김·신청 마감 지난 정책은 제외하고 최신순(id 내림차순, 서버 고정 정렬)으로 내린다. 지역 라벨은 페이지 단위 배치
-     * 조회(fetch join)로 조립해 N+1을 피한다.
+     * 정책 목록(카드) 조회 (비회원 허용). 삭제·숨김·신청 마감 지난 정책은 제외하고 최신순(id 내림차순, 서버 고정 정렬)으로 내린다. category(표준
+     * 5분류)를 주면 해당 분류만. 지역 라벨은 페이지 단위 배치 조회(fetch join)로 조립해 N+1을 피한다.
      */
     @Transactional(readOnly = true)
-    public Page<PolicyCardResponse> getCards(Pageable pageable) {
+    public Page<PolicyCardResponse> getCards(@Nullable String category, Pageable pageable) {
         Pageable sorted =
                 PageRequest.of(
                         pageable.getPageNumber(),
                         pageable.getPageSize(),
                         Sort.by(Sort.Direction.DESC, "id"));
+        String categoryFilter = category == null || category.isBlank() ? null : category;
         Page<Policy> page =
-                policyRepository.findCards(PolicyVisibility.VISIBLE, LocalDate.now(), sorted);
+                policyRepository.findCards(
+                        PolicyVisibility.VISIBLE, LocalDate.now(), categoryFilter, sorted);
 
         List<Long> policyIds = page.getContent().stream().map(Policy::getId).toList();
         Map<Long, List<String>> sidoNamesByPolicyId =

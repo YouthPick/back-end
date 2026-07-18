@@ -58,6 +58,7 @@ class AdminPolicyServiceTest {
 
     @BeforeEach
     void setUp() {
+
         adminPolicyService =
                 new AdminPolicyService(policyRepository, policyRegionRepository, regionRepository);
     }

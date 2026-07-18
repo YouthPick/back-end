@@ -29,12 +29,17 @@ public interface PolicyRepository
 
     Optional<Policy> findByIdAndVisibilityAndDeletedAtIsNull(Long id, PolicyVisibility visibility);
 
-    /** 목록 카드 조회 — 노출 중이고 신청 마감(applicationEndDate)이 지나지 않은 정책만. 마감일 없음(상시)은 포함. */
+    /**
+     * 목록 카드 조회 — 노출 중이고 신청 마감(applicationEndDate)이 지나지 않은 정책만. 마감일 없음(상시)은 포함. category는 표준
+     * 5분류(V8에서 정규화) exact match, null이면 전체.
+     */
     @Query(
             "select p from Policy p where p.visibility = :visibility and p.deletedAt is null"
-                    + " and (p.applicationEndDate is null or p.applicationEndDate >= :today)")
+                    + " and (p.applicationEndDate is null or p.applicationEndDate >= :today)"
+                    + " and (:category is null or p.category = :category)")
     Page<Policy> findCards(
             @Param("visibility") PolicyVisibility visibility,
             @Param("today") LocalDate today,
+            @Param("category") String category,
             Pageable pageable);
 }
