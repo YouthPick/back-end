@@ -2,10 +2,10 @@ package com.bop.youthpick.admin.board.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.bop.youthpick.board.entity.Post;
-import com.bop.youthpick.board.entity.PostCategory;
-import com.bop.youthpick.board.repository.PostRepository;
 import com.bop.youthpick.global.config.JpaAuditingConfig;
+import com.bop.youthpick.post.entity.Post;
+import com.bop.youthpick.post.entity.PostCategory;
+import com.bop.youthpick.post.repository.PostRepository;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.time.LocalDate;

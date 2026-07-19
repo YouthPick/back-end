@@ -1,7 +1,7 @@
 package com.bop.youthpick.admin.board.dto;
 
-import com.bop.youthpick.board.entity.Post;
-import com.bop.youthpick.board.entity.PostCategory;
+import com.bop.youthpick.post.entity.Post;
+import com.bop.youthpick.post.entity.PostCategory;
 import java.time.LocalDateTime;
 
 public record AdminCommunityPostResponse(

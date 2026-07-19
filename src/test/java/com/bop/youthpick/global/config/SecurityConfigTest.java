@@ -3,6 +3,7 @@ package com.bop.youthpick.global.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -81,6 +82,18 @@ class SecurityConfigTest {
         int status = mockMvc.perform(get("/api/v1/policies")).andReturn().getResponse().getStatus();
 
         assertThat(status).isNotIn(401, 403);
+    }
+
+    @Test
+    void 게시글_조회는_인증없이_접근할_수_있다() throws Exception {
+        int status = mockMvc.perform(get("/api/v1/posts")).andReturn().getResponse().getStatus();
+
+        assertThat(status).isNotIn(401, 403);
+    }
+
+    @Test
+    void 게시글_작성은_인증없이_접근하면_401() throws Exception {
+        mockMvc.perform(post("/api/v1/posts")).andExpect(status().isUnauthorized());
     }
 
     @Test
