@@ -30,7 +30,11 @@ public enum PolicyErrorCode implements ErrorCode {
     // 값이라 평소엔 발생하지 않지만, ApplicationStatus enum과 두 곳의 @Pattern 문자열이 어긋나는 경우를 대비한
     // 방어선이다(ApplicationStatus.java 클래스 주석 참고). 이게 없으면 valueOf()의 IllegalArgumentException이
     // GlobalExceptionHandler의 Exception.class 핸들러로 떨어져 500(S001)으로 샌다.
-    INVALID_APPLICATION_STATUS("P007", "유효하지 않은 상태값입니다.", HttpStatus.BAD_REQUEST);
+    INVALID_APPLICATION_STATUS("P007", "유효하지 않은 상태값입니다.", HttpStatus.BAD_REQUEST),
+    // 정책 비교는 DB에 저장하지 않는 stateless 설계다(PolicyComparisonService 클래스 주석 참고). comparisonId는
+    // 비교 대상 policyId를 정렬해 이어붙인 문자열일 뿐이라, 형식이 잘못됐거나(파싱 실패) policyId가 2개 미만이면
+    // "그런 비교는 애초에 존재할 수 없다"는 의미로 이 코드를 던진다.
+    COMPARISON_NOT_FOUND("P008", "존재하지 않는 정책 비교입니다.", HttpStatus.NOT_FOUND);
 
     private final String code;
     private final String message;
