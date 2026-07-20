@@ -23,8 +23,23 @@ spring:
         # 프론트가 페이지 번호를 1부터 쓰므로(page=1이 첫 페이지) 맞춘다.
         # PageMeta.from()도 응답의 page를 +1해서 요청/응답 모두 1-based로 통일한다.
         one-indexed-parameters: true
+  servlet:
+    multipart:
+      max-file-size: ${FILE_MAX_SIZE:10MB}
+      # multipart boundary/header 오버헤드를 고려해 실제 파일 제한보다 여유를 둔다.
+      max-request-size: ${FILE_MAX_REQUEST_SIZE:11MB}
 
 youthpick:
+  file:
+    max-size: ${FILE_MAX_SIZE:10MB}
+  minio:
+    endpoint: ${MINIO_ENDPOINT}
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+    bucket: ${MINIO_BUCKET:youthpick-files}
+    connect-timeout: ${MINIO_CONNECT_TIMEOUT:3s}
+    write-timeout: ${MINIO_WRITE_TIMEOUT:30s}
+    read-timeout: ${MINIO_READ_TIMEOUT:30s}
   auth:
     refresh-cookie:
       # 운영 안전 기본값: 프론트/백엔드가 서로 다른 도메인(크로스사이트)이라 SameSite=None + Secure가 필수.

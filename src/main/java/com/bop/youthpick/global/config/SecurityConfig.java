@@ -83,6 +83,11 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers("/api/v1/posts/**")
                                 .authenticated()
+                                // 파일 조회 URL은 img src에서 바로 사용하도록 공개하고, 업로드만 회원 전용으로 제한한다.
+                                .requestMatchers(HttpMethod.GET, "/api/v1/files/**")
+                                .permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/files")
+                                .authenticated()
                                 // 회원 전용 — 로그인 상태 조회/로그아웃, 회원 탈퇴(컨트롤러 미구현, 경로만 선점),
                                 // 마이페이지(관심정책/추천/읽음/프로필), 최근 본 정책
                                 .requestMatchers(
