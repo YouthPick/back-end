@@ -27,6 +27,14 @@ public class PolicyComparisonService {
 
     private static final String ID_DELIMITER = "-";
 
+    /**
+     * 비교 가능한 정책 개수. {@link PolicyComparisonCreateRequest}의 {@code @Size(min, max)}와 같은 값이어야 한다 —
+     * create로 만들 수 없는 comparisonId는 find로도 조회되면 안 되기 때문이다.
+     */
+    private static final int MIN_POLICY_COUNT = 2;
+
+    private static final int MAX_POLICY_COUNT = 3;
+
     private final PolicyRepository policyRepository;
 
     @Transactional(readOnly = true)
@@ -61,11 +69,15 @@ public class PolicyComparisonService {
         return policyIds.stream().map(String::valueOf).collect(Collectors.joining(ID_DELIMITER));
     }
 
+    /**
+     * comparisonId를 policyId 목록으로 분해한다. create와 같은 개수 제약(2~3개)을 적용해, 생성할 수 없는 comparisonId는 조회도
+     * 거부한다 — 임의로 긴 ID로 큰 IN 쿼리를 유발하는 것도 함께 막는다.
+     */
     private List<Long> decode(String comparisonId) {
         try {
             List<Long> policyIds =
                     Arrays.stream(comparisonId.split(ID_DELIMITER)).map(Long::parseLong).toList();
-            if (policyIds.size() < 2) {
+            if (policyIds.size() < MIN_POLICY_COUNT || policyIds.size() > MAX_POLICY_COUNT) {
                 throw new CustomException(PolicyErrorCode.COMPARISON_NOT_FOUND);
             }
             return policyIds;

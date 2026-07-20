@@ -100,6 +100,28 @@ class PolicyComparisonServiceTest {
     }
 
     @Test
+    void 조회_policyId가_4개_이상이면_COMPARISON_NOT_FOUND_예외를_던진다() {
+        // create는 최대 3개까지만 허용하므로, 생성할 수 없는 comparisonId는 조회도 거부해야 한다.
+        assertThatThrownBy(() -> policyComparisonService.find("1-2-3-4"))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue("errorCode", PolicyErrorCode.COMPARISON_NOT_FOUND);
+    }
+
+    @Test
+    void 조회_policyId가_3개면_정상_조회된다() {
+        Policy first = newPolicy(1L, "청년 월세 지원");
+        Policy second = newPolicy(2L, "청년 취업 장려금");
+        Policy third = newPolicy(3L, "청년 도약계좌");
+        when(policyRepository.findAllById(List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(first, second, third));
+
+        PolicyComparisonResponse response = policyComparisonService.find("1-2-3");
+
+        assertThat(response.comparisonId()).isEqualTo("1-2-3");
+        assertThat(response.policies()).extracting("policyId").containsExactly(1L, 2L, 3L);
+    }
+
+    @Test
     void 조회_참조하는_정책이_더_이상_없으면_POLICY_NOT_FOUND_예외를_던진다() {
         when(policyRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of());
 

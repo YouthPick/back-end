@@ -431,7 +431,7 @@ DB에 별도로 저장하지 않는 stateless 설계다. `comparisonId`는 비�
 | 경로 | `/api/v1/policy-comparisons/{comparisonId}` |
 | 권한 | 비회원 |
 | 파라미터 | path: comparisonId (예: `"1-2"`) |
-| 에러 | 형식이 잘못됐거나 policyId가 2개 미만이면 `P008 COMPARISON_NOT_FOUND`, 참조하는 정책이 더 이상 없으면 `P001 POLICY_NOT_FOUND` |
+| 에러 | 형식이 잘못됐거나 policyId 개수가 2~3개를 벗어나면 `P008 COMPARISON_NOT_FOUND`, 참조하는 정책이 더 이상 없으면 `P001 POLICY_NOT_FOUND` |
 
 ### 응답 필드 (`POST`/`GET` 공통)
 
