@@ -20,6 +20,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
     Page<Post> findAllByDeletedAtIsNull(Pageable pageable);
 
     @Modifying(clearAutomatically = true)
-    @Query("update Post p set p.viewCount = p.viewCount + 1 where p.id = :id")
+    @Query(
+            "update Post p set p.viewCount = p.viewCount + 1 where p.id = :id and p.deletedAt is null")
     int incrementViewCount(@Param("id") Long id);
 }
