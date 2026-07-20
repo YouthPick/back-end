@@ -20,6 +20,13 @@ spring:
         one-indexed-parameters: true
 
 youthpick:
+  file:
+    max-size: 10MB
+  minio:
+    endpoint: http://localhost:9000
+    access-key: test-access-key
+    secret-key: test-secret-key
+    bucket: youthpick-test-files
   jwt:
     secret: test-secret-key-please-be-long-enough-for-hs256
     access-token-expiration: 30m

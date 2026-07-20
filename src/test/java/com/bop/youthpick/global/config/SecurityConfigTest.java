@@ -117,6 +117,22 @@ class SecurityConfigTest {
     }
 
     @Test
+    void 파일_업로드는_인증없이_접근하면_401() throws Exception {
+        mockMvc.perform(post("/api/v1/files")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void 파일_조회는_인증없이_접근할_수_있다() throws Exception {
+        int status =
+                mockMvc.perform(get("/api/v1/files/00000000-0000-0000-0000-000000000000"))
+                        .andReturn()
+                        .getResponse()
+                        .getStatus();
+
+        assertThat(status).isNotIn(401, 403);
+    }
+
+    @Test
     void 회원_탈퇴_경로에_인증없이_접근하면_401() throws Exception {
         mockMvc.perform(delete("/api/v1/users")).andExpect(status().isUnauthorized());
     }
