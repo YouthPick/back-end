@@ -7,6 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface PolicyApplicationRepository
         extends JpaRepository<PolicyApplication, Long>,
@@ -22,7 +24,12 @@ public interface PolicyApplicationRepository
     @EntityGraph(attributePaths = "policy")
     Page<PolicyApplication> findByUser_IdAndDeletedAtIsNull(Long userId, Pageable pageable);
 
-    // PolicyApplicationService.register()의 첫 줄에서 사용 — soft-delete 여부와 무관하게 (user, policy) 조합의
-    // 기존 행이 있는지부터 확인한다(테이블의 UNIQUE(user_id, policy_id) 제약과 짝을 이루는 조회).
-    Optional<PolicyApplication> findByUser_IdAndPolicy_Id(Long userId, Long policyId);
+    // @SQLRestriction("deleted_at IS NULL")은 모든 엔티티 조회에 붙을 수 있으므로, 재등록 판단은 native query로
+    // 명시적으로 우회한다. soft-delete된 기존 행까지 포함해야 UNIQUE(user_id, policy_id) 충돌 없이 reactivate할 수 있다.
+    @Query(
+            value =
+                    "SELECT * FROM policy_applications WHERE user_id = :userId AND policy_id = :policyId LIMIT 1",
+            nativeQuery = true)
+    Optional<PolicyApplication> findIncludingDeletedByUserIdAndPolicyId(
+            @Param("userId") Long userId, @Param("policyId") Long policyId);
 }

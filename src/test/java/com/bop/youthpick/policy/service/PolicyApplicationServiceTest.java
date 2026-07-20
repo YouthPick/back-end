@@ -62,7 +62,8 @@ class PolicyApplicationServiceTest {
 
     @Test
     void 신규_신청관리를_정상적으로_등록한다() {
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(mock(Policy.class)));
@@ -81,7 +82,8 @@ class PolicyApplicationServiceTest {
     void 마감일을_지정하지_않으면_정책의_신청_마감일을_기본값으로_사용한다() {
         Policy policy = mock(Policy.class);
         when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 8, 31));
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
@@ -98,7 +100,8 @@ class PolicyApplicationServiceTest {
     @Test
     void 마감일을_직접_지정하면_정책_마감일_대신_그_값을_사용한다() {
         Policy policy = mock(Policy.class);
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
@@ -117,7 +120,8 @@ class PolicyApplicationServiceTest {
     void 마감일이_정책_마감일과_같으면_등록을_허용한다() {
         Policy policy = mock(Policy.class);
         when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 8, 31));
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
@@ -136,7 +140,8 @@ class PolicyApplicationServiceTest {
     void 마감일이_정책_마감일을_넘으면_END_AT_AFTER_POLICY_DEADLINE_예외를_던진다() {
         Policy policy = mock(Policy.class);
         when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 8, 31));
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
@@ -157,7 +162,8 @@ class PolicyApplicationServiceTest {
 
     @Test
     void 메모가_빈_문자열이면_null로_저장한다() {
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(mock(Policy.class)));
@@ -180,7 +186,8 @@ class PolicyApplicationServiceTest {
                         ApplicationStatus.INTERESTED,
                         null,
                         null);
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.of(existing));
 
         assertThatThrownBy(
@@ -202,7 +209,8 @@ class PolicyApplicationServiceTest {
                         null,
                         null);
         existing.delete();
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.of(existing));
 
         PolicyApplication result =
@@ -223,7 +231,8 @@ class PolicyApplicationServiceTest {
                 PolicyApplication.register(
                         mock(User.class), policy, ApplicationStatus.INTERESTED, null, null);
         existing.delete();
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.of(existing));
 
         PolicyApplication result =
@@ -243,7 +252,8 @@ class PolicyApplicationServiceTest {
                         null,
                         null);
         existing.delete();
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.of(existing));
 
         policyApplicationService.register(
@@ -254,7 +264,8 @@ class PolicyApplicationServiceTest {
 
     @Test
     void 저장_시점에_동시요청으로_유니크_제약이_위반되면_POLICY_ALREADY_EXISTS_예외를_던진다() {
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(mock(Policy.class)));
@@ -277,7 +288,8 @@ class PolicyApplicationServiceTest {
 
     @Test
     void 존재하지_않는_사용자면_USER_NOT_FOUND_예외를_던진다() {
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
@@ -296,7 +308,8 @@ class PolicyApplicationServiceTest {
 
     @Test
     void 존재하지_않는_정책이면_POLICY_NOT_FOUND_예외를_던진다() {
-        when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
+        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
+                        USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.empty());
