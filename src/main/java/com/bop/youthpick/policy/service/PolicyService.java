@@ -41,7 +41,7 @@ public class PolicyService {
 
     /**
      * 정책 목록(카드) 조회 (비회원 허용). 삭제·숨김·신청 마감 지난 정책은 제외하고 최신순(id 내림차순, 서버 고정 정렬)으로 내린다. category(표준 5분류)
-     * exact match, keyword는 5개 필드 LIKE 부분일치, region은 시도명 필터('전국'이면 전 시도를 커버하는 정책만), age는 [ageMin,
+     * exact match, keyword는 5개 필드 LIKE 부분일치, region은 시도명 필터('전국'은 지역 무관이라 필터 미적용), age는 [ageMin,
      * ageMax] 구간과 정책 자격 구간의 겹침(overlap)만 필터한다. 지역 라벨은 페이지 단위 배치 조회(fetch join)로 조립해 N+1을 피한다.
      */
     @Transactional(readOnly = true)
@@ -60,10 +60,10 @@ public class PolicyService {
         String categoryFilter = trimToNull(category);
         String keywordPattern = toLikePattern(keyword);
         String regionFilter = trimToNull(region);
-        boolean nationwideOnly = NATIONWIDE_REGION.equals(regionFilter);
-        String sidoName = nationwideOnly ? null : regionFilter;
+        // '전국'은 지역 드롭다운의 "지역 무관" 선택지 — 시도명 필터를 걸지 않는다.
+        // 전국 대상 정책은 policy_regions에 전 시도가 들어 있어 개별 시도 조회에도 이미 포함된다.
+        String sidoName = NATIONWIDE_REGION.equals(regionFilter) ? null : regionFilter;
         long totalSidoCount = regionRepository.countDistinctSidoNames();
-        Long nationwideThreshold = nationwideOnly ? totalSidoCount : null;
 
         Page<Policy> page =
                 policyRepository.findCards(
@@ -72,7 +72,6 @@ public class PolicyService {
                         categoryFilter,
                         keywordPattern,
                         sidoName,
-                        nationwideThreshold,
                         ageMin,
                         ageMax,
                         sorted);
