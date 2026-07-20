@@ -54,7 +54,7 @@ class PolicyApplicationChecklistServiceTest {
     private PolicyApplication application() {
         User owner = mock(User.class);
         lenient().when(owner.getId()).thenReturn(USER_ID);
-        return PolicyApplication.register(
+        return PolicyApplication.create(
                 owner, mock(Policy.class), ApplicationStatus.APPLIED, null, null);
     }
 

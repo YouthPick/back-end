@@ -70,7 +70,7 @@ class PolicyApplicationServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         PolicyApplication result =
-                policyApplicationService.register(
+                policyApplicationService.create(
                         USER_ID, POLICY_ID, ApplicationStatus.INTERESTED, "메모", null);
 
         assertThat(result.getStatus()).isEqualTo(ApplicationStatus.INTERESTED);
@@ -89,7 +89,7 @@ class PolicyApplicationServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         PolicyApplication result =
-                policyApplicationService.register(
+                policyApplicationService.create(
                         USER_ID, POLICY_ID, ApplicationStatus.INTERESTED, "메모", null);
 
         assertThat(result.getEndAt()).isEqualTo(LocalDateTime.of(2026, 8, 31, 0, 0));
@@ -107,7 +107,7 @@ class PolicyApplicationServiceTest {
 
         LocalDateTime explicitEndAt = LocalDateTime.of(2026, 9, 15, 18, 0);
         PolicyApplication result =
-                policyApplicationService.register(
+                policyApplicationService.create(
                         USER_ID, POLICY_ID, ApplicationStatus.INTERESTED, "메모", explicitEndAt);
 
         assertThat(result.getEndAt()).isEqualTo(explicitEndAt);
@@ -126,7 +126,7 @@ class PolicyApplicationServiceTest {
 
         LocalDateTime sameDayEndAt = LocalDateTime.of(2026, 8, 31, 23, 59);
         PolicyApplication result =
-                policyApplicationService.register(
+                policyApplicationService.create(
                         USER_ID, POLICY_ID, ApplicationStatus.INTERESTED, "메모", sameDayEndAt);
 
         assertThat(result.getEndAt()).isEqualTo(sameDayEndAt);
@@ -144,7 +144,7 @@ class PolicyApplicationServiceTest {
         LocalDateTime tooLateEndAt = LocalDateTime.of(2026, 9, 1, 0, 0);
         assertThatThrownBy(
                         () ->
-                                policyApplicationService.register(
+                                policyApplicationService.create(
                                         USER_ID,
                                         POLICY_ID,
                                         ApplicationStatus.INTERESTED,
@@ -165,7 +165,7 @@ class PolicyApplicationServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         PolicyApplication result =
-                policyApplicationService.register(
+                policyApplicationService.create(
                         USER_ID, POLICY_ID, ApplicationStatus.INTERESTED, "   ", null);
 
         assertThat(result.getMemo()).isNull();
@@ -174,7 +174,7 @@ class PolicyApplicationServiceTest {
     @Test
     void 이미_등록된_행이_있으면_POLICY_ALREADY_EXISTS_예외를_던진다() {
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.INTERESTED,
@@ -185,7 +185,7 @@ class PolicyApplicationServiceTest {
 
         assertThatThrownBy(
                         () ->
-                                policyApplicationService.register(
+                                policyApplicationService.create(
                                         USER_ID, POLICY_ID, ApplicationStatus.APPLIED, null, null))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
@@ -195,7 +195,7 @@ class PolicyApplicationServiceTest {
     @Test
     void soft_delete된_행이_있으면_재활성화한다() {
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.INTERESTED,
@@ -206,7 +206,7 @@ class PolicyApplicationServiceTest {
                 .thenReturn(Optional.of(existing));
 
         PolicyApplication result =
-                policyApplicationService.register(
+                policyApplicationService.create(
                         USER_ID, POLICY_ID, ApplicationStatus.APPLIED, "재등록", null);
 
         assertThat(result).isSameAs(existing);
@@ -220,14 +220,14 @@ class PolicyApplicationServiceTest {
         Policy policy = mock(Policy.class);
         when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 10, 1));
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class), policy, ApplicationStatus.INTERESTED, null, null);
         existing.delete();
         when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
                 .thenReturn(Optional.of(existing));
 
         PolicyApplication result =
-                policyApplicationService.register(
+                policyApplicationService.create(
                         USER_ID, POLICY_ID, ApplicationStatus.APPLIED, "재등록", null);
 
         assertThat(result.getEndAt()).isEqualTo(LocalDateTime.of(2026, 10, 1, 0, 0));
@@ -236,7 +236,7 @@ class PolicyApplicationServiceTest {
     @Test
     void soft_delete된_행을_재활성화하면_이전_체크리스트를_모두_소프트딜리트한다() {
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.INTERESTED,
@@ -246,8 +246,7 @@ class PolicyApplicationServiceTest {
         when(policyApplicationRepository.findByUser_IdAndPolicy_Id(USER_ID, POLICY_ID))
                 .thenReturn(Optional.of(existing));
 
-        policyApplicationService.register(
-                USER_ID, POLICY_ID, ApplicationStatus.APPLIED, "재등록", null);
+        policyApplicationService.create(USER_ID, POLICY_ID, ApplicationStatus.APPLIED, "재등록", null);
 
         verify(policyApplicationChecklistRepository).softDeleteAllByApplicationId(existing.getId());
     }
@@ -264,7 +263,7 @@ class PolicyApplicationServiceTest {
 
         assertThatThrownBy(
                         () ->
-                                policyApplicationService.register(
+                                policyApplicationService.create(
                                         USER_ID,
                                         POLICY_ID,
                                         ApplicationStatus.INTERESTED,
@@ -283,7 +282,7 @@ class PolicyApplicationServiceTest {
 
         assertThatThrownBy(
                         () ->
-                                policyApplicationService.register(
+                                policyApplicationService.create(
                                         USER_ID,
                                         POLICY_ID,
                                         ApplicationStatus.INTERESTED,
@@ -303,7 +302,7 @@ class PolicyApplicationServiceTest {
 
         assertThatThrownBy(
                         () ->
-                                policyApplicationService.register(
+                                policyApplicationService.create(
                                         USER_ID,
                                         POLICY_ID,
                                         ApplicationStatus.INTERESTED,
@@ -319,7 +318,7 @@ class PolicyApplicationServiceTest {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
@@ -349,7 +348,7 @@ class PolicyApplicationServiceTest {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
@@ -369,7 +368,7 @@ class PolicyApplicationServiceTest {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner, mock(Policy.class), ApplicationStatus.INTERESTED, "기존 메모", null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
@@ -384,7 +383,7 @@ class PolicyApplicationServiceTest {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner, mock(Policy.class), ApplicationStatus.INTERESTED, "기존 메모", null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
@@ -410,7 +409,7 @@ class PolicyApplicationServiceTest {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
@@ -427,7 +426,7 @@ class PolicyApplicationServiceTest {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
@@ -443,7 +442,7 @@ class PolicyApplicationServiceTest {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner,
                         mock(Policy.class),
                         ApplicationStatus.INTERESTED,
@@ -464,7 +463,7 @@ class PolicyApplicationServiceTest {
         Policy policy = mock(Policy.class);
         when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 8, 31));
         PolicyApplication existing =
-                PolicyApplication.register(owner, policy, ApplicationStatus.INTERESTED, null, null);
+                PolicyApplication.create(owner, policy, ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
 
@@ -482,7 +481,7 @@ class PolicyApplicationServiceTest {
         when(owner.getId()).thenReturn(USER_ID);
         Policy policy = mock(Policy.class);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner,
                         policy,
                         ApplicationStatus.INTERESTED,
@@ -512,7 +511,7 @@ class PolicyApplicationServiceTest {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
@@ -529,7 +528,7 @@ class PolicyApplicationServiceTest {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
@@ -555,7 +554,7 @@ class PolicyApplicationServiceTest {
         User owner = mock(User.class);
         when(owner.getId()).thenReturn(USER_ID);
         PolicyApplication existing =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         owner, mock(Policy.class), ApplicationStatus.INTERESTED, null, null);
         when(policyApplicationRepository.findByIdAndDeletedAtIsNull(10L))
                 .thenReturn(Optional.of(existing));
@@ -575,7 +574,7 @@ class PolicyApplicationServiceTest {
         when(policy.getCategory()).thenReturn("일자리");
         when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 12, 31));
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class), policy, ApplicationStatus.APPLIED, "메모", null);
         Pageable pageable = PageRequest.of(0, 20);
         Page<PolicyApplication> page = new PageImpl<>(List.of(application), pageable, 1);

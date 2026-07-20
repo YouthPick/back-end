@@ -46,7 +46,7 @@ class PolicyApplicationChecklistControllerTest {
 
     private PolicyApplicationChecklist checklist() {
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.APPLIED,

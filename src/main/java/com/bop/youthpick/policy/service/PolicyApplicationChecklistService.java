@@ -25,8 +25,10 @@ public class PolicyApplicationChecklistService {
     private final PolicyApplicationChecklistRepository applicationChecklistRepository;
     private final PolicyApplicationRepository policyApplicationRepository;
 
-    // PolicyApplicationChecklistController.add()에서 호출. 먼저 findActiveApplication()으로 부모 신청관리가
-    // 존재하고 요청자 소유인지 확인한 뒤에만 PolicyApplicationChecklist.create()로 새 항목을 만든다.
+    /**
+     * 먼저 {@link #findActiveApplication}으로 부모 신청관리가 존재하고 요청자 소유인지 확인한 뒤에만 {@link
+     * PolicyApplicationChecklist#create}로 새 항목을 만든다.
+     */
     @Transactional
     public PolicyApplicationChecklist add(Long applicationId, Long userId, String message) {
         PolicyApplication application = findActiveApplication(applicationId, userId);
@@ -36,8 +38,10 @@ public class PolicyApplicationChecklistService {
         return applicationChecklistRepository.save(checklist);
     }
 
-    // PolicyApplicationChecklistController.update()에서 호출. save() 없이 필드만 바꿔도 @Transactional
-    // 커밋 시 dirty checking으로 자동 반영된다(PolicyApplication.changeStatus()와 같은 패턴).
+    /**
+     * {@code save()} 없이 필드만 바꿔도 {@code @Transactional} 커밋 시 dirty checking으로 자동 반영된다 ({@link
+     * PolicyApplication#changeStatus}와 같은 패턴).
+     */
     @Transactional
     public PolicyApplicationChecklist update(Long id, Long userId, String message) {
         PolicyApplicationChecklist checklist = findActive(id, userId);
@@ -45,29 +49,27 @@ public class PolicyApplicationChecklistService {
         return checklist;
     }
 
-    // PolicyApplicationChecklistController.check()에서 호출.
     @Transactional
     public void check(Long id, Long userId) {
         findActive(id, userId).check();
     }
 
-    // PolicyApplicationChecklistController.uncheck()에서 호출.
     @Transactional
     public void uncheck(Long id, Long userId) {
         findActive(id, userId).uncheck();
     }
 
-    // PolicyApplicationChecklistController.delete()에서 호출 — 항목 하나만 소프트 삭제.
-    // 부모 신청관리 전체가 삭제/재등록될 때 체크리스트를 일괄 정리하는 건 여기가 아니라
-    // PolicyApplicationChecklistRepository.softDeleteAllByApplicationId()이고, 그건
-    // PolicyApplicationService.register()의 reactivate 분기에서 (이 서비스를 거치지 않고) 직접 호출된다.
+    /**
+     * 항목 하나만 소프트 삭제한다. 부모 신청관리 전체가 삭제/재등록될 때 체크리스트를 일괄 정리하는 건 여기가 아니라 {@link
+     * PolicyApplicationChecklistRepository#softDeleteAllByApplicationId}이고, 그건 {@link
+     * PolicyApplicationService#create}의 reactivate 분기에서 (이 서비스를 거치지 않고) 직접 호출된다.
+     */
     @Transactional
     public void delete(Long id, Long userId) {
         findActive(id, userId).delete();
     }
 
-    // PolicyApplicationChecklistController.getByApplication()에서 호출. 부모 신청관리 소유권 확인(1쿼리) 후
-    // 체크리스트 목록을 id 오름차순으로 조회(1쿼리)해 PolicyApplicationChecklistResponse로 변환한다.
+    /** 부모 신청관리 소유권 확인(1쿼리) 후 체크리스트 목록을 id 오름차순으로 조회(1쿼리)해 응답 DTO로 변환한다. */
     @Transactional(readOnly = true)
     public Page<PolicyApplicationChecklistResponse> getByApplication(
             Long applicationId, Long userId, Pageable pageable) {
@@ -78,9 +80,11 @@ public class PolicyApplicationChecklistService {
                 .map(PolicyApplicationChecklistResponse::from);
     }
 
-    // add()/getByApplication()이 공통으로 쓰는 "부모 신청관리가 존재하고, 삭제되지 않았고, 요청자 소유인지" 확인.
-    // PolicyApplicationService.findActive()와 거의 같은 조회(findByIdAndDeletedAtIsNull)를 이 서비스가
-    // 별도로 다시 한다 — 두 서비스가 같은 Repository를 각자 호출하는 구조라 로직이 갈라져 있다.
+    /**
+     * {@link #add}/{@link #getByApplication}이 공통으로 쓰는 "부모 신청관리가 존재하고, 삭제되지 않았고, 요청자 소유인지" 확인.
+     * PolicyApplicationService.findActive()와 거의 같은 조회를 이 서비스가 별도로 다시 한다 — 두 서비스가 같은 Repository를 각자
+     * 호출하는 구조라 로직이 갈라져 있다.
+     */
     private PolicyApplication findActiveApplication(Long applicationId, Long userId) {
         PolicyApplication application =
                 policyApplicationRepository
@@ -93,10 +97,11 @@ public class PolicyApplicationChecklistService {
         return application;
     }
 
-    // update/check/uncheck/delete가 공통으로 쓰는 조회. 체크리스트 자신의 deletedAt뿐 아니라
-    // checklist.getApplication().isDeleted()까지 한 번 더 확인하는 이유: 체크리스트는 안 지워졌는데 부모
-    // PolicyApplication만 나중에 소프트 삭제된 경우를 걸러내기 위해서다(그런 상태의 체크리스트는 "고아"로 취급해
-    // CHECKLIST_NOT_FOUND로 통일).
+    /**
+     * update/check/uncheck/delete가 공통으로 쓰는 조회. 체크리스트 자신의 {@code deletedAt}뿐 아니라 {@code
+     * checklist.getApplication().isDeleted()}까지 한 번 더 확인하는 이유: 체크리스트는 안 지워졌는데 부모 PolicyApplication만
+     * 나중에 소프트 삭제된 경우를 걸러내기 위해서다(그런 상태의 체크리스트는 "고아"로 취급해 CHECKLIST_NOT_FOUND로 통일).
+     */
     private PolicyApplicationChecklist findActive(Long id, Long userId) {
         PolicyApplicationChecklist checklist =
                 applicationChecklistRepository

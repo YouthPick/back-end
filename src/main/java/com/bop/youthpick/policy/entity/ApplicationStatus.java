@@ -5,7 +5,7 @@ package com.bop.youthpick.policy.entity;
  *
  * <p>이 enum 상수 이름 4개는 코드 곳곳에 문자열로 하드코딩되어 있어 같이 맞춰야 한다: {@link PolicyApplication}의
  * {@code @Enumerated(EnumType.STRING)} 컬럼(DB엔 이 이름 그대로 저장됨), {@code
- * PolicyApplicationRegisterRequest}의 {@code @Pattern(regexp =
+ * PolicyApplicationCreateRequest}의 {@code @Pattern(regexp =
  * "INTERESTED|PREPARING|APPLIED|COMPLETED")}, {@code PolicyApplicationController.changeStatus()}의
  * 동일한 {@code @Pattern}. 상수를 추가/이름 변경할 때 이 세 곳을 빠뜨리면 유효한 값인데도 400으로 막힐 수 있다 — 다만 반대
  * 방향({@code @Pattern}이 못 걸러 {@code valueOf()}가 던지는 {@code IllegalArgumentException})은 {@code

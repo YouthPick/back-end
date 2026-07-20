@@ -51,13 +51,13 @@ class PolicyApplicationControllerTest {
     @Test
     void 유효한_요청이면_201과_등록된_신청관리를_반환한다() throws Exception {
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.INTERESTED,
                         "메모",
                         null);
-        when(policyApplicationService.register(
+        when(policyApplicationService.create(
                         eq(1L), eq(2L), eq(ApplicationStatus.INTERESTED), any(), any()))
                 .thenReturn(application);
 
@@ -83,13 +83,13 @@ class PolicyApplicationControllerTest {
     @Test
     void 등록시_PREPARING도_유효한_상태값이다() throws Exception {
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.PREPARING,
                         null,
                         null);
-        when(policyApplicationService.register(
+        when(policyApplicationService.create(
                         eq(1L), eq(2L), eq(ApplicationStatus.PREPARING), any(), any()))
                 .thenReturn(application);
 
@@ -193,7 +193,7 @@ class PolicyApplicationControllerTest {
     @Test
     void changeStatus_유효한_요청이면_200과_변경된_상태를_반환한다() throws Exception {
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.APPLIED,
@@ -216,7 +216,7 @@ class PolicyApplicationControllerTest {
     @Test
     void changeStatus_PREPARING도_유효한_상태값이다() throws Exception {
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.PREPARING,
@@ -257,7 +257,7 @@ class PolicyApplicationControllerTest {
     @Test
     void updateMemo_유효한_요청이면_200과_수정된_메모를_반환한다() throws Exception {
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.INTERESTED,
@@ -300,7 +300,7 @@ class PolicyApplicationControllerTest {
     @Test
     void updateMemo_빈_문자열이면_메모를_비운다() throws Exception {
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.INTERESTED,
@@ -320,7 +320,7 @@ class PolicyApplicationControllerTest {
     @Test
     void updateEndAt_유효한_요청이면_200과_수정된_마감일을_반환한다() throws Exception {
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.INTERESTED,
@@ -340,7 +340,7 @@ class PolicyApplicationControllerTest {
     @Test
     void updateEndAt_빈_문자열이면_마감일을_비운다() throws Exception {
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.INTERESTED,
@@ -361,7 +361,7 @@ class PolicyApplicationControllerTest {
     @Test
     void updateEndAt_파라미터를_생략해도_마감일을_비운다() throws Exception {
         PolicyApplication application =
-                PolicyApplication.register(
+                PolicyApplication.create(
                         mock(User.class),
                         mock(Policy.class),
                         ApplicationStatus.INTERESTED,

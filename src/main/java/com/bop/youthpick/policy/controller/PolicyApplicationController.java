@@ -3,7 +3,7 @@ package com.bop.youthpick.policy.controller;
 import com.bop.youthpick.auth.service.CurrentUser;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.global.error.CustomException;
-import com.bop.youthpick.policy.dto.PolicyApplicationRegisterRequest;
+import com.bop.youthpick.policy.dto.PolicyApplicationCreateRequest;
 import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.PolicyApplication;
@@ -46,20 +46,18 @@ public class PolicyApplicationController {
 
     private final PolicyApplicationService policyApplicationService;
 
-    // POST /api/v1/policy-applications — "관심 등록" 액션의 진입점.
-    // @Valid가 PolicyApplicationRegisterRequest의 Bean Validation(@NotNull, @Pattern 등)을 먼저 통과시킨 뒤에만
-    // 이 메서드 본문이 실행된다.
-    // status 문자열 → ApplicationStatus enum 변환은 parseStatus()를 거친다 — 평소엔 DTO의
-    // @Pattern(PolicyApplicationRegisterRequest.java:12)이 걸러준 값만 들어오지만, 그 화이트리스트가
-    // changeStatus()의 @Pattern과 별도로 중복 관리되는 탓에(ApplicationStatus.java 클래스 주석 참고) 어긋날 경우를
-    // 대비해 parseStatus()가 500 대신 깔끔한 400(P007)으로 막아준다.
-    // 신규 등록 vs soft-delete 재활성화 vs 중복 예외 판단은 PolicyApplicationService.register()가 전담한다.
+    /**
+     * {@code POST /api/v1/policy-applications} — "관심 등록" 액션의 진입점. {@code status} 문자열 → {@link
+     * ApplicationStatus} 변환은 {@link #parseStatus}를 거친다 — 평소엔 DTO의 {@code @Pattern}이 걸러준 값만 들어오지만, 그
+     * 화이트리스트가 {@link #changeStatus}의 {@code @Pattern}과 별도로 중복 관리되는 탓에 어긋날 경우를 대비해 {@link
+     * #parseStatus}가 500 대신 깔끔한 400(P007)으로 막아준다. 신규 등록 vs soft-delete 재활성화 vs 중복 예외 판단은 {@link
+     * PolicyApplicationService#create}가 전담한다.
+     */
     @PostMapping
-    public ResponseEntity<ApiResponse<PolicyApplicationResponse>> register(
-            @CurrentUser Long userId,
-            @Valid @RequestBody PolicyApplicationRegisterRequest request) {
+    public ResponseEntity<ApiResponse<PolicyApplicationResponse>> create(
+            @CurrentUser Long userId, @Valid @RequestBody PolicyApplicationCreateRequest request) {
         PolicyApplication application =
-                policyApplicationService.register(
+                policyApplicationService.create(
                         userId,
                         request.policyId(),
                         parseStatus(request.status()),
@@ -69,11 +67,12 @@ public class PolicyApplicationController {
                 .body(ApiResponse.ok(PolicyApplicationResponse.from(application)));
     }
 
-    // GET /api/v1/policy-applications — 내 정책 신청 목록 페이지 조회.
-    // page/size/totalPages를 컨트롤러가 직접 계산하지 않는다 — @PageableDefault(size=20)로 Spring Data가 Pageable을
-    // 만들고,
-    // PolicyApplicationService.getApplications()가 이미 PolicyApplicationResponse로 변환된 Page를 돌려주므로
-    // 여기선 그 Page를 (content, meta) 형태로 ApiResponse에 담기만 한다(api-design.md의 Pageable 규칙).
+    /**
+     * {@code GET /api/v1/policy-applications} — 내 정책 신청 목록 페이지 조회. page/size/totalPages는 컨트롤러가 직접
+     * 계산하지 않는다 — {@link PolicyApplicationService#getApplications}가 이미 {@link
+     * PolicyApplicationResponse}로 변환된 {@code Page}를 돌려주므로, 여기선 그 Page를 (content, meta) 형태로 {@link
+     * ApiResponse}에 담기만 한다(api-design.md의 Pageable 규칙).
+     */
     @GetMapping
     public ApiResponse<List<PolicyApplicationResponse>> getApplications(
             @CurrentUser Long userId, @PageableDefault(size = 20) Pageable pageable) {
@@ -82,11 +81,12 @@ public class PolicyApplicationController {
         return ApiResponse.ok(page.getContent(), page);
     }
 
-    // PATCH /api/v1/policy-applications/{id}/status — 상태만 단독으로 바꾸는 엔드포인트.
-    // register()의 DTO와 같은 4개 상태값 화이트리스트를 여기서도 별도로 유지한다(위 register() 주석 참고 — 드리프트 위험 동일,
-    // parseStatus()가 같은 방식으로 방어한다).
-    // 소유권 검증은 여기가 아니라 PolicyApplicationService.changeStatus() 안의 application.verifyOwner()에서 한다 —
-    // id로 조회한 신청이 진짜 이 userId 소유인지는 서비스 계층 책임이다.
+    /**
+     * {@code PATCH /api/v1/policy-applications/{id}/status} — 상태만 단독으로 바꾸는 엔드포인트. {@link #create}의
+     * DTO와 같은 4개 상태값 화이트리스트를 여기서도 별도로 유지한다(드리프트 위험 동일, {@link #parseStatus}가 같은 방식으로 방어한다). 소유권 검증은
+     * 여기가 아니라 {@link PolicyApplicationService#changeStatus} 안의 {@code verifyOwner()}에서 한다 — id로 조회한
+     * 신청이 진짜 이 userId 소유인지는 서비스 계층 책임이다.
+     */
     @PatchMapping("/{id}/status")
     public ApiResponse<PolicyApplicationResponse> changeStatus(
             @CurrentUser Long userId,
@@ -102,9 +102,10 @@ public class PolicyApplicationController {
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 
-    // PATCH /api/v1/policy-applications/{id}/memo — 메모만 단독 수정.
-    // 컨트롤러는 @Size로 길이만 검증하고, 빈 문자열/공백을 null로 통일하는 정규화는
-    // PolicyApplicationService.blankToNull()(서비스 계층)이 담당한다 — 여기서 값을 가공하지 않는다.
+    /**
+     * {@code PATCH /api/v1/policy-applications/{id}/memo} — 메모만 단독 수정. 컨트롤러는 {@code @Size}로 길이만
+     * 검증하고, 빈 문자열/공백을 null로 통일하는 정규화는 서비스 계층이 담당한다 — 여기서 값을 가공하지 않는다.
+     */
     @PatchMapping("/{id}/memo")
     public ApiResponse<PolicyApplicationResponse> updateMemo(
             @CurrentUser Long userId,
@@ -115,10 +116,11 @@ public class PolicyApplicationController {
     }
 
     /**
-     * memo와 달리 endAt은 생략 시 필수 에러가 아니라 마감일 초기화(clear)로 동작한다. LocalDateTime처럼 String이 아닌 타입은 Spring이
-     * "파라미터 생략"과 "빈 문자열(endAt=)"을 바인딩 단계에서 이미 null로 합쳐 버려 required=true로는 이 둘을 구분할 수 없다(둘 다 "필수값
-     * 없음" 에러가 됨) — 그래서 memo처럼 필수로 강제하지 않고 의도적으로 생략=초기화로 둔다. 정책 마감일을 넘는지 검증하는 로직은
-     * PolicyApplicationService.updateEndAt() → resolveEndAt()/validateWithinPolicyDeadline()에 있다.
+     * {@code PATCH /api/v1/policy-applications/{id}/end-at} — memo와 달리 endAt은 생략 시 필수 에러가 아니라 마감일
+     * 초기화(clear)로 동작한다. {@code LocalDateTime}처럼 String이 아닌 타입은 Spring이 "파라미터 생략"과 "빈 문자열(endAt=)"을
+     * 바인딩 단계에서 이미 null로 합쳐 버려 required=true로는 이 둘을 구분할 수 없다(둘 다 "필수값 없음" 에러가 됨) — 그래서 memo처럼 필수로
+     * 강제하지 않고 의도적으로 생략=초기화로 둔다. 정책 마감일을 넘는지 검증하는 로직은 {@link PolicyApplicationService#updateEndAt}에
+     * 있다.
      */
     @PatchMapping("/{id}/end-at")
     public ApiResponse<PolicyApplicationResponse> updateEndAt(
@@ -130,19 +132,23 @@ public class PolicyApplicationController {
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 
-    // DELETE /api/v1/policy-applications/{id} — 소프트 삭제(관심 해제).
-    // PolicyApplicationService.delete() → PolicyApplication.delete()가 deletedAt만 세팅한다(물리 삭제 아님, 재등록
-    // 시 reactivate()로 되살아남).
-    // 반환할 데이터가 없어 ApiResponse.ok(null) — data는 null, meta 없음.
+    /**
+     * {@code DELETE /api/v1/policy-applications/{id}} — 소프트 삭제(관심 해제). 물리 삭제가 아니라 {@code
+     * deletedAt}만 세팅한다(재등록 시 reactivate로 되살아남). 반환할 데이터가 없어 {@code ApiResponse.ok(null)} — data는
+     * null, meta 없음.
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@CurrentUser Long userId, @PathVariable Long id) {
         policyApplicationService.delete(id, userId);
         return ApiResponse.ok(null);
     }
 
-    // register()/changeStatus() 공통 — ApplicationStatus.valueOf()를 직접 부르지 않고 이걸 거친다.
-    // 평소엔 @Pattern이 이미 걸러준 값만 들어와서 아무 차이가 없지만, 두 @Pattern과 enum 상수가 어긋나는 드리프트가
-    // 생기면 IllegalArgumentException을 여기서 CustomException(P007)으로 바꿔, 처리 못 한 예외로 새서 500이 되는 걸 막는다.
+    /**
+     * {@link #create}/{@link #changeStatus} 공통 — {@code ApplicationStatus.valueOf()}를 직접 부르지 않고 이걸
+     * 거친다. 평소엔 {@code @Pattern}이 이미 걸러준 값만 들어와서 아무 차이가 없지만, 두 {@code @Pattern}과 enum 상수가 어긋나는 드리프트가
+     * 생기면 {@code IllegalArgumentException}을 여기서 {@code CustomException(P007)}로 바꿔, 처리 못 한 예외로 새서
+     * 500이 되는 걸 막는다.
+     */
     private ApplicationStatus parseStatus(String status) {
         try {
             return ApplicationStatus.valueOf(status);
