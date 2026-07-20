@@ -48,6 +48,10 @@ public class OnboardingService {
                         request.birthYear(),
                         request.employmentStatus(),
                         request.educationLevel(),
+                        request.merryStatus(),
+                        joinToCommaString(request.major()),
+                        joinToCommaString(request.specialCondition()),
+                        request.income(),
                         joinToCommaString(request.categories()),
                         joinToCommaString(request.keywords()));
 

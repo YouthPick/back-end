@@ -69,6 +69,10 @@ class AdminUserControllerTest {
                         2000,
                         "EMPLOYED",
                         "UNIVERSITY",
+                        "SINGLE",
+                        List.of("COMPUTER_SCIENCE"),
+                        List.of("LOW_INCOME"),
+                        3000,
                         List.of("취업"),
                         List.of("청년"),
                         "COMPLETED",
@@ -78,6 +82,10 @@ class AdminUserControllerTest {
         mockMvc.perform(get("/api/v1/admin/users/{userId}/profile", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userId").value(1))
+                .andExpect(jsonPath("$.data.merryStatus").value("SINGLE"))
+                .andExpect(jsonPath("$.data.major[0]").value("COMPUTER_SCIENCE"))
+                .andExpect(jsonPath("$.data.specialCondition[0]").value("LOW_INCOME"))
+                .andExpect(jsonPath("$.data.income").value(3000))
                 .andExpect(jsonPath("$.data.regionLabel").value("서울특별시 강남구"));
     }
 

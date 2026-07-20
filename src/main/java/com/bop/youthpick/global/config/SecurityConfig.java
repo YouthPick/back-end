@@ -75,6 +75,7 @@ public class SecurityConfig {
                                         "/api/v1/auth/token/refresh",
                                         "/api/v1/policy-comparisons/**",
                                         "/api/v1/meta/profile-options",
+                                        "/api/v1/regions",
                                         "/api/v1/policies/**",
                                         "/api/v1/health")
                                 .permitAll()

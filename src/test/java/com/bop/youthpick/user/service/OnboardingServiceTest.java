@@ -44,6 +44,10 @@ class OnboardingServiceTest {
                     "11110",
                     "EMPLOYED",
                     "UNIVERSITY",
+                    "SINGLE",
+                    List.of("COMPUTER_SCIENCE"),
+                    List.of("LOW_INCOME"),
+                    3000,
                     List.of("취업", "주거"),
                     List.of("청년", "공모전"));
 
@@ -66,6 +70,11 @@ class OnboardingServiceTest {
 
         assertThat(result.getBirthYear()).isEqualTo(REQUEST.birthYear());
         assertThat(result.getEmploymentStatus()).isEqualTo(REQUEST.employmentStatus());
+        assertThat(result.getEducationLevel()).isEqualTo(REQUEST.educationLevel());
+        assertThat(result.getMerryStatus()).isEqualTo(REQUEST.merryStatus());
+        assertThat(result.getMajor()).isEqualTo("COMPUTER_SCIENCE");
+        assertThat(result.getSpecialCondition()).isEqualTo("LOW_INCOME");
+        assertThat(result.getIncome()).isEqualTo(REQUEST.income());
         assertThat(result.getCategories()).isEqualTo("취업,주거");
         assertThat(result.getKeywords()).isEqualTo("청년,공모전");
     }
