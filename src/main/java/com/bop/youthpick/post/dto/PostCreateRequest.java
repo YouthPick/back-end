@@ -19,7 +19,8 @@ public record PostCreateRequest(
         @Size(max = 10, message = "이미지는 최대 10개까지 첨부할 수 있습니다.")
                 List<
                                 @Pattern(
-                                        regexp = "/api/v1/files/[0-9a-fA-F-]{36}",
+                                        regexp =
+                                                "/api/v1/files/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
                                         message = "업로드된 이미지 URL 형식이 아닙니다.")
                                 String>
                         attachmentUrls) {} // 필수값이 아님. 잡담은 유무 다 가능

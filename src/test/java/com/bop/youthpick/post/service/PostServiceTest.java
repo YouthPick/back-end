@@ -15,6 +15,7 @@ import com.bop.youthpick.post.dto.PostCreateRequest;
 import com.bop.youthpick.post.dto.PostDetailResponse;
 import com.bop.youthpick.post.dto.PostSummaryResponse;
 import com.bop.youthpick.post.dto.PostUpdateRequest;
+import com.bop.youthpick.post.entity.Attachment;
 import com.bop.youthpick.post.entity.Post;
 import com.bop.youthpick.post.entity.PostCategory;
 import com.bop.youthpick.post.exception.BoardErrorCode;
@@ -80,14 +81,25 @@ class PostServiceTest {
                         "이미지 글",
                         "<img src=\"/api/v1/files/2e5c2c2f-22c7-43a9-8d2c-8902a29b2b21\">",
                         null,
-                        List.of("/api/v1/files/2e5c2c2f-22c7-43a9-8d2c-8902a29b2b21"));
+                        List.of(
+                                "/api/v1/files/2e5c2c2f-22c7-43a9-8d2c-8902a29b2b21",
+                                "/api/v1/files/2e5c2c2f-22c7-43a9-8d2c-8902a29b2b21"));
         when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
         when(postRepository.save(any(Post.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         postService.create(1L, request);
 
-        verify(attachmentRepository).saveAll(any());
+        verify(attachmentRepository)
+                .saveAll(
+                        org.mockito.ArgumentMatchers.argThat(
+                                attachments -> {
+                                    assertThat(attachments)
+                                            .extracting(Attachment::getFileUrl)
+                                            .containsExactly(
+                                                    "/api/v1/files/2e5c2c2f-22c7-43a9-8d2c-8902a29b2b21");
+                                    return true;
+                                }));
     }
 
     @Test
