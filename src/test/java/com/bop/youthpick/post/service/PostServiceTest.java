@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bop.youthpick.board.repository.AttachmentRepository;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.post.dto.PostCreateRequest;
@@ -21,6 +22,7 @@ import com.bop.youthpick.post.exception.BoardException;
 import com.bop.youthpick.post.repository.PostRepository;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.repository.UserRepository;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,7 @@ import org.springframework.data.domain.PageRequest;
 class PostServiceTest {
 
     @Mock private PostRepository postRepository;
+    @Mock private AttachmentRepository attachmentRepository;
     @Mock private UserRepository userRepository;
     @Mock private PolicyRepository policyRepository;
     @Mock private PostViewLogStore postViewLogStore;
@@ -44,13 +47,18 @@ class PostServiceTest {
     @BeforeEach
     void setUp() {
         postService =
-                new PostService(postRepository, userRepository, policyRepository, postViewLogStore);
+                new PostService(
+                        postRepository,
+                        attachmentRepository,
+                        userRepository,
+                        policyRepository,
+                        postViewLogStore);
     }
 
     @Test
     void 자유글을_생성한다() {
         User user = user(1L);
-        PostCreateRequest request = new PostCreateRequest("FREE", "제목", "내용", null);
+        PostCreateRequest request = new PostCreateRequest("FREE", "제목", "내용", null, null);
         when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
         when(postRepository.save(any(Post.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -64,10 +72,29 @@ class PostServiceTest {
     }
 
     @Test
+    void 게시글을_생성할_때_업로드된_이미지를_첨부로_저장한다() {
+        User user = user(1L);
+        PostCreateRequest request =
+                new PostCreateRequest(
+                        "FREE",
+                        "이미지 글",
+                        "<img src=\"/api/v1/files/2e5c2c2f-22c7-43a9-8d2c-8902a29b2b21\">",
+                        null,
+                        List.of("/api/v1/files/2e5c2c2f-22c7-43a9-8d2c-8902a29b2b21"));
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
+        when(postRepository.save(any(Post.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        postService.create(1L, request);
+
+        verify(attachmentRepository).saveAll(any());
+    }
+
+    @Test
     void 후기를_생성할_때_정책을_연결한다() {
         User user = user(1L);
         Policy policy = policy(10L, "청년 정책");
-        PostCreateRequest request = new PostCreateRequest("REVIEW", "후기", "내용", 10L);
+        PostCreateRequest request = new PostCreateRequest("REVIEW", "후기", "내용", 10L, null);
         when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
         when(policyRepository.findById(10L)).thenReturn(Optional.of(policy));
         when(postRepository.save(any(Post.class)))

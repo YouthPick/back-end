@@ -2,7 +2,6 @@ package com.bop.youthpick.post.entity;
 
 import com.bop.youthpick.global.entity.BaseEntity;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,6 +30,10 @@ public class Attachment extends BaseEntity {
     @Column(name = "file_size")
     private Long fileSize;
 
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    public static Attachment create(Post post, String fileUrl) {
+        Attachment attachment = new Attachment();
+        attachment.post = post;
+        attachment.fileUrl = fileUrl;
+        return attachment;
+    }
 }
