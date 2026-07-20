@@ -6,8 +6,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface PolicyApplicationRepository extends JpaRepository<PolicyApplication, Long> {
+public interface PolicyApplicationRepository
+        extends JpaRepository<PolicyApplication, Long>,
+                JpaSpecificationExecutor<PolicyApplication> {
 
     // PolicyApplicationService.findActive(id)가 이걸 감싼다 — changeStatus/updateMemo/updateEndAt/delete가
     // 모두 이 메서드를 거쳐 "존재하지 않거나 이미 삭제된 id"를 POLICY_APPLICATION_NOT_FOUND로 통일해서 처리한다.

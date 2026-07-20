@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 테스트 클래스패스에서 log4j2.xml보다 우선 적용된다(Log4j2가 log4j2-test.*를 먼저 찾음).
+     테스트는 Docker/MySQL 없이 돌아가야 하므로 JDBC Appender 없이 콘솔로만 로깅한다. -->
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%throwable"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>

@@ -2,13 +2,11 @@ package com.bop.youthpick.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +15,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.data.redis.core.script.RedisScript;
 
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenStoreTest {
@@ -46,32 +43,30 @@ class RefreshTokenStoreTest {
     }
 
     @Test
-    void rotate가_성공하면_true를_반환한다() {
-        when(redisTemplate.execute(any(RedisScript.class), anyList(), any(), any(), any()))
-                .thenReturn(1L);
+    void 저장된_해시와_일치하면_matches가_true를_반환한다() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        ArgumentCaptor<String> hashCaptor = ArgumentCaptor.forClass(String.class);
+        refreshTokenStore.save(1L, "refresh-token", Duration.ofDays(14));
+        verify(valueOperations).set(eq("auth:refresh-token:1"), hashCaptor.capture(), any());
+        when(valueOperations.get("auth:refresh-token:1")).thenReturn(hashCaptor.getValue());
 
-        boolean rotated =
-                refreshTokenStore.rotate(1L, "old-token", "new-token", Duration.ofDays(14));
-
-        assertThat(rotated).isTrue();
-        verify(redisTemplate)
-                .execute(
-                        any(RedisScript.class),
-                        eq(List.of("auth:refresh-token:1")),
-                        any(),
-                        any(),
-                        any());
+        assertThat(refreshTokenStore.matches(1L, "refresh-token")).isTrue();
     }
 
     @Test
-    void 저장된_값과_불일치하면_rotate가_false를_반환한다() {
-        when(redisTemplate.execute(any(RedisScript.class), anyList(), any(), any(), any()))
-                .thenReturn(0L);
+    void 저장된_값과_불일치하면_matches가_false를_반환한다() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("auth:refresh-token:1")).thenReturn("different-hash");
 
-        boolean rotated =
-                refreshTokenStore.rotate(1L, "old-token", "new-token", Duration.ofDays(14));
+        assertThat(refreshTokenStore.matches(1L, "refresh-token")).isFalse();
+    }
 
-        assertThat(rotated).isFalse();
+    @Test
+    void 저장된_값이_없으면_matches가_false를_반환한다() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("auth:refresh-token:1")).thenReturn(null);
+
+        assertThat(refreshTokenStore.matches(1L, "refresh-token")).isFalse();
     }
 
     @Test

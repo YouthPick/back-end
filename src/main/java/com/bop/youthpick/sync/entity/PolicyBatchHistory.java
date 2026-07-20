@@ -66,4 +66,39 @@ public class PolicyBatchHistory {
 
     @Column(name = "failure_message", length = 1000)
     private String failureMessage;
+
+    private static final int FAILURE_MESSAGE_MAX = 1000;
+
+    public static PolicyBatchHistory request(BatchMode mode) {
+        PolicyBatchHistory history = new PolicyBatchHistory();
+        history.mode = mode;
+        history.status = BatchStatus.REQUESTED;
+        history.requestedAt = LocalDateTime.now();
+        return history;
+    }
+
+    public void start() {
+        this.status = BatchStatus.RUNNING;
+        this.startedAt = LocalDateTime.now();
+    }
+
+    public void succeed(
+            int newCount, int updatedCount, int unchangedCount, int missingCount, int errorCount) {
+        this.status = BatchStatus.SUCCEEDED;
+        this.finishedAt = LocalDateTime.now();
+        this.newCount = newCount;
+        this.updatedCount = updatedCount;
+        this.unchangedCount = unchangedCount;
+        this.missingCount = missingCount;
+        this.errorCount = errorCount;
+    }
+
+    public void fail(String message) {
+        this.status = BatchStatus.FAILED;
+        this.finishedAt = LocalDateTime.now();
+        this.failureMessage =
+                message != null && message.length() > FAILURE_MESSAGE_MAX
+                        ? message.substring(0, FAILURE_MESSAGE_MAX)
+                        : message;
+    }
 }

@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLRestriction;
 
 /**
  * 사용자별 정책 신청 진행관리 (관심 → 신청 → 완료). 기존 favorite_policies를 흡수 — status=INTERESTED가 즐겨찾기. UNIQUE(user,
@@ -34,6 +35,7 @@ import lombok.NoArgsConstructor;
                 @UniqueConstraint(
                         name = "uk_policy_applications_user_policy",
                         columnNames = {"user_id", "policy_id"}))
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PolicyApplication extends BaseEntity {

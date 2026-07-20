@@ -59,4 +59,12 @@ public class User extends BaseEntity {
         user.nickname = nickname;
         return user;
     }
+
+    public void changeRole(Role role) {
+        this.role = role;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }

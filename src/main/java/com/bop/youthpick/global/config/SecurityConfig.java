@@ -2,6 +2,7 @@ package com.bop.youthpick.global.config;
 
 import com.bop.youthpick.auth.service.JwtAuthenticationFilter;
 import com.bop.youthpick.auth.service.JwtTokenProvider;
+import com.bop.youthpick.log.service.RequestLogContextFilter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -71,13 +72,19 @@ public class SecurityConfig {
                                         "/api/v1/policies/**",
                                         "/api/v1/health")
                                 .permitAll()
+                                // 게시글 조회는 공개, 생성·수정·삭제는 회원 전용
+                                .requestMatchers(HttpMethod.GET, "/api/v1/posts/**")
+                                .permitAll()
+                                .requestMatchers("/api/v1/posts/**")
+                                .authenticated()
                                 // 회원 전용 — 로그인 상태 조회/로그아웃, 회원 탈퇴(컨트롤러 미구현, 경로만 선점),
-                                // 마이페이지(관심정책/추천/읽음/프로필), 챗봇 프로필 동의
+                                // 마이페이지(관심정책/추천/읽음/프로필), 최근 본 정책, 챗봇 프로필 동의
                                 .requestMatchers(
                                         "/api/v1/auth/me",
                                         "/api/v1/auth/logout",
                                         "/api/v1/users",
                                         "/api/v1/me/**",
+                                        "/api/v1/policy-recent-views",
                                         "/api/v1/policy-chat/profile-consent")
                                 .authenticated()
                                 // 회원 전용 — 정책 신청관리(관심정책 흡수) + 체크리스트.
@@ -92,6 +99,7 @@ public class SecurityConfig {
         http.addFilterBefore(
                 new JwtAuthenticationFilter(jwtTokenProvider),
                 UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(new RequestLogContextFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
     }

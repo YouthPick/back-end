@@ -45,6 +45,7 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 | 신청관리 | 체크리스트 체크 | `PATCH` | `/api/v1/policy-application-checklists/{id}/check` | 회원 | path: id |
 | 신청관리 | 체크리스트 체크 해제 | `PATCH` | `/api/v1/policy-application-checklists/{id}/uncheck` | 회원 | path: id |
 | 신청관리 | 체크리스트 삭제 | `DELETE` | `/api/v1/policy-application-checklists/{id}` | 회원 | path: id |
+| 최근 본 정책 | 최근 본 정책 목록 | `GET` | `/api/v1/policy-recent-views` | 회원 | query: page 기본 0, size 기본 20 |
 | 읽음 상태 | 읽음 상태 목록 조회 | `GET` | `/api/v1/policy-read-states` | 회원 | query: policyIds 반복 |
 | 읽음 상태 | 정책 읽음 처리 | `PUT` | `/api/v1/policy-read-states/{policyId}` | 회원 | path: policyId |
 | 정책 비교 | 정책 비교 생성 | `POST` | `/api/v1/policy-comparisons` | 비회원 | body: policyIds[] |
@@ -185,7 +186,7 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 
 ### 정책 상세 조회
 
-단일 정책의 상세 정보를 조회한다.
+단일 정책의 상세 정보를 조회한다. 삭제·숨김 처리된 정책은 404(`P001`)로 응답한다. 로그인 사용자(access token 포함 요청)가 조회하면 해당 정책이 최근 본 정책으로 기록된다.
 
 | 항목 | 내용 |
 |---|---|
@@ -331,6 +332,19 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 경로 | `/api/v1/policy-application-checklists/{id}` |
 | 권한 | 회원 |
 | 파라미터 | path: id |
+
+## 최근 본 정책
+
+### 최근 본 정책 목록
+
+로그인 사용자가 최근에 상세 조회한 정책 목록을 마지막 조회 시각 내림차순으로 조회한다. 같은 정책을 다시 보면 기록이 늘어나지 않고 조회 시각만 갱신된다. 삭제·숨김 처리된 정책은 목록에서 제외된다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `GET` |
+| 경로 | `/api/v1/policy-recent-views` |
+| 권한 | 회원 |
+| 파라미터 | query: page 기본 0, size 기본 20 |
 
 ## 읽음 상태
 

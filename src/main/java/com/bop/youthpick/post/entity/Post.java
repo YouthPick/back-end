@@ -1,20 +1,9 @@
-package com.bop.youthpick.board.entity;
+package com.bop.youthpick.post.entity;
 
 import com.bop.youthpick.global.entity.BaseEntity;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.user.entity.User;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -54,4 +43,26 @@ public class Post extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public static Post create(
+            User user, Policy policy, PostCategory category, String title, String content) {
+        Post post = new Post();
+        post.user = user;
+        post.policy = policy;
+        post.category = category;
+        post.title = title;
+        post.content = content;
+        return post;
+    }
+
+    public void update(Policy policy, PostCategory category, String title, String content) {
+        this.policy = policy;
+        this.category = category;
+        this.title = title;
+        this.content = content;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }

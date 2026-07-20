@@ -4,7 +4,7 @@
 
 - [ ] 미인증 접근이 리다이렉트가 아니라 `RestAuthenticationEntryPoint`에서 JSON + `A001 UNAUTHORIZED`로 내려가는가.
 - [ ] `SecurityConfig`가 `SessionCreationPolicy.STATELESS`를 유지하는가. 세션/쿠키 기반 인증 코드가 새로 생기지 않았는가.
-- [ ] access token은 짧은 TTL, refresh token은 발급 시 `RefreshTokenStore`(Redis)에 저장되고 재발급(rotate)/로그아웃 시 갱신·삭제되는가.
+- [ ] access token은 짧은 TTL, refresh token은 발급 시 `RefreshTokenStore`(Redis)에 저장되고 로그아웃 시 삭제되는가. refresh token 자체는 재발급(rotate) 없이 최초 TTL이 다할 때까지 재사용된다.
 - [ ] `/api/v1/auth/token/refresh`가 JWT 서명·만료뿐 아니라 Redis에 저장된 값과 일치하는지도 검증하는가(탈취된 구 토큰 재사용 방지).
 - [ ] 인가 규칙(경로별 권한)이 `SecurityConfig`에 모여 있는가. Controller에 `if (권한)` 식으로 흩뿌려지지 않았는가.
 - [ ] 새로 추가된 인증 필요 엔드포인트가 `SecurityConfig`의 `authenticated()` 목록에 반영됐는가(빠지면 `anyRequest().permitAll()`로 누구나 접근 가능).

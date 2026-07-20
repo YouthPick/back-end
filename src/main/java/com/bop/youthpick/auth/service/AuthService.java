@@ -4,7 +4,9 @@ import com.bop.youthpick.auth.dto.OAuthUserInfo;
 import com.bop.youthpick.auth.dto.TokenResponse;
 import com.bop.youthpick.auth.exception.AuthErrorCode;
 import com.bop.youthpick.auth.exception.AuthException;
+import com.bop.youthpick.user.entity.LoginHistory;
 import com.bop.youthpick.user.entity.User;
+import com.bop.youthpick.user.repository.LoginHistoryRepository;
 import com.bop.youthpick.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import java.util.UUID;
@@ -29,6 +31,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenStore refreshTokenStore;
+    private final LoginHistoryRepository loginHistoryRepository;
 
     public String buildAuthorizationUrl(String registrationId) {
         OAuthProvider provider = OAuthProvider.from(registrationId);
@@ -70,6 +73,7 @@ public class AuthService {
         OAuthUserInfo userInfo = oAuthClient.fetchUserInfo(provider, accessToken);
 
         User user = findOrCreateUser(provider, userInfo);
+        loginHistoryRepository.save(LoginHistory.create(user));
         return issueTokens(user);
     }
 
@@ -83,21 +87,15 @@ public class AuthService {
                         .findById(userId)
                         .orElseThrow(() -> new AuthException(AuthErrorCode.UNAUTHORIZED));
 
-        String newAccessToken =
-                jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());
-        String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getId());
-        boolean rotated =
-                refreshTokenStore.rotate(
-                        userId,
-                        refreshToken,
-                        newRefreshToken,
-                        jwtTokenProvider.refreshTokenExpiration());
-        if (!rotated) {
-            // 저장된 refresh token과 불일치(이미 재발급됐거나 로그아웃됨) — 동시 재발급 요청 중 하나만 성공시킨다.
+        if (!refreshTokenStore.matches(userId, refreshToken)) {
+            // 저장된 refresh token과 불일치(로그아웃되었거나 유효하지 않음)
             throw new AuthException(AuthErrorCode.INVALID_REFRESH_TOKEN);
         }
+
+        String newAccessToken =
+                jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());
         return TokenResponse.of(
-                newAccessToken, newRefreshToken, jwtTokenProvider.accessTokenExpirationSeconds());
+                newAccessToken, refreshToken, jwtTokenProvider.accessTokenExpirationSeconds());
     }
 
     // Redis(refresh token 삭제)만 다루고 JPA 트랜잭션 리소스를 쓰지 않아 @Transactional 대상이 아니다.

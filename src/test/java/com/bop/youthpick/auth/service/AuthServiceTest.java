@@ -13,7 +13,9 @@ import static org.mockito.Mockito.when;
 import com.bop.youthpick.auth.dto.OAuthUserInfo;
 import com.bop.youthpick.auth.dto.TokenResponse;
 import com.bop.youthpick.auth.exception.AuthException;
+import com.bop.youthpick.user.entity.LoginHistory;
 import com.bop.youthpick.user.entity.User;
+import com.bop.youthpick.user.repository.LoginHistoryRepository;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -36,6 +38,7 @@ class AuthServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private RefreshTokenStore refreshTokenStore;
+    @Mock private LoginHistoryRepository loginHistoryRepository;
 
     private AuthService authService;
 
@@ -54,7 +57,8 @@ class AuthServiceTest {
                         oAuthStateStore,
                         userRepository,
                         jwtTokenProvider,
-                        refreshTokenStore);
+                        refreshTokenStore,
+                        loginHistoryRepository);
     }
 
     @Test
@@ -83,6 +87,7 @@ class AuthServiceTest {
                 .isInstanceOf(AuthException.class);
 
         verify(oAuthClient, never()).exchangeCodeForAccessToken(any(), any(), any(), any(), any());
+        verify(loginHistoryRepository, never()).save(any());
     }
 
     @Test
@@ -110,6 +115,7 @@ class AuthServiceTest {
 
         verify(userRepository).save(any(User.class));
         verify(refreshTokenStore).save(savedUser.getId(), "jwt-refresh", Duration.ofDays(14));
+        verify(loginHistoryRepository).save(any(LoginHistory.class));
         assertThat(tokens.accessToken()).isEqualTo("jwt-access");
         assertThat(tokens.refreshToken()).isEqualTo("jwt-refresh");
         assertThat(tokens.expiresIn()).isEqualTo(1800L);
@@ -139,29 +145,26 @@ class AuthServiceTest {
         authService.login("google", "code", "state-value");
 
         verify(userRepository, never()).save(any());
+        verify(loginHistoryRepository).save(any(LoginHistory.class));
     }
 
     @Test
-    void refresh_token_rotate가_실패하면_거부된다() {
+    void refresh_token이_저장된_값과_불일치하면_거부된다() {
         User user = mock(User.class);
         io.jsonwebtoken.Claims claims = mock(io.jsonwebtoken.Claims.class);
-        when(user.getId()).thenReturn(1L);
-        when(user.getRole()).thenReturn(com.bop.youthpick.user.entity.Role.USER);
         when(jwtTokenProvider.validateRefreshToken("refresh-token")).thenReturn(claims);
         when(jwtTokenProvider.getUserId(claims)).thenReturn(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(jwtTokenProvider.createAccessToken(1L, "USER")).thenReturn("new-access");
-        when(jwtTokenProvider.createRefreshToken(1L)).thenReturn("new-refresh");
-        when(jwtTokenProvider.refreshTokenExpiration()).thenReturn(Duration.ofDays(14));
-        when(refreshTokenStore.rotate(1L, "refresh-token", "new-refresh", Duration.ofDays(14)))
-                .thenReturn(false);
+        when(refreshTokenStore.matches(1L, "refresh-token")).thenReturn(false);
 
         assertThatThrownBy(() -> authService.refresh("refresh-token"))
                 .isInstanceOf(AuthException.class);
+
+        verify(jwtTokenProvider, never()).createAccessToken(any(), any());
     }
 
     @Test
-    void refresh_token이_유효하면_원자적으로_rotate하고_토큰을_재발급한다() {
+    void refresh_token이_유효하면_회전없이_access_token만_재발급한다() {
         User user = mock(User.class);
         io.jsonwebtoken.Claims claims = mock(io.jsonwebtoken.Claims.class);
         when(user.getId()).thenReturn(1L);
@@ -169,18 +172,15 @@ class AuthServiceTest {
         when(jwtTokenProvider.validateRefreshToken("refresh-token")).thenReturn(claims);
         when(jwtTokenProvider.getUserId(claims)).thenReturn(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(refreshTokenStore.matches(1L, "refresh-token")).thenReturn(true);
         when(jwtTokenProvider.createAccessToken(1L, "USER")).thenReturn("new-access");
-        when(jwtTokenProvider.createRefreshToken(1L)).thenReturn("new-refresh");
-        when(jwtTokenProvider.refreshTokenExpiration()).thenReturn(Duration.ofDays(14));
         when(jwtTokenProvider.accessTokenExpirationSeconds()).thenReturn(1800L);
-        when(refreshTokenStore.rotate(1L, "refresh-token", "new-refresh", Duration.ofDays(14)))
-                .thenReturn(true);
 
         TokenResponse tokens = authService.refresh("refresh-token");
 
         assertThat(tokens.accessToken()).isEqualTo("new-access");
-        assertThat(tokens.refreshToken()).isEqualTo("new-refresh");
-        verify(refreshTokenStore).rotate(1L, "refresh-token", "new-refresh", Duration.ofDays(14));
+        assertThat(tokens.refreshToken()).isEqualTo("refresh-token");
+        verify(jwtTokenProvider, never()).createRefreshToken(any());
     }
 
     @Test
@@ -213,6 +213,7 @@ class AuthServiceTest {
         assertThat(tokens.accessToken()).isEqualTo("jwt-access");
         verify(userRepository, org.mockito.Mockito.times(2))
                 .findByProviderAndProviderId("GOOGLE", "provider-id-1");
+        verify(loginHistoryRepository).save(any(LoginHistory.class));
     }
 
     @Test

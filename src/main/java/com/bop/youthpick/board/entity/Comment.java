@@ -1,6 +1,7 @@
 package com.bop.youthpick.board.entity;
 
 import com.bop.youthpick.global.entity.BaseEntity;
+import com.bop.youthpick.post.entity.Post;
 import com.bop.youthpick.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -45,4 +46,8 @@ public class Comment extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }
