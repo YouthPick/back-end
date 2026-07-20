@@ -103,7 +103,8 @@ class PostControllerTest {
 
     @Test
     void 게시글_상세를_조회한다() throws Exception {
-        when(postService.findById(3L)).thenReturn(detail(3L, "FREE", "제목", "내용"));
+        when(postService.findById(eq(3L), eq(1L), any()))
+                .thenReturn(detail(3L, "FREE", "제목", "내용"));
 
         mockMvc.perform(get("/api/v1/posts/{postId}", 3L))
                 .andExpect(status().isOk())
