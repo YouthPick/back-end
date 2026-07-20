@@ -12,12 +12,15 @@ import com.bop.youthpick.user.exception.UserException;
 import com.bop.youthpick.user.repository.UserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class PolicyChatService {
+
+    private static final int MESSAGE_PAGE_SIZE = 50;
 
     private final PolicyChatAccessService accessService;
     private final UserRepository userRepository;
@@ -31,7 +34,7 @@ public class PolicyChatService {
         List<PolicyChatMessageResponse> messages =
                 messageRepository
                         .findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(
-                                policyId, afterId)
+                                policyId, afterId, Pageable.ofSize(MESSAGE_PAGE_SIZE))
                         .stream()
                         .map(message -> PolicyChatMessageResponse.from(message, userId))
                         .toList();

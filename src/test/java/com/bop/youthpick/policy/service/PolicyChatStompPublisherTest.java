@@ -97,7 +97,16 @@ class PolicyChatStompPublisherTest {
                 .forEach(TransactionSynchronization::afterCommit);
         verify(messagingTemplate)
                 .convertAndSendToUser(
-                        "1", "/queue/policies/10/chat/messages", message().forUser(1L));
+                        "1",
+                        "/queue/policies/10/chat/messages",
+                        new PolicyChatMessageResponse(
+                                11L,
+                                10L,
+                                "작성자",
+                                "메시지",
+                                LocalDateTime.of(2026, 7, 19, 12, 0),
+                                true,
+                                "client-message-1"));
     }
 
     private PolicyChatMessageResponse responseFor(

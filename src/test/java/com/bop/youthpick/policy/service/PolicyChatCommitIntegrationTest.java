@@ -19,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -61,7 +62,7 @@ class PolicyChatCommitIntegrationTest {
         assertThat(
                         messageRepository
                                 .findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(
-                                        policy.getId(), 0L))
+                                        policy.getId(), 0L, Pageable.ofSize(50)))
                 .hasSize(1);
         ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
         verify(messagingTemplate, timeout(1_000))

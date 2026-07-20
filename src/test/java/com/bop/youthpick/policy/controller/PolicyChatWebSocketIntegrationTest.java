@@ -29,6 +29,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -162,7 +163,7 @@ class PolicyChatWebSocketIntegrationTest {
         assertThat(
                         messageRepository
                                 .findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(
-                                        policy.getId(), 0L))
+                                        policy.getId(), 0L, Pageable.ofSize(50)))
                 .isEmpty();
     }
 
@@ -191,7 +192,7 @@ class PolicyChatWebSocketIntegrationTest {
         assertThat(
                         messageRepository
                                 .findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(
-                                        policy.getId(), 0L))
+                                        policy.getId(), 0L, Pageable.ofSize(50)))
                 .isEmpty();
     }
 

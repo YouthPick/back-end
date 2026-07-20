@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bop.youthpick.auth.dto.AuthPrincipal;
+import com.bop.youthpick.auth.exception.AuthErrorCode;
 import com.bop.youthpick.auth.exception.AuthException;
 import com.bop.youthpick.auth.service.JwtProperties;
 import com.bop.youthpick.auth.service.JwtStompAuthentication;
@@ -97,9 +98,11 @@ class PolicyChatInboundInterceptorTest {
         accessor(invalid).setNativeHeader(HttpHeaders.AUTHORIZATION, "Bearer invalid");
 
         assertThatThrownBy(() -> interceptor.preSend(missing, channel))
-                .isInstanceOf(AuthException.class);
+                .isInstanceOf(AuthException.class)
+                .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.UNAUTHORIZED);
         assertThatThrownBy(() -> interceptor.preSend(invalid, channel))
-                .isInstanceOf(AuthException.class);
+                .isInstanceOf(AuthException.class)
+                .hasFieldOrPropertyWithValue("errorCode", AuthErrorCode.INVALID_TOKEN);
     }
 
     @Test
@@ -167,7 +170,7 @@ class PolicyChatInboundInterceptorTest {
     }
 
     @Test
-    void SUBSCRIBE_UNSUBSCRIBE_DISCONNECT가_등록을_안전하게_정리한다() {
+    void SUBSCRIBE_UNSUBSCRIBE가_등록을_안전하게_정리한다() {
         JwtStompAuthentication user = new JwtStompAuthentication(7L, "USER");
         Message<byte[]> first =
                 frame(
@@ -193,10 +196,6 @@ class PolicyChatInboundInterceptorTest {
                 frame(StompCommand.UNSUBSCRIBE, null, user, "session-1", "sub-1");
         interceptor.afterSendCompletion(unsubscribe, channel, true, null);
         assertThat(registry.registrationCount()).isOne();
-
-        Message<byte[]> disconnect = frame(StompCommand.DISCONNECT, null, user, "session-1", null);
-        interceptor.afterSendCompletion(disconnect, channel, true, null);
-        assertThat(registry.registrationCount()).isZero();
     }
 
     private Message<byte[]> frame(

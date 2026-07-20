@@ -3,6 +3,7 @@ package com.bop.youthpick.policy.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,9 +27,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,7 +61,7 @@ class PolicyChatServiceTest {
         when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(mine));
         when(accessService.requireVisiblePolicy(10L)).thenReturn(policy);
         when(messageRepository.findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(
-                        10L, 7L))
+                        eq(10L), eq(7L), any(Pageable.class)))
                 .thenReturn(List.of(first, second));
 
         PolicyChatMessagesResponse response = policyChatService.getMessages(10L, 1L, 7L);
@@ -69,6 +72,11 @@ class PolicyChatServiceTest {
                 .containsExactly(11L, 12L);
         assertThat(response.messages().get(0).mine()).isTrue();
         assertThat(response.messages().get(1).authorName()).isEqualTo("사용자");
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(messageRepository)
+                .findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(
+                        eq(10L), eq(7L), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(50);
     }
 
     @Test
@@ -80,7 +88,7 @@ class PolicyChatServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", UserError.USER_NOT_FOUND);
 
         verify(messageRepository, never())
-                .findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(any(), any());
+                .findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(any(), any(), any());
     }
 
     @Test
@@ -93,7 +101,7 @@ class PolicyChatServiceTest {
         assertPolicyNotFound(() -> policyChatService.getMessages(10L, 1L, 0L));
 
         verify(messageRepository, never())
-                .findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(any(), any());
+                .findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(any(), any(), any());
     }
 
     @Test

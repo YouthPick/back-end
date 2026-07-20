@@ -67,10 +67,6 @@ public class PolicyChatInboundInterceptor implements ChannelInterceptor {
         if (accessor == null || accessor.getCommand() == null) {
             return;
         }
-        if (accessor.getCommand() == StompCommand.DISCONNECT) {
-            disconnect(accessor);
-            return;
-        }
         if (!sent || exception != null) {
             return;
         }
@@ -140,12 +136,6 @@ public class PolicyChatInboundInterceptor implements ChannelInterceptor {
         if (StringUtils.hasText(accessor.getSessionId())
                 && StringUtils.hasText(accessor.getSubscriptionId())) {
             subscriptionRegistry.unregister(accessor.getSessionId(), accessor.getSubscriptionId());
-        }
-    }
-
-    private void disconnect(StompHeaderAccessor accessor) {
-        if (StringUtils.hasText(accessor.getSessionId())) {
-            subscriptionRegistry.disconnect(accessor.getSessionId());
         }
     }
 

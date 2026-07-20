@@ -21,6 +21,10 @@ public class PolicyChatStompPublisher {
     }
 
     void publishAfterCommit(PolicyChatOutboundMessage outboundMessage) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            taskExecutor.execute(() -> publish(outboundMessage));
+            return;
+        }
         TransactionSynchronizationManager.registerSynchronization(
                 new TransactionSynchronization() {
                     @Override

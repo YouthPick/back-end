@@ -15,6 +15,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
@@ -47,7 +48,7 @@ class PolicyChatMessageRepositoryTest {
 
         List<PolicyChatMessage> result =
                 messageRepository.findByPolicyIdAndIdGreaterThanAndDeletedAtIsNullOrderByIdAsc(
-                        firstPolicy.getId(), first.getId());
+                        firstPolicy.getId(), first.getId(), Pageable.ofSize(50));
 
         assertThat(result).extracting(PolicyChatMessage::getId).containsExactly(second.getId());
         assertThat(result)
