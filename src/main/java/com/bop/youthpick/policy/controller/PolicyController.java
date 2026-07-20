@@ -13,6 +13,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -22,11 +23,21 @@ public class PolicyController {
 
     private final PolicyService policyService;
 
-    /** 정책 목록(카드) 조회 (비회원 허용). 최신순 서버 고정 정렬, meta에 page/totalCount/totalPages. */
+    /**
+     * 정책 목록(카드) 조회 (비회원 허용). 최신순 서버 고정 정렬. category(표준 5분류) exact match, keyword는 부분일치 검색, region은
+     * 시도명('전국'이면 전 시도 커버 정책만), ageMin/ageMax는 자격 구간과의 겹침 필터 — 모두 선택. meta에
+     * page/totalCount/totalPages.
+     */
     @GetMapping
     public ApiResponse<List<PolicyCardResponse>> getCards(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) Integer ageMin,
+            @RequestParam(required = false) Integer ageMax,
             @PageableDefault(size = 20) Pageable pageable) {
-        Page<PolicyCardResponse> page = policyService.getCards(pageable);
+        Page<PolicyCardResponse> page =
+                policyService.getCards(category, keyword, region, ageMin, ageMax, pageable);
         return ApiResponse.ok(page.getContent(), page);
     }
 

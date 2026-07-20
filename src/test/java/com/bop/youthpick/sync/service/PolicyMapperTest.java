@@ -45,6 +45,17 @@ class PolicyMapperTest {
     }
 
     @Test
+    @DisplayName("대분류 정규화: 반각점·콤마다중·구명칭은 표준 5분류로, 미지의 값은 원본 유지, 빈값은 null (#80)")
+    void normalizesCategoryVariants() {
+        assertThat(mapper.normalizeCategory("P1", "일자리")).isEqualTo("일자리");
+        assertThat(mapper.normalizeCategory("P1", "교육･직업훈련")).isEqualTo("교육·직업훈련");
+        assertThat(mapper.normalizeCategory("P1", "금융･복지･문화,금융･복지･문화")).isEqualTo("금융·복지·문화");
+        assertThat(mapper.normalizeCategory("P1", "참여권리")).isEqualTo("참여·기반");
+        assertThat(mapper.normalizeCategory("P1", "신규분류")).isEqualTo("신규분류");
+        assertThat(mapper.normalizeCategory("P1", "  ")).isNull();
+    }
+
+    @Test
     @DisplayName("A: 정상 정책은 45개 필드 전부가 규칙대로 매핑된다 (파라미터 순서 실수 감지)")
     void mapsAllFieldsFromNormalItem() throws IOException {
         Policy policy = mapper.toEntity(fixtureItem(0));
