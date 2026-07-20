@@ -30,6 +30,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final PolicyRepository policyRepository;
+    private final PostViewLogStore postViewLogStore;
 
     @Transactional
     public PostDetailResponse create(Long userId, PostCreateRequest request) {
@@ -49,8 +50,12 @@ public class PostService {
         return postRepository.findAllByDeletedAtIsNull(pageable).map(PostSummaryResponse::from);
     }
 
-    @Transactional(readOnly = true)
-    public PostDetailResponse findById(Long postId) {
+    @Transactional
+    public PostDetailResponse findById(Long postId, Long userId, String ipAddress) {
+        String identifier = userId != null ? "user:" + userId : "ip:" + ipAddress;
+        if (postViewLogStore.isFirstView(postId, identifier)) {
+            postRepository.incrementViewCount(postId);
+        }
         return PostDetailResponse.from(findPost(postId));
     }
 

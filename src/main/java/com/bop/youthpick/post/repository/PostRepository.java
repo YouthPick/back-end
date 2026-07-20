@@ -7,6 +7,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificationExecutor<Post> {
 
@@ -15,4 +18,8 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
 
     @EntityGraph(attributePaths = {"user", "policy"})
     Page<Post> findAllByDeletedAtIsNull(Pageable pageable);
+
+    @Modifying(clearAutomatically = true)
+    @Query("update Post p set p.viewCount = p.viewCount + 1 where p.id = :id")
+    int incrementViewCount(@Param("id") Long id);
 }

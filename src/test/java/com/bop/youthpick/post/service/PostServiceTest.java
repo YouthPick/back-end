@@ -37,12 +37,14 @@ class PostServiceTest {
     @Mock private PostRepository postRepository;
     @Mock private UserRepository userRepository;
     @Mock private PolicyRepository policyRepository;
+    @Mock private PostViewLogStore postViewLogStore;
 
     private PostService postService;
 
     @BeforeEach
     void setUp() {
-        postService = new PostService(postRepository, userRepository, policyRepository);
+        postService =
+                new PostService(postRepository, userRepository, policyRepository, postViewLogStore);
     }
 
     @Test
@@ -92,14 +94,29 @@ class PostServiceTest {
     }
 
     @Test
-    void 게시글_상세를_조회한다() {
+    void 처음_조회할_때_게시글_상세를_조회하고_조회수를_증가시킨다() {
         Post post = Post.create(user(1L), null, PostCategory.FREE, "제목", "내용");
+        when(postViewLogStore.isFirstView(3L, "user:1")).thenReturn(true);
         when(postRepository.findByIdAndDeletedAtIsNull(3L)).thenReturn(Optional.of(post));
 
-        PostDetailResponse response = postService.findById(3L);
+        PostDetailResponse response = postService.findById(3L, 1L, "127.0.0.1");
 
         assertThat(response.title()).isEqualTo("제목");
         assertThat(response.content()).isEqualTo("내용");
+        verify(postRepository).incrementViewCount(3L);
+    }
+
+    @Test
+    void 이미_조회한_경우_조회수를_증가시키지_않고_상세를_조회한다() {
+        Post post = Post.create(user(1L), null, PostCategory.FREE, "제목", "내용");
+        when(postViewLogStore.isFirstView(3L, "ip:127.0.0.1")).thenReturn(false);
+        when(postRepository.findByIdAndDeletedAtIsNull(3L)).thenReturn(Optional.of(post));
+
+        PostDetailResponse response = postService.findById(3L, null, "127.0.0.1");
+
+        assertThat(response.title()).isEqualTo("제목");
+        assertThat(response.content()).isEqualTo("내용");
+        verify(postRepository, never()).incrementViewCount(3L);
     }
 
     @Test
