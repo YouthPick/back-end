@@ -1,6 +1,6 @@
 package com.bop.youthpick.admin.policy.dto;
 
-import com.bop.youthpick.policy.entity.ApplicationChecklist;
+import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import java.time.LocalDateTime;
 
 public record ApplicationChecklistItemResponse(
@@ -9,7 +9,7 @@ public record ApplicationChecklistItemResponse(
         boolean checked,
         String description,
         LocalDateTime createdAt) {
-    public static ApplicationChecklistItemResponse from(ApplicationChecklist item) {
+    public static ApplicationChecklistItemResponse from(PolicyApplicationChecklist item) {
         return new ApplicationChecklistItemResponse(
                 item.getId(),
                 item.getApplication().getId(),

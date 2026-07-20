@@ -3,10 +3,10 @@ package com.bop.youthpick.policy.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.bop.youthpick.global.config.JpaAuditingConfig;
-import com.bop.youthpick.policy.entity.ApplicationChecklist;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
+import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import com.bop.youthpick.policy.entity.PolicyVisibility;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.repository.UserRepository;
@@ -19,13 +19,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
 @Import(JpaAuditingConfig.class)
-class ApplicationChecklistRepositoryTest {
+class PolicyApplicationChecklistRepositoryTest {
 
-    @Autowired private ApplicationChecklistRepository applicationChecklistRepository;
+    @Autowired private PolicyApplicationChecklistRepository applicationChecklistRepository;
 
     @Autowired private UserRepository userRepository;
 
@@ -55,7 +56,8 @@ class ApplicationChecklistRepositoryTest {
     }
 
     private void saveChecklistItem(PolicyApplication application, String content) {
-        ApplicationChecklist item = BeanUtils.instantiateClass(ApplicationChecklist.class);
+        PolicyApplicationChecklist item =
+                BeanUtils.instantiateClass(PolicyApplicationChecklist.class);
         ReflectionTestUtils.setField(item, "application", application);
         ReflectionTestUtils.setField(item, "content", content);
         ReflectionTestUtils.setField(item, "checked", false);
@@ -64,30 +66,38 @@ class ApplicationChecklistRepositoryTest {
 
     @Test
     void 체크리스트는_id_오름차순으로_조회된다() {
-        List<ApplicationChecklist> result =
-                applicationChecklistRepository.findByApplicationIdOrderByIdAsc(applicationId);
+        List<PolicyApplicationChecklist> result =
+                applicationChecklistRepository
+                        .findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(
+                                applicationId, Pageable.unpaged())
+                        .getContent();
 
         assertThat(result)
-                .extracting(ApplicationChecklist::getContent)
+                .extracting(PolicyApplicationChecklist::getContent)
                 .containsExactly("서류 A", "서류 B", "서류 C");
     }
 
     @Test
     void 관리_해제된_체크리스트는_조회에서_제외된다() {
-        ApplicationChecklist target =
+        PolicyApplicationChecklist target =
                 applicationChecklistRepository
-                        .findByApplicationIdOrderByIdAsc(applicationId)
+                        .findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(
+                                applicationId, Pageable.unpaged())
+                        .getContent()
                         .get(0);
         ReflectionTestUtils.setField(target, "deletedAt", LocalDateTime.now());
         entityManager.persistAndFlush(target);
         entityManager.clear();
 
-        List<ApplicationChecklist> result =
-                applicationChecklistRepository.findByApplicationIdOrderByIdAsc(applicationId);
+        List<PolicyApplicationChecklist> result =
+                applicationChecklistRepository
+                        .findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(
+                                applicationId, Pageable.unpaged())
+                        .getContent();
 
         assertThat(result).hasSize(2);
         assertThat(result)
-                .extracting(ApplicationChecklist::getContent)
+                .extracting(PolicyApplicationChecklist::getContent)
                 .containsExactly("서류 B", "서류 C");
     }
 }

@@ -87,6 +87,11 @@ public class SecurityConfig {
                                         "/api/v1/policy-recent-views",
                                         "/api/v1/policy-chat/profile-consent")
                                 .authenticated()
+                                // 회원 전용 — 정책 신청관리(관심정책 흡수) + 체크리스트.
+                                .requestMatchers(
+                                        "/api/v1/policy-applications/**",
+                                        "/api/v1/policy-application-checklists/**")
+                                .authenticated()
                                 // 명세에 없는 나머지 경로(구현 중인 다른 도메인 등)는 개발 편의상 열어 둔다.
                                 .anyRequest()
                                 .permitAll());

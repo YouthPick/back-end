@@ -3,17 +3,18 @@ package com.bop.youthpick.admin.policy.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bop.youthpick.global.error.CustomException;
-import com.bop.youthpick.policy.entity.ApplicationChecklist;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
+import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
-import com.bop.youthpick.policy.repository.ApplicationChecklistRepository;
+import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
 import com.bop.youthpick.user.entity.User;
 import java.util.List;
@@ -33,7 +34,7 @@ class AdminPolicyApplicationServiceTest {
 
     @Mock private PolicyApplicationRepository policyApplicationRepository;
 
-    @Mock private ApplicationChecklistRepository applicationChecklistRepository;
+    @Mock private PolicyApplicationChecklistRepository applicationChecklistRepository;
 
     private AdminPolicyApplicationService adminPolicyApplicationService;
 
@@ -76,15 +77,16 @@ class AdminPolicyApplicationServiceTest {
     void 체크리스트를_조회한다() {
         when(policyApplicationRepository.findById(APPLICATION_ID))
                 .thenReturn(Optional.of(mock(PolicyApplication.class)));
-        ApplicationChecklist item = mock(ApplicationChecklist.class);
+        PolicyApplicationChecklist item = mock(PolicyApplicationChecklist.class);
         PolicyApplication application = mock(PolicyApplication.class);
         when(item.getId()).thenReturn(100L);
         when(item.getApplication()).thenReturn(application);
         when(application.getId()).thenReturn(APPLICATION_ID);
         when(item.isChecked()).thenReturn(true);
         when(item.getContent()).thenReturn("주민등록등본 제출");
-        when(applicationChecklistRepository.findByApplicationIdOrderByIdAsc(APPLICATION_ID))
-                .thenReturn(List.of(item));
+        when(applicationChecklistRepository.findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(
+                        eq(APPLICATION_ID), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(item)));
 
         List<?> result = adminPolicyApplicationService.getChecklist(APPLICATION_ID);
 

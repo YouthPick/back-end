@@ -7,7 +7,7 @@ import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
-import com.bop.youthpick.policy.repository.ApplicationChecklistRepository;
+import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
 import java.time.LocalDate;
 import java.util.List;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminPolicyApplicationService {
 
     private final PolicyApplicationRepository policyApplicationRepository;
-    private final ApplicationChecklistRepository applicationChecklistRepository;
+    private final PolicyApplicationChecklistRepository applicationChecklistRepository;
 
     @Transactional(readOnly = true)
     public Page<AdminPolicyApplicationResponse> search(
@@ -44,7 +44,8 @@ public class AdminPolicyApplicationService {
     public List<ApplicationChecklistItemResponse> getChecklist(Long applicationId) {
         findApplication(applicationId);
         return applicationChecklistRepository
-                .findByApplicationIdOrderByIdAsc(applicationId)
+                .findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(
+                        applicationId, Pageable.unpaged())
                 .stream()
                 .map(ApplicationChecklistItemResponse::from)
                 .toList();
