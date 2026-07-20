@@ -1,5 +1,6 @@
 package com.bop.youthpick.post.service;
 
+import com.bop.youthpick.board.repository.AttachmentRepository;
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
@@ -8,6 +9,7 @@ import com.bop.youthpick.post.dto.PostCreateRequest;
 import com.bop.youthpick.post.dto.PostDetailResponse;
 import com.bop.youthpick.post.dto.PostSummaryResponse;
 import com.bop.youthpick.post.dto.PostUpdateRequest;
+import com.bop.youthpick.post.entity.Attachment;
 import com.bop.youthpick.post.entity.Post;
 import com.bop.youthpick.post.entity.PostCategory;
 import com.bop.youthpick.post.exception.BoardErrorCode;
@@ -17,6 +19,7 @@ import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.exception.UserError;
 import com.bop.youthpick.user.exception.UserException;
 import com.bop.youthpick.user.repository.UserRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final AttachmentRepository attachmentRepository;
     private final UserRepository userRepository;
     private final PolicyRepository policyRepository;
     private final PostViewLogStore postViewLogStore;
@@ -39,10 +43,11 @@ public class PostService {
         // valueOf()는 모든 enum이 제공받는 정적 메서드. 문자열과 이름이 일치하는 enum 값을 찾아줌
 
         Policy policy = resolvePolicy(category, request.policyId());
-        Post post = Post.create(user, policy, category, request.title(), request.content());
-        // request record로 선언됐으면 거기 안에 있는 변수들을 메서드로 쓰면 자동으로 똑같이 반환해줌
-        return PostDetailResponse.from(postRepository.save(post));
-        // from도 누가준 선물인지 모르겠어.. 암튼 위에서 받은 Post객체를 레포지토리에 저장해서 디테일리스폰스 객체로 보내준다는뜻같음
+        Post post =
+                postRepository.save(
+                        Post.create(user, policy, category, request.title(), request.content()));
+        saveAttachments(post, request.attachmentUrls());
+        return PostDetailResponse.from(post);
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +71,8 @@ public class PostService {
         PostCategory category = PostCategory.valueOf(request.category());
         Policy policy = resolvePolicy(category, request.policyId());
         post.update(policy, category, request.title(), request.content());
+        attachmentRepository.deleteByPostId(postId);
+        saveAttachments(post, request.attachmentUrls());
         return PostDetailResponse.from(post);
     } // PostDetailRequest가 record라면 Java가 이 메서드들(category() 등)을 자동으로 만듦
 
@@ -74,6 +81,17 @@ public class PostService {
         Post post = findPost(postId);
         validateAuthor(post, userId);
         post.softDelete();
+    }
+
+    private void saveAttachments(Post post, List<String> attachmentUrls) {
+        if (attachmentUrls == null || attachmentUrls.isEmpty()) {
+            return;
+        }
+        attachmentRepository.saveAll(
+                attachmentUrls.stream()
+                        .distinct()
+                        .map(url -> Attachment.create(post, url))
+                        .toList());
     }
 
     private User findUser(Long userId) {
