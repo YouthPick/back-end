@@ -28,6 +28,11 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
+    void 비동기_재디스패치에서도_JWT_인증을_수행한다() {
+        assertThat(filter.shouldNotFilterAsyncDispatch()).isFalse();
+    }
+
+    @Test
     void 유효한_토큰이면_인증정보를_채운다() throws Exception {
         HttpServletRequest request = mock(HttpServletRequest.class);
         HttpServletResponse response = mock(HttpServletResponse.class);

@@ -85,6 +85,26 @@ class SecurityConfigTest {
     }
 
     @Test
+    void 정책_상세는_공개지만_정책_채팅_GET은_인증없이_접근하면_401이다() throws Exception {
+        int detailStatus =
+                mockMvc.perform(get("/api/v1/policies/1")).andReturn().getResponse().getStatus();
+        assertThat(detailStatus).isNotIn(401, 403);
+
+        mockMvc.perform(get("/api/v1/policies/1/chat/messages"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("A001"));
+    }
+
+    @Test
+    void 정책_채팅_HTTP_POST는_더이상_존재하지_않는다() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/policies/1/chat/messages")
+                                .contentType("application/json")
+                                .content("{\"content\":\"메시지\"}"))
+                .andExpect(status().isMethodNotAllowed());
+    }
+
+    @Test
     void 게시글_조회는_인증없이_접근할_수_있다() throws Exception {
         int status = mockMvc.perform(get("/api/v1/posts")).andReturn().getResponse().getStatus();
 

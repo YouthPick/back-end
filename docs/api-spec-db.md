@@ -6,7 +6,6 @@
 |---|---|---|---|---|---|---|---|
 | 정책 수집 실행 | POST | `/api/v1/admin/policy-sync-jobs` | 관리자 | SYNC | 확정 |  |  |
 | 로그아웃 | POST | `/api/v1/auth/logout` | 회원 | AUTH | 확정 |  |  |
-| 정책 탐색 챗봇 질문 | POST | `/api/v1/policy-chat/queries` | 비회원 | CHAT | 확정 |  |  |
 | 관심정책 등록 | PUT | `/api/v1/me/favorites/{policyId}` | 회원 | FAV | 확정 |  |  |
 | 정책 비교 생성 | POST | `/api/v1/policy-comparisons` | 비회원 | CMP | 확정 |  |  |
 | OAuth 인가 URL 생성 | GET | `/api/v1/auth/oauth/{provider}/authorization-url` | 비회원 | AUTH | 확정 |  |  |
@@ -18,7 +17,6 @@
 | 맞춤정책 조회 | GET | `/api/v1/me/recommended-policies` | 회원 | REC | 확정 |  |  |
 | 회원 탈퇴 | DELETE | `/api/v1/auth/me` | 회원 | AUTH | 확정 |  |  |
 | 정책 상세 조회 | GET | `/api/v1/policies/{policyId}` | 비회원 | SEARCH | 확정 |  |  |
-| 챗봇 프로필 사용 동의 설정 | POST | `/api/v1/policy-chat/profile-consent` | 회원 | CHAT | 확정 |  |  |
 | 읽음 상태 목록 조회 | GET | `/api/v1/me/policy-read-states` | 회원 | READ | 확정 |  |  |
 | 관심정책 해제 | DELETE | `/api/v1/me/favorites/{policyId}` | 회원 | FAV | 확정 |  |  |
 | 관심정책 목록 | GET | `/api/v1/me/favorites` | 회원 | FAV | 확정 |  |  |
@@ -27,3 +25,17 @@
 | 내 로그인 사용자 조회 | GET | `/api/v1/auth/me` | 회원 | AUTH | 확정 |  |  |
 | 정책 비교 조회 | GET | `/api/v1/policy-comparisons/{comparisonId}` | 비회원 | CMP | 확정 |  |  |
 | 정책 검색/필터 | GET | `/api/v1/policies` | 비회원 | SEARCH | 확정 |  |  |
+
+## 정책 채팅 DB 스키마
+
+`policy_chat_messages`는 정책별 회원 대화 메시지를 저장한다. 삭제되지 않은 정책 채팅 이력은 `(policy_id, id)` 인덱스로 커서 조회한다.
+
+| 테이블 | 컬럼 | 제약 | 설명 |
+|---|---|---|---|
+| `policy_chat_messages` | `id` | PK, auto increment | 메시지 ID |
+| `policy_chat_messages` | `policy_id` | NOT NULL, FK `policies(id)`, index `(policy_id, id)` | 메시지가 속한 정책 |
+| `policy_chat_messages` | `user_id` | NOT NULL, FK `users(id)`, index | 작성 회원 |
+| `policy_chat_messages` | `content` | NOT NULL, `VARCHAR(1000)` | 메시지 본문 |
+| `policy_chat_messages` | `created_at` | NOT NULL, 기본 `CURRENT_TIMESTAMP` | 생성 시각 |
+| `policy_chat_messages` | `updated_at` | NOT NULL, 기본 `CURRENT_TIMESTAMP`, 수정 시 자동 갱신 | 수정 시각 |
+| `policy_chat_messages` | `deleted_at` | NULL | 소프트 삭제 시각 |
