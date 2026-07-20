@@ -44,7 +44,8 @@ public class AdminPolicyApplicationService {
     public List<ApplicationChecklistItemResponse> getChecklist(Long applicationId) {
         findApplication(applicationId);
         return applicationChecklistRepository
-                .findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(applicationId, Pageable.unpaged())
+                .findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(
+                        applicationId, Pageable.unpaged())
                 .stream()
                 .map(ApplicationChecklistItemResponse::from)
                 .toList();

@@ -56,7 +56,8 @@ class PolicyApplicationChecklistRepositoryTest {
     }
 
     private void saveChecklistItem(PolicyApplication application, String content) {
-        PolicyApplicationChecklist item = BeanUtils.instantiateClass(PolicyApplicationChecklist.class);
+        PolicyApplicationChecklist item =
+                BeanUtils.instantiateClass(PolicyApplicationChecklist.class);
         ReflectionTestUtils.setField(item, "application", application);
         ReflectionTestUtils.setField(item, "content", content);
         ReflectionTestUtils.setField(item, "checked", false);
