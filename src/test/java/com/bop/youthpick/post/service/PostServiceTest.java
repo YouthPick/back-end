@@ -147,15 +147,23 @@ class PostServiceTest {
     }
 
     @Test
-    void 작성자가_게시글을_수정한다() {
+    void 작성자가_게시글을_수정하면_기존_이미지_첨부를_최신_목록으로_교체한다() {
         Post post = Post.create(user(1L), null, PostCategory.FREE, "수정 전", "수정 전 내용");
-        PostUpdateRequest request = new PostUpdateRequest("FREE", "수정 후", "수정 후 내용", null);
+        PostUpdateRequest request =
+                new PostUpdateRequest(
+                        "FREE",
+                        "수정 후",
+                        "수정 후 내용",
+                        null,
+                        List.of("/api/v1/files/2e5c2c2f-22c7-43a9-8d2c-8902a29b2b21"));
         when(postRepository.findByIdAndDeletedAtIsNull(3L)).thenReturn(Optional.of(post));
 
         PostDetailResponse response = postService.update(1L, 3L, request);
 
         assertThat(response.title()).isEqualTo("수정 후");
         assertThat(response.content()).isEqualTo("수정 후 내용");
+        verify(attachmentRepository).deleteByPostId(3L);
+        verify(attachmentRepository).saveAll(any());
     }
 
     @Test
@@ -172,7 +180,7 @@ class PostServiceTest {
     @Test
     void 다른_사용자는_게시글을_수정할_수_없다() {
         Post post = Post.create(user(1L), null, PostCategory.FREE, "제목", "내용");
-        PostUpdateRequest request = new PostUpdateRequest("FREE", "수정", "수정", null);
+        PostUpdateRequest request = new PostUpdateRequest("FREE", "수정", "수정", null, null);
         when(postRepository.findByIdAndDeletedAtIsNull(3L)).thenReturn(Optional.of(post));
 
         assertThatThrownBy(() -> postService.update(2L, 3L, request))

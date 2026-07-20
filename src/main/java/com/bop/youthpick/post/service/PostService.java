@@ -71,6 +71,8 @@ public class PostService {
         PostCategory category = PostCategory.valueOf(request.category());
         Policy policy = resolvePolicy(category, request.policyId());
         post.update(policy, category, request.title(), request.content());
+        attachmentRepository.deleteByPostId(postId);
+        saveAttachments(post, request.attachmentUrls());
         return PostDetailResponse.from(post);
     } // PostDetailRequest가 record라면 Java가 이 메서드들(category() 등)을 자동으로 만듦
 
