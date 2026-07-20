@@ -140,6 +140,11 @@ class PolicyServiceTest {
                         eq(PolicyVisibility.VISIBLE),
                         any(LocalDate.class),
                         isNull(),
+                        isNull(),
+                        isNull(),
+                        isNull(),
+                        isNull(),
+                        isNull(),
                         pageableCaptor.capture()))
                 .thenReturn(
                         new PageImpl<>(
@@ -158,7 +163,8 @@ class PolicyServiceTest {
                                 newPolicyRegion(nationwide, "27110", "대구광역시", "중구")));
         when(regionRepository.countDistinctSidoNames()).thenReturn(3L);
 
-        Page<PolicyCardResponse> page = policyService.getCards(null, PageRequest.of(0, 20));
+        Page<PolicyCardResponse> page =
+                policyService.getCards(null, null, null, null, null, PageRequest.of(0, 20));
 
         assertThat(pageableCaptor.getValue().getSort())
                 .isEqualTo(Sort.by(Sort.Direction.DESC, "id"));
@@ -169,6 +175,73 @@ class PolicyServiceTest {
         assertThat(page.getContent())
                 .extracting(PolicyCardResponse::regionLabel)
                 .containsExactly("서울특별시", null, "부산광역시 외 1", "전국");
+    }
+
+    @Test
+    void 검색어의_LIKE_특수문자를_이스케이프해_전달한다() {
+        ArgumentCaptor<String> keywordCaptor = ArgumentCaptor.forClass(String.class);
+        when(policyRepository.findCards(
+                        eq(PolicyVisibility.VISIBLE),
+                        any(LocalDate.class),
+                        isNull(),
+                        keywordCaptor.capture(),
+                        isNull(),
+                        isNull(),
+                        isNull(),
+                        isNull(),
+                        any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+        when(regionRepository.countDistinctSidoNames()).thenReturn(16L);
+
+        policyService.getCards(null, "50% 지원_special!", null, null, null, PageRequest.of(0, 20));
+
+        assertThat(keywordCaptor.getValue()).isEqualTo("%50!% 지원!_special!!%");
+    }
+
+    @Test
+    void region이_전국이면_시도명_대신_전_시도_커버_조건으로_필터한다() {
+        ArgumentCaptor<String> sidoNameCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Long> totalSidoCountCaptor = ArgumentCaptor.forClass(Long.class);
+        when(policyRepository.findCards(
+                        eq(PolicyVisibility.VISIBLE),
+                        any(LocalDate.class),
+                        isNull(),
+                        isNull(),
+                        sidoNameCaptor.capture(),
+                        totalSidoCountCaptor.capture(),
+                        isNull(),
+                        isNull(),
+                        any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+        when(regionRepository.countDistinctSidoNames()).thenReturn(16L);
+
+        policyService.getCards(null, null, "전국", null, null, PageRequest.of(0, 20));
+
+        assertThat(sidoNameCaptor.getValue()).isNull();
+        assertThat(totalSidoCountCaptor.getValue()).isEqualTo(16L);
+    }
+
+    @Test
+    void age_구간을_그대로_ageMin_ageMax_파라미터로_전달한다() {
+        ArgumentCaptor<Integer> ageMinCaptor = ArgumentCaptor.forClass(Integer.class);
+        ArgumentCaptor<Integer> ageMaxCaptor = ArgumentCaptor.forClass(Integer.class);
+        when(policyRepository.findCards(
+                        eq(PolicyVisibility.VISIBLE),
+                        any(LocalDate.class),
+                        isNull(),
+                        isNull(),
+                        isNull(),
+                        isNull(),
+                        ageMinCaptor.capture(),
+                        ageMaxCaptor.capture(),
+                        any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+        when(regionRepository.countDistinctSidoNames()).thenReturn(16L);
+
+        policyService.getCards(null, null, null, 19, 34, PageRequest.of(0, 20));
+
+        assertThat(ageMinCaptor.getValue()).isEqualTo(19);
+        assertThat(ageMaxCaptor.getValue()).isEqualTo(34);
     }
 
     private Policy newPolicy(Long id, String title) {

@@ -37,21 +37,45 @@ public class PolicyService {
     private final RegionRepository regionRepository;
     private final PolicyRecentViewService policyRecentViewService;
 
+    private static final String NATIONWIDE_REGION = "전국";
+
     /**
-     * 정책 목록(카드) 조회 (비회원 허용). 삭제·숨김·신청 마감 지난 정책은 제외하고 최신순(id 내림차순, 서버 고정 정렬)으로 내린다. category(표준
-     * 5분류)를 주면 해당 분류만. 지역 라벨은 페이지 단위 배치 조회(fetch join)로 조립해 N+1을 피한다.
+     * 정책 목록(카드) 조회 (비회원 허용). 삭제·숨김·신청 마감 지난 정책은 제외하고 최신순(id 내림차순, 서버 고정 정렬)으로 내린다. category(표준 5분류)
+     * exact match, keyword는 5개 필드 LIKE 부분일치, region은 시도명 필터('전국'이면 전 시도를 커버하는 정책만), age는 [ageMin,
+     * ageMax] 구간과 정책 자격 구간의 겹침(overlap)만 필터한다. 지역 라벨은 페이지 단위 배치 조회(fetch join)로 조립해 N+1을 피한다.
      */
     @Transactional(readOnly = true)
-    public Page<PolicyCardResponse> getCards(@Nullable String category, Pageable pageable) {
+    public Page<PolicyCardResponse> getCards(
+            @Nullable String category,
+            @Nullable String keyword,
+            @Nullable String region,
+            @Nullable Integer ageMin,
+            @Nullable Integer ageMax,
+            Pageable pageable) {
         Pageable sorted =
                 PageRequest.of(
                         pageable.getPageNumber(),
                         pageable.getPageSize(),
                         Sort.by(Sort.Direction.DESC, "id"));
-        String categoryFilter = category == null || category.isBlank() ? null : category;
+        String categoryFilter = trimToNull(category);
+        String keywordPattern = toLikePattern(keyword);
+        String regionFilter = trimToNull(region);
+        boolean nationwideOnly = NATIONWIDE_REGION.equals(regionFilter);
+        String sidoName = nationwideOnly ? null : regionFilter;
+        long totalSidoCount = regionRepository.countDistinctSidoNames();
+        Long nationwideThreshold = nationwideOnly ? totalSidoCount : null;
+
         Page<Policy> page =
                 policyRepository.findCards(
-                        PolicyVisibility.VISIBLE, LocalDate.now(), categoryFilter, sorted);
+                        PolicyVisibility.VISIBLE,
+                        LocalDate.now(),
+                        categoryFilter,
+                        keywordPattern,
+                        sidoName,
+                        nationwideThreshold,
+                        ageMin,
+                        ageMax,
+                        sorted);
 
         List<Long> policyIds = page.getContent().stream().map(Policy::getId).toList();
         Map<Long, List<String>> sidoNamesByPolicyId =
@@ -64,7 +88,6 @@ public class PolicyService {
                                                 Collectors.mapping(
                                                         pr -> pr.getRegion().getSidoName(),
                                                         Collectors.toList())));
-        long totalSidoCount = policyIds.isEmpty() ? 0 : regionRepository.countDistinctSidoNames();
 
         return page.map(
                 policy ->
@@ -73,6 +96,26 @@ public class PolicyService {
                                 toRegionLabel(
                                         sidoNamesByPolicyId.getOrDefault(policy.getId(), List.of()),
                                         totalSidoCount)));
+    }
+
+    @Nullable
+    private static String trimToNull(@Nullable String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /** LIKE 특수문자(%/_)와 이스케이프 문자(!)를 이스케이프하고 부분일치 패턴으로 감싼다. */
+    @Nullable
+    private static String toLikePattern(@Nullable String keyword) {
+        String normalized = trimToNull(keyword);
+        if (normalized == null) {
+            return null;
+        }
+        String escaped = normalized.replace("!", "!!").replace("%", "!%").replace("_", "!_");
+        return "%" + escaped + "%";
     }
 
     /** 지역 없음 → null, 전 시도 커버 → '전국', 시도 1개 → 시도명, 여러 시도 → '가나다 첫 시도 외 N'. */
