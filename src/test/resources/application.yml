@@ -27,6 +27,9 @@ youthpick:
     access-key: test-access-key
     secret-key: test-secret-key
     bucket: youthpick-test-files
+    connect-timeout: 3s
+    write-timeout: 30s
+    read-timeout: 30s
   jwt:
     secret: test-secret-key-please-be-long-enough-for-hs256
     access-token-expiration: 30m

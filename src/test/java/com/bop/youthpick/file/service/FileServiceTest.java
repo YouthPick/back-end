@@ -87,6 +87,17 @@ class FileServiceTest {
     }
 
     @Test
+    void 설정된_최대_크기와_같은_파일은_허용한다() {
+        fileService =
+                new FileService(objectStorage, new FileProperties(DataSize.ofBytes(PNG.length)));
+        MockMultipartFile file = new MockMultipartFile("file", "boundary.png", "image/png", PNG);
+
+        FileUploadResponse response = fileService.upload(7L, file);
+
+        assertThat(response.size()).isEqualTo(PNG.length);
+    }
+
+    @Test
     void 저장소_업로드_장애를_S002로_변환한다() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", PNG);
         doThrow(ObjectStorageException.unavailable(new IllegalStateException()))

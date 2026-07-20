@@ -9,6 +9,7 @@ import io.minio.GetObjectResponse;
 import io.minio.Http;
 import io.minio.MinioClient;
 import io.minio.StatObjectResponse;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,10 @@ class MinioObjectStorageTest {
                         "http://localhost:9000",
                         "test-access-key",
                         "test-secret-key",
-                        "test-bucket");
+                        "test-bucket",
+                        Duration.ofSeconds(3),
+                        Duration.ofSeconds(30),
+                        Duration.ofSeconds(30));
         objectStorage = new MinioObjectStorage(minioClient, properties);
     }
 

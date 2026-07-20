@@ -20,6 +20,8 @@ public class FileService {
     private static final Set<String> ALLOWED_CONTENT_TYPES =
             Set.of("image/jpeg", "image/png", "image/gif", "image/webp");
     private static final String ORIGINAL_FILENAME_METADATA = "original-filename";
+    private static final int SIGNATURE_LENGTH = 12;
+    private static final int MAX_FILENAME_LENGTH = 255;
 
     private final ObjectStorage objectStorage;
     private final long maxFileSize;
@@ -91,38 +93,49 @@ public class FileService {
     }
 
     private boolean hasValidSignature(MultipartFile file) {
-        byte[] signature = new byte[12];
+        byte[] signature = new byte[SIGNATURE_LENGTH];
         try (InputStream inputStream = file.getInputStream()) {
             int length = inputStream.read(signature);
             return switch (file.getContentType()) {
-                case "image/jpeg" ->
-                        length >= 3
-                                && unsigned(signature[0]) == 0xFF
-                                && unsigned(signature[1]) == 0xD8
-                                && unsigned(signature[2]) == 0xFF;
-                case "image/png" ->
-                        length >= 8
-                                && unsigned(signature[0]) == 0x89
-                                && signature[1] == 'P'
-                                && signature[2] == 'N'
-                                && signature[3] == 'G'
-                                && unsigned(signature[4]) == 0x0D
-                                && unsigned(signature[5]) == 0x0A
-                                && unsigned(signature[6]) == 0x1A
-                                && unsigned(signature[7]) == 0x0A;
-                case "image/gif" ->
-                        length >= 6
-                                && new String(signature, 0, 6, StandardCharsets.US_ASCII)
-                                        .matches("GIF8[79]a");
-                case "image/webp" ->
-                        length >= 12
-                                && asciiEquals(signature, 0, "RIFF")
-                                && asciiEquals(signature, 8, "WEBP");
+                case "image/jpeg" -> isJpeg(signature, length);
+                case "image/png" -> isPng(signature, length);
+                case "image/gif" -> isGif(signature, length);
+                case "image/webp" -> isWebp(signature, length);
                 default -> false;
             };
         } catch (IOException exception) {
             return false;
         }
+    }
+
+    private boolean isJpeg(byte[] signature, int length) {
+        return length >= 3
+                && unsigned(signature[0]) == 0xFF
+                && unsigned(signature[1]) == 0xD8
+                && unsigned(signature[2]) == 0xFF;
+    }
+
+    private boolean isPng(byte[] signature, int length) {
+        return length >= 8
+                && unsigned(signature[0]) == 0x89
+                && signature[1] == 'P'
+                && signature[2] == 'N'
+                && signature[3] == 'G'
+                && unsigned(signature[4]) == 0x0D
+                && unsigned(signature[5]) == 0x0A
+                && unsigned(signature[6]) == 0x1A
+                && unsigned(signature[7]) == 0x0A;
+    }
+
+    private boolean isGif(byte[] signature, int length) {
+        return length >= 6
+                && (asciiEquals(signature, 0, "GIF87a") || asciiEquals(signature, 0, "GIF89a"));
+    }
+
+    private boolean isWebp(byte[] signature, int length) {
+        return length >= SIGNATURE_LENGTH
+                && asciiEquals(signature, 0, "RIFF")
+                && asciiEquals(signature, 8, "WEBP");
     }
 
     private boolean asciiEquals(byte[] bytes, int offset, String expected) {
@@ -148,7 +161,9 @@ public class FileService {
         if (sanitized.isBlank()) {
             return "image";
         }
-        return sanitized.length() > 255 ? sanitized.substring(0, 255) : sanitized;
+        return sanitized.length() > MAX_FILENAME_LENGTH
+                ? sanitized.substring(0, MAX_FILENAME_LENGTH)
+                : sanitized;
     }
 
     private String encodeFilename(String filename) {

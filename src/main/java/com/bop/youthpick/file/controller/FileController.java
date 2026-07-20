@@ -13,6 +13,7 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,13 +29,15 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class FileController {
 
+    private static final Duration FILE_CACHE_MAX_AGE = Duration.ofDays(365);
+
     private final FileService fileService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<FileUploadResponse>> upload(
             @CurrentUser Long userId, @RequestPart("file") MultipartFile file) {
         FileUploadResponse response = fileService.upload(userId, file);
-        return ResponseEntity.status(201).body(ApiResponse.ok(response));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
     @GetMapping("/{fileId}")
@@ -50,7 +53,7 @@ public class FileController {
                 .contentLength(file.size())
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .header("X-Content-Type-Options", "nosniff")
-                .cacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable())
+                .cacheControl(CacheControl.maxAge(FILE_CACHE_MAX_AGE).cachePublic().immutable())
                 .body(new InputStreamResource(file.inputStream()));
     }
 }
