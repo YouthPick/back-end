@@ -407,6 +407,8 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 
 ## 정책 비교
 
+DB에 별도로 저장하지 않는 stateless 설계다. `comparisonId`는 비교 대상 `policyId`를 오름차순 정렬해 `-`로 이어붙인 문자열(예: `"1-2"`)이며, 조회 시 그 시점의 최신 정책 정보를 반환한다.
+
 ### 정책 비교 생성
 
 여러 정책 ID를 기준으로 비교 결과를 생성한다.
@@ -416,7 +418,8 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 메서드 | `POST` |
 | 경로 | `/api/v1/policy-comparisons` |
 | 권한 | 비회원 |
-| 파라미터 | body: policyIds[] |
+| 파라미터 | body: policyIds[] (2~3개, 중복 제거 후 오름차순 정렬되어 처리됨) |
+| 에러 | `policyIds`에 존재하지 않는 정책이 섞여 있으면 `P001 POLICY_NOT_FOUND` |
 
 ### 정책 비교 조회
 
@@ -427,7 +430,32 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 메서드 | `GET` |
 | 경로 | `/api/v1/policy-comparisons/{comparisonId}` |
 | 권한 | 비회원 |
-| 파라미터 | path: comparisonId |
+| 파라미터 | path: comparisonId (예: `"1-2"`) |
+| 에러 | 형식이 잘못됐거나 policyId가 2개 미만이면 `P008 COMPARISON_NOT_FOUND`, 참조하는 정책이 더 이상 없으면 `P001 POLICY_NOT_FOUND` |
+
+### 응답 필드 (`POST`/`GET` 공통)
+
+`data.comparisonId`(문자열)와 `data.policies[]`(비교 대상 정책 목록)로 구성된다. `policies[]`의 각 원소는 `Policy` 엔티티 전체가 아니라 비교에 필요한 필드만 담은 값이다.
+
+| 필드 | 타입 | 내용 |
+|---|---|---|
+| `policyId` | number | 정책 ID |
+| `title` | string | 정책명 |
+| `category` | string | 대분류 |
+| `organizationName` | string | 주관기관 |
+| `minAge` / `maxAge` | number \| null | 지원 나이 범위 (null = 제한없음) |
+| `jobCodes` | string \| null | 취업상태 조건 코드(콤마 다중) |
+| `schoolCodes` | string \| null | 학력 조건 코드(콤마 다중) |
+| `incomeConditionCode` | string \| null | 소득 조건 구분 코드 |
+| `incomeMaxAmount` | number \| null | 연소득 상한(만원) |
+| `incomeEtcContent` | string \| null | 소득 조건 기타 설명 |
+| `maritalStatusCode` | string \| null | 혼인상태 조건 코드 |
+| `majorCodes` | string \| null | 전공 조건 코드(콤마 다중) |
+| `specializationCodes` | string \| null | 특화분야 조건 코드(콤마 다중) |
+| `additionalQualification` | string \| null | 추가 자격조건 원문 |
+| `participationRestriction` | string \| null | 참여 제한사항 원문 |
+| `applicationEndDate` | string(`YYYY-MM-DD`) \| null | 신청 마감일 |
+| `applicationUrl` | string \| null | 신청 바로가기 링크 |
 
 ## 정책 동기화
 
