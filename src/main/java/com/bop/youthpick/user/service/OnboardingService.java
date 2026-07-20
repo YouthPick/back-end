@@ -25,6 +25,11 @@ public class OnboardingService {
     private final UserProfileRepository userProfileRepository;
     private final RegionRepository regionRepository;
 
+    @Transactional(readOnly = true)
+    public UserProfile getMyProfile(Long userId) {
+        return userProfileRepository.findByUserId(userId).orElse(null);
+    }
+
     @Transactional
     public UserProfile submit(Long userId, OnboardingProfileRequest request) {
         User user =

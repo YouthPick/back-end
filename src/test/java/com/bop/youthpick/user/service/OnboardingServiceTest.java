@@ -116,6 +116,25 @@ class OnboardingServiceTest {
     }
 
     @Test
+    void 프로필이_있으면_조회한다() {
+        UserProfile profile = mock(UserProfile.class);
+        when(userProfileRepository.findByUserId(USER_ID)).thenReturn(Optional.of(profile));
+
+        UserProfile result = onboardingService.getMyProfile(USER_ID);
+
+        assertThat(result).isEqualTo(profile);
+    }
+
+    @Test
+    void 프로필이_없으면_null을_반환한다() {
+        when(userProfileRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
+
+        UserProfile result = onboardingService.getMyProfile(USER_ID);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
     void 존재하지_않는_지역코드면_REGION_NOT_FOUND_예외를_던진다() {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(userProfileRepository.existsByUserId(USER_ID)).thenReturn(false);
