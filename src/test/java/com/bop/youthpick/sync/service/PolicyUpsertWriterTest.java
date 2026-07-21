@@ -50,7 +50,7 @@ class PolicyUpsertWriterTest {
                 writer.upsertAll(
                         List.of(
                                 new PolicyUpsertItem(
-                                        policy("R2026-001", "새 정책", null), List.of(seoul))));
+                                        policy("R2026-001", "새 정책", null), List.of(seoul), false)));
 
         assertThat(result).isEqualTo(new PolicyWriteResult(1, 0, 0));
         assertThat(policyRepository.findAll())
@@ -80,7 +80,8 @@ class PolicyUpsertWriterTest {
                                                 "R2026-001",
                                                 "새 제목",
                                                 LocalDateTime.of(2026, 7, 1, 0, 0)),
-                                        List.of(busan))));
+                                        List.of(busan),
+                                        false)));
 
         assertThat(result).isEqualTo(new PolicyWriteResult(0, 1, 0));
         assertThat(policyRepository.findAll())
@@ -102,9 +103,12 @@ class PolicyUpsertWriterTest {
         PolicyWriteResult result =
                 writer.upsertAll(
                         List.of(
-                                new PolicyUpsertItem(policy("R2026-001", "정상1", null), List.of()),
-                                new PolicyUpsertItem(policy("R2026-002", null, null), List.of()),
-                                new PolicyUpsertItem(policy("R2026-003", "정상2", null), List.of())));
+                                new PolicyUpsertItem(
+                                        policy("R2026-001", "정상1", null), List.of(), false),
+                                new PolicyUpsertItem(
+                                        policy("R2026-002", null, null), List.of(), false),
+                                new PolicyUpsertItem(
+                                        policy("R2026-003", "정상2", null), List.of(), false)));
 
         assertThat(result).isEqualTo(new PolicyWriteResult(2, 0, 1));
         assertThat(policyRepository.findAll())

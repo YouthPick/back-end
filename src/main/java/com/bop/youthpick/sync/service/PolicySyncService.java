@@ -125,6 +125,9 @@ public class PolicySyncService {
         Map<String, Region> regionsByCode =
                 regionRepository.findAll().stream()
                         .collect(Collectors.toMap(Region::getCode, Function.identity()));
+        // 전 시도 커버 판정 기준(#120). 이미 로드한 지역 마스터에서 세므로 추가 쿼리가 없다.
+        long totalSidoCount =
+                regionsByCode.values().stream().map(Region::getSidoName).distinct().count();
 
         // 수집 도중 페이지 경계가 밀리면 같은 정책이 두 번 올 수 있다 — plcyNo 기준으로 접는다(먼저 온 것 유지)
         Set<String> seenPolicyNos = new HashSet<>();
@@ -151,13 +154,25 @@ public class PolicySyncService {
             }
             List<Region> regions =
                     policyMapper.resolveRegions(policyNo, item.zipCd(), regionsByCode);
-            upserts.add(new PolicyUpsertItem(policy, regions));
+            upserts.add(
+                    new PolicyUpsertItem(policy, regions, isNationwide(regions, totalSidoCount)));
         }
 
         // API 응답에 아예 안 나타난 정책만 누락 — SKIP(unchanged)된 정책은 존재하는 것
         List<String> missingPolicyNos =
                 snapshots.keySet().stream().filter(no -> !seenPolicyNos.contains(no)).toList();
         return new SyncPlan(upserts, missingPolicyNos, unchangedCount);
+    }
+
+    /**
+     * 전 시도를 커버하면 전국 정책(#120). 온통청년 zipCd는 지역 한정 정책에도 전국 코드를 담는 경우가 있어, 조회 시 지역 특화 정책을 먼저 노출하려면 이
+     * 구분이 필요하다. 지역 수가 아니라 시도 수로 판정한다 — 시군구 개수는 시도마다 달라 임계값을 정할 수 없기 때문이다.
+     */
+    private static boolean isNationwide(List<Region> regions, long totalSidoCount) {
+        if (totalSidoCount <= 0 || regions.isEmpty()) {
+            return false;
+        }
+        return regions.stream().map(Region::getSidoName).distinct().count() >= totalSidoCount;
     }
 
     // 앞으로 Insert/Delete할 정책들(신규+변경), 앞으로 누락 처리 할 정책번호들, 아무것도 안할 건수(이력 기록용)
