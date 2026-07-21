@@ -69,6 +69,33 @@ public class UserProfileService {
         }
     }
 
+    @Transactional
+    public UserProfile update(Long userId, UserProfileRequest request) {
+        UserProfile profile =
+                userProfileRepository
+                        .findByUserId(userId)
+                        .orElseThrow(() -> new UserException(UserError.PROFILE_NOT_FOUND));
+
+        Region region =
+                regionRepository
+                        .findById(request.regionCode())
+                        .orElseThrow(() -> new CustomException(PolicyErrorCode.REGION_NOT_FOUND));
+
+        profile.update(
+                region,
+                request.birthYear(),
+                request.employmentStatus(),
+                request.educationLevel(),
+                request.merryStatus(),
+                joinToCommaString(request.major()),
+                joinToCommaString(request.specialCondition()),
+                request.income(),
+                joinToCommaString(request.categories()),
+                joinToCommaString(request.keywords()));
+
+        return profile;
+    }
+
     private String joinToCommaString(List<String> values) {
         if (values == null || values.isEmpty()) {
             return null;

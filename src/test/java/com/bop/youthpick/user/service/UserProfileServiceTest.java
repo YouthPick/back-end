@@ -145,4 +145,60 @@ class UserProfileServiceTest {
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.REGION_NOT_FOUND);
     }
+
+    @Test
+    void 프로필을_정상적으로_수정한다() {
+        UserProfile existing =
+                UserProfile.create(
+                        mock(User.class),
+                        mock(Region.class),
+                        1998,
+                        "UNEMPLOYED",
+                        "HIGHSCHOOL",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null);
+        Region newRegion = mock(Region.class);
+        when(userProfileRepository.findByUserId(USER_ID)).thenReturn(Optional.of(existing));
+        when(regionRepository.findById(REQUEST.regionCode())).thenReturn(Optional.of(newRegion));
+
+        UserProfile result = userProfileService.update(USER_ID, REQUEST);
+
+        assertThat(result).isSameAs(existing);
+        assertThat(result.getRegion()).isSameAs(newRegion);
+        assertThat(result.getBirthYear()).isEqualTo(REQUEST.birthYear());
+        assertThat(result.getEmploymentStatus()).isEqualTo(REQUEST.employmentStatus());
+        assertThat(result.getEducationLevel()).isEqualTo(REQUEST.educationLevel());
+        assertThat(result.getMerryStatus()).isEqualTo(REQUEST.merryStatus());
+        assertThat(result.getMajor()).isEqualTo("COMPUTER_SCIENCE");
+        assertThat(result.getSpecialCondition()).isEqualTo("LOW_INCOME");
+        assertThat(result.getIncome()).isEqualTo(REQUEST.income());
+        assertThat(result.getCategories()).isEqualTo("취업,주거");
+        assertThat(result.getKeywords()).isEqualTo("청년,공모전");
+    }
+
+    @Test
+    void 수정할_프로필이_없으면_PROFILE_NOT_FOUND_예외를_던진다() {
+        when(userProfileRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userProfileService.update(USER_ID, REQUEST))
+                .isInstanceOf(UserException.class)
+                .extracting(ex -> ((UserException) ex).getErrorCode())
+                .isEqualTo(UserError.PROFILE_NOT_FOUND);
+    }
+
+    @Test
+    void 수정_시_존재하지_않는_지역코드면_REGION_NOT_FOUND_예외를_던진다() {
+        UserProfile existing = mock(UserProfile.class);
+        when(userProfileRepository.findByUserId(USER_ID)).thenReturn(Optional.of(existing));
+        when(regionRepository.findById(REQUEST.regionCode())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userProfileService.update(USER_ID, REQUEST))
+                .isInstanceOf(CustomException.class)
+                .extracting(ex -> ((CustomException) ex).getErrorCode())
+                .isEqualTo(PolicyErrorCode.REGION_NOT_FOUND);
+    }
 }
