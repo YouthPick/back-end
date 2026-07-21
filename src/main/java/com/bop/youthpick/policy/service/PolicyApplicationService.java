@@ -46,7 +46,7 @@ public class PolicyApplicationService {
             LocalDateTime endAt) {
         PolicyApplication existing =
                 policyApplicationRepository
-                        .findByUser_IdAndPolicy_Id(userId, policyId)
+                        .findIncludingDeletedByUserIdAndPolicyId(userId, policyId)
                         .orElse(null);
         String normalizedMemo = blankToNull(memo);
 
@@ -73,7 +73,7 @@ public class PolicyApplicationService {
         try {
             return policyApplicationRepository.save(application);
         } catch (DataIntegrityViolationException e) {
-            // findByUser_IdAndPolicy_Id 확인 이후 동시 요청이 먼저 저장된 경우
+            // including-deleted 조회 확인 이후 동시 요청이 먼저 저장한 경우
             // (uk_policy_applications_user_policy UNIQUE 위반). 같은 도메인 에러로 통일한다.
             throw new CustomException(PolicyErrorCode.POLICY_ALREADY_EXISTS);
         }

@@ -10,11 +10,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 /**
  * 전역 예외 처리. 모든 컨트롤러 예외를 여기서 {@link ErrorResponse}로 변환한다. 컨트롤러는 try-catch로 에러 응답을 직접 만들지 않는다(여기로
@@ -80,6 +83,23 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(errorCode, List.of(detail)));
     }
 
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingServletRequestPart(
+            MissingServletRequestPartException exception) {
+        ErrorResponse.FieldErrorDetail detail =
+                new ErrorResponse.FieldErrorDetail(
+                        exception.getRequestPartName(), "", "파일은 필수입니다.");
+        ErrorCode errorCode = GlobalErrorCode.INVALID_INPUT_VALUE;
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ErrorResponse.of(errorCode, List.of(detail)));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded() {
+        ErrorCode errorCode = GlobalErrorCode.FILE_SIZE_EXCEEDED;
+        return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.of(errorCode));
+    }
+
     // @RequestParam 값이 대상 타입(LocalDateTime 등)으로 변환되지 않는 경우
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
@@ -110,6 +130,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.of(errorCode));
     }
 
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported() {
+        ErrorCode errorCode = GlobalErrorCode.METHOD_NOT_ALLOWED;
+        return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.of(errorCode));
+    }
+
     // 개발자가 예상치 못한 에러 — application_logs 테이블에 남도록 ERROR로 로깅한다.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception exception) {
@@ -132,7 +158,9 @@ public class GlobalExceptionHandler {
     enum GlobalErrorCode implements ErrorCode {
         INTERNAL_SERVER_ERROR(
                 HttpStatus.INTERNAL_SERVER_ERROR, "S001", "서버 내부에 예기치 않은 오류가 발생했습니다."),
-        INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "입력 형태가 올바르지 않습니다.");
+        INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "C001", "입력 형태가 올바르지 않습니다."),
+        METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "C002", "지원하지 않는 HTTP 메서드입니다."),
+        FILE_SIZE_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "C006", "파일 크기 제한을 초과했습니다.");
 
         private final HttpStatus status;
         private final String code;

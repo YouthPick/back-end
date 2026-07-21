@@ -7,6 +7,7 @@ import com.bop.youthpick.post.dto.PostDetailResponse;
 import com.bop.youthpick.post.dto.PostSummaryResponse;
 import com.bop.youthpick.post.dto.PostUpdateRequest;
 import com.bop.youthpick.post.service.PostService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -43,8 +44,36 @@ public class PostController {
     }
 
     @GetMapping("/{postId}")
-    public ApiResponse<PostDetailResponse> findById(@PathVariable Long postId) {
-        return ApiResponse.ok(postService.findById(postId));
+    public ApiResponse<PostDetailResponse> findById(
+            @PathVariable Long postId,
+            @CurrentUser(required = false) Long userId,
+            HttpServletRequest request) {
+        String ipAddress = getClientIp(request);
+        return ApiResponse.ok(postService.findById(postId, userId, ipAddress));
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        return ip;
     }
 
     @PatchMapping("/{postId}")

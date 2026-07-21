@@ -33,6 +33,11 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 | 정책 검색 | 정책 검색/필터 | `GET` | `/api/v1/policies` | 비회원 | query: keyword 선택, region 선택, category 선택, page 기본 0, size 기본 20, sort 기본 relevance |
 | 정책 검색 | 검색어 제안 | `GET` | `/api/v1/policies/search-suggestions` | 비회원 | query: keyword 선택 |
 | 정책 검색 | 정책 상세 조회 | `GET` | `/api/v1/policies/{policyId}` | 비회원 | path: policyId |
+| 정책 채팅 | 메시지 이력 조회 | `GET` | `/api/v1/policies/{policyId}/chat/messages` | 회원 | path: policyId, query: afterId 기본 0 |
+| 정책 채팅 | STOMP 연결 | `WebSocket` | `/api/ws` | 회원 | STOMP `CONNECT` header: `Authorization: Bearer <accessToken>` |
+| 정책 채팅 | 실시간 메시지 전송 | `STOMP SEND` | `/app/policies/{policyId}/chat/messages` | 회원 | body: content(1~1000자) |
+| 정책 채팅 | 실시간 메시지 수신 | `STOMP SUBSCRIBE` | `/user/queue/policies/{policyId}/chat/messages` | 회원 | path: policyId |
+| 정책 채팅 | 오류 수신 | `STOMP SUBSCRIBE` | `/user/queue/policies/{policyId}/chat/errors` | 회원 | path: policyId |
 | 맞춤 추천 | 맞춤정책 조회 | `GET` | `/api/v1/recommended-policies` | 회원 | query: region 선택, category 선택, keyword 선택 |
 | 신청관리 | 신청 등록 | `POST` | `/api/v1/policy-applications` | 회원 | body: policyId, status(INTERESTED\|PREPARING\|APPLIED\|COMPLETED), memo 선택, endAt 선택 |
 | 신청관리 | 신청 목록 조회 | `GET` | `/api/v1/policy-applications` | 회원 | query: page 기본 1, size 기본 20 |
@@ -48,14 +53,11 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 | 최근 본 정책 | 최근 본 정책 목록 | `GET` | `/api/v1/policy-recent-views` | 회원 | query: page 기본 0, size 기본 20 |
 | 읽음 상태 | 읽음 상태 목록 조회 | `GET` | `/api/v1/policy-read-states` | 회원 | query: policyIds 반복 |
 | 읽음 상태 | 정책 읽음 처리 | `PUT` | `/api/v1/policy-read-states/{policyId}` | 회원 | path: policyId |
-| 정책 비교 | 정책 비교 생성 | `POST` | `/api/v1/policy-comparisons` | 비회원 | body: policyIds[] |
-| 정책 비교 | 정책 비교 조회 | `GET` | `/api/v1/policy-comparisons/{comparisonId}` | 비회원 | path: comparisonId |
+| 정책 비교 | 정책 비교 조회 | `GET` | `/api/v1/policy-comparisons` | 비회원 | query: policyIds 반복(2~3개) |
 | 정책 동기화 | 정책 수집 이력 목록 | `GET` | `/api/v1/policy-batch-histories` | 관리자 | query: page 기본 0, size 기본 20 |
 | 정책 동기화 | 정책 수집 실행 | `POST` | `/api/v1/policy-batch-histories` | 관리자 | body: mode(FULL 또는 DELTA) |
 | 정책 동기화 | 검색 인덱스 재생성 | `POST` | `/api/v1/search-indexes/rebuild` | 관리자 | 없음 |
 | 관리자/운영 | 운영 지표 조회 | `GET` | `/api/v1/admin/metrics` | 관리자 | 없음 |
-| 챗봇 | 챗봇 일반 질의 | `POST` | `/chat` | 비회원 | body: message, thread_id 선택, user_profile 선택 |
-| 챗봇 | 챗봇 스트리밍 질의 | `POST` | `/chat/stream` | 비회원 | body: message, thread_id 선택, user_profile 선택 |
 
 ## 인증
 
@@ -194,6 +196,38 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 경로 | `/api/v1/policies/{policyId}` |
 | 권한 | 비회원 |
 | 파라미터 | path: policyId |
+
+## 정책 채팅
+
+삭제되지 않은 `VISIBLE` 정책에서 로그인 회원끼리 메시지를 주고받는다. 숨김·삭제된 정책은 이력 조회, 전송, 구독 모두 거부한다. 메시지는 정책별 ID 오름차순이며 `afterId`를 제외한 이후 메시지만 반환한다.
+
+### 메시지 이력 조회
+
+현재 저장된 메시지를 즉시 반환한다. 실시간 수신은 아래 STOMP 구독을 사용한다.
+
+| 항목 | 내용 |
+|---|---|
+| 메서드 | `GET` |
+| 경로 | `/api/v1/policies/{policyId}/chat/messages` |
+| 권한 | 회원 |
+| 파라미터 | path: policyId. query: afterId 기본 0 |
+| 응답 data | `messages[{id, policyId, authorName, content, createdAt, mine}]`, `nextCursor` |
+
+### STOMP 연결과 목적지
+
+브라우저 WebSocket handshake에는 토큰을 넣지 않는다. 클라이언트는 `/api/ws`에 native WebSocket으로 연결한 뒤 STOMP `CONNECT` frame의 `Authorization` native header에 access token을 보낸다. 토큰이 없거나 유효하지 않으면 연결을 거부한다.
+
+| 항목 | 내용 |
+|---|---|
+| WebSocket endpoint | `/api/ws` |
+| application prefix | `/app` |
+| user destination prefix | `/user` |
+| broker prefix | `/queue`만 사용. 정책 채팅에 `/topic` broadcast를 사용하지 않음 |
+| 전송 | `SEND /app/policies/{policyId}/chat/messages`, body: `{content}`(필수, 공백 불가, 최대 1000자) |
+| 메시지 구독 | `SUBSCRIBE /user/queue/policies/{policyId}/chat/messages` |
+| 오류 구독 | `SUBSCRIBE /user/queue/policies/{policyId}/chat/errors` |
+
+메시지는 DB commit이 끝난 뒤 해당 정책을 구독 중인 사용자에게만 개별 전송한다. 메시지 payload는 `{id, policyId, authorName, content, createdAt, mine}`이며 `mine`은 수신 사용자별로 계산한다. 사용자 id, 이메일, 소셜 provider, token은 노출하지 않는다. 오류 payload는 `{code, message}`다. 허용 목록 밖의 전역 목적지와 `/topic` SEND/SUBSCRIBE는 거부한다.
 
 ## 맞춤 추천
 
@@ -372,27 +406,44 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 
 ## 정책 비교
 
-### 정책 비교 생성
+비교 결과를 저장하지 않고 요청받은 정책들을 그때그때 조회해 내려주는 **순수 조회**다. 그래서 생성(`POST`) + 식별자(`comparisonId`) 재조회 구조가 아니라 쿼리 파라미터를 받는 **단일 `GET`**이다. 저장하는 것이 없으므로 `POST`는 만들 리소스가 없고, 식별자 역시 요청에 담긴 `policyIds`를 그대로 다시 표현한 값이라 정보를 더하지 않는다. 공유가 필요하면 이 요청 URL 자체가 공유 링크가 된다.
 
-여러 정책 ID를 기준으로 비교 결과를 생성한다.
-
-| 항목 | 내용 |
-|---|---|
-| 메서드 | `POST` |
-| 경로 | `/api/v1/policy-comparisons` |
-| 권한 | 비회원 |
-| 파라미터 | body: policyIds[] |
+응답은 항상 조회 시점의 최신 정책 정보이며, 요청에 담긴 `policyIds` 순서를 그대로 보존한다(비교표 열 순서 = 사용자가 고른 순서).
 
 ### 정책 비교 조회
 
-생성된 정책 비교 결과를 비교 ID로 조회한다.
+여러 정책을 나란히 비교할 수 있도록 항목별 값을 함께 조회한다.
 
 | 항목 | 내용 |
 |---|---|
 | 메서드 | `GET` |
-| 경로 | `/api/v1/policy-comparisons/{comparisonId}` |
+| 경로 | `/api/v1/policy-comparisons` |
 | 권한 | 비회원 |
-| 파라미터 | path: comparisonId |
+| 파라미터 | query: `policyIds` 반복 — 서로 다른 정책 2~3개 (예: `?policyIds=1&policyIds=2`) |
+| 에러 | 개수가 2~3개를 벗어나거나 숫자가 아니거나 누락되면 `C001`, 중복된 정책이 있으면 `P008 INVALID_COMPARISON_REQUEST`, 존재하지 않는 정책이 섞여 있으면 `P001 POLICY_NOT_FOUND` |
+
+### 응답 필드
+
+`data`는 비교 대상 정책 배열이다. 각 원소는 `Policy` 엔티티 전체가 아니라 비교에 필요한 필드만 담은 값이며, **정책 상세 조회 응답의 부분집합으로 유지한다** — 같은 정책을 상세로 볼 때 감춰지는 값이 비교로 볼 때만 드러나면 안 되기 때문이다. 따라서 자격 판정용 내부 코드(`jobCodes`, `schoolCodes`, `majorCodes`, `specializationCodes`, `maritalStatusCode`)와 보류 필드, raw payload는 상세와 동일하게 노출하지 않는다.
+
+| 필드 | 타입 | 내용 |
+|---|---|---|
+| `policyId` | number | 정책 ID |
+| `title` | string | 정책명 |
+| `category` | string | 대분류 |
+| `organizationName` | string | 주관기관 |
+| `minAge` / `maxAge` | number \| null | 지원 나이 범위 (null = 제한없음) |
+| `incomeConditionCode` | string \| null | 소득 조건 구분 코드 |
+| `incomeMaxAmount` | number \| null | 연소득 상한(만원) |
+| `incomeEtcContent` | string \| null | 소득 조건 기타 설명 |
+| `additionalQualification` | string \| null | 추가 자격조건 원문 |
+| `participationRestriction` | string \| null | 참여 제한사항 원문 |
+| `applicationEndDate` | string(`YYYY-MM-DD`) \| null | 신청 마감일 |
+| `applicationUrl` | string \| null | 신청 바로가기 링크 |
+| `regions[]` | array | 지원 지역 목록. 비어 있으면 지역 조건 없음 |
+| `regions[].regionCode` | string | 법정동 코드 |
+| `regions[].provinceName` | string | 시도명 |
+| `regions[].districtName` | string | 시군구명 |
 
 ## 정책 동기화
 
@@ -442,28 +493,6 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 권한 | 관리자 |
 | 파라미터 | 없음 |
 
-## 챗봇 FastAPI
-
-아래 경로는 프론트가 FastAPI 챗봇 서비스로 직접 호출하는 API다. Spring Boot 백엔드 엔티티 기반 경로와 별도로 취급하며, Spring Controller로 중복 구현하지 않는다.
-
-### 챗봇 일반 질의
-
-| 항목 | 내용 |
-|---|---|
-| 메서드 | `POST` |
-| 경로 | `/chat` |
-| 권한 | 비회원 |
-| 파라미터 | body: message, thread_id 선택, user_profile 선택 |
-
-### 챗봇 스트리밍 질의
-
-| 항목 | 내용 |
-|---|---|
-| 메서드 | `POST` |
-| 경로 | `/chat/stream` |
-| 권한 | 비회원 |
-| 파라미터 | body: message, thread_id 선택, user_profile 선택 |
-
 ## 기존/보류 명세
 
 아래 항목은 Notion DB에 유지된 기존 데이터다. 현재 프론트 필요 API 경로 변경 작업의 직접 대상이 아니므로 별도 확인 후 사용한다.
@@ -473,8 +502,6 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 온보딩/프로필 | 프로필 삭제 | `DELETE` | `/api/v1/me/profile` | 회원 | 없음 |
 | 정책 동기화 | 정책 수집 상세 | `GET` | `/api/v1/admin/policy-sync-jobs/{jobId}` | 관리자 | path: jobId |
 | 관리자/운영 | 헬스 체크 | `GET` | `/api/v1/health` | 공통 | 없음 |
-| 챗봇 | 챗봇 프로필 사용 동의 설정 | `POST` | `/api/v1/policy-chat/profile-consent` | 회원 | 명세 기준 확인 필요 |
-| 챗봇 | 정책 탐색 챗봇 질문 | `POST` | `/api/v1/policy-chat/queries` | 비회원 | 명세 기준 확인 필요 |
 
 ## 백엔드 구현 메모
 

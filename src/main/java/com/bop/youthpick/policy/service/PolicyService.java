@@ -93,9 +93,10 @@ public class PolicyService {
                 policy ->
                         PolicyCardResponse.from(
                                 policy,
-                                toRegionLabel(
-                                        sidoNamesByPolicyId.getOrDefault(policy.getId(), List.of()),
-                                        totalSidoCount)));
+                                sidoNamesByPolicyId.getOrDefault(policy.getId(), List.of()).stream()
+                                        .distinct()
+                                        .sorted()
+                                        .toList()));
     }
 
     @Nullable
@@ -116,22 +117,6 @@ public class PolicyService {
         }
         String escaped = normalized.replace("!", "!!").replace("%", "!%").replace("_", "!_");
         return "%" + escaped + "%";
-    }
-
-    /** 지역 없음 → null, 전 시도 커버 → '전국', 시도 1개 → 시도명, 여러 시도 → '가나다 첫 시도 외 N'. */
-    @Nullable
-    private static String toRegionLabel(List<String> sidoNames, long totalSidoCount) {
-        List<String> distinct = sidoNames.stream().distinct().sorted().toList();
-        if (distinct.isEmpty()) {
-            return null;
-        }
-        if (totalSidoCount > 0 && distinct.size() >= totalSidoCount) {
-            return "전국";
-        }
-        if (distinct.size() == 1) {
-            return distinct.get(0);
-        }
-        return distinct.get(0) + " 외 " + (distinct.size() - 1);
     }
 
     /**

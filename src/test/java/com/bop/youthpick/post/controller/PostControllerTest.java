@@ -90,6 +90,24 @@ class PostControllerTest {
     }
 
     @Test
+    void 첨부_URL의_UUID_형식이_아니면_400과_C001을_반환한다() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/posts")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
+                                        {
+                                          "category": "FREE",
+                                          "title": "제목",
+                                          "content": "내용",
+                                          "attachmentUrls": ["/api/v1/files/------------------------------------"]
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
     void 게시글_목록과_페이지_정보를_조회한다() throws Exception {
         PostSummaryResponse summary =
                 new PostSummaryResponse(3L, 1L, "작성자", null, null, "FREE", "제목", 0, null);
@@ -103,7 +121,8 @@ class PostControllerTest {
 
     @Test
     void 게시글_상세를_조회한다() throws Exception {
-        when(postService.findById(3L)).thenReturn(detail(3L, "FREE", "제목", "내용"));
+        when(postService.findById(eq(3L), eq(1L), any()))
+                .thenReturn(detail(3L, "FREE", "제목", "내용"));
 
         mockMvc.perform(get("/api/v1/posts/{postId}", 3L))
                 .andExpect(status().isOk())

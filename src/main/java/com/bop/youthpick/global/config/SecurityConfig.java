@@ -62,13 +62,20 @@ public class SecurityConfig {
                                 // 관리자(ADMIN) 전용 — 정책 수집 실행/이력 조회
                                 .requestMatchers("/api/v1/admin/**")
                                 .hasRole("ADMIN")
+                                // 브라우저 WebSocket handshake에는 Authorization 헤더를 넣을 수 없다.
+                                // 실제 인증/인가는 STOMP CONNECT/SEND/SUBSCRIBE interceptor가 수행한다.
+                                .requestMatchers("/api/ws")
+                                .permitAll()
+                                // 정책 상세/목록은 공개지만 정책별 채팅 이력 조회는 회원 전용
+                                .requestMatchers(HttpMethod.GET, "/api/v1/policies/*/chat/messages")
+                                .authenticated()
                                 // 비회원(공개) — 로그인 자체, 정책 탐색/비교/검색, 메타 조회, 헬스체크
                                 .requestMatchers(
                                         "/api/v1/auth/oauth/**",
                                         "/api/v1/auth/token/refresh",
-                                        "/api/v1/policy-chat/queries",
                                         "/api/v1/policy-comparisons/**",
                                         "/api/v1/meta/profile-options",
+                                        "/api/v1/regions",
                                         "/api/v1/policies/**",
                                         "/api/v1/health")
                                 .permitAll()
@@ -77,15 +84,19 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers("/api/v1/posts/**")
                                 .authenticated()
+                                // 파일 조회 URL은 img src에서 바로 사용하도록 공개하고, 업로드만 회원 전용으로 제한한다.
+                                .requestMatchers(HttpMethod.GET, "/api/v1/files/**")
+                                .permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/files")
+                                .authenticated()
                                 // 회원 전용 — 로그인 상태 조회/로그아웃, 회원 탈퇴(컨트롤러 미구현, 경로만 선점),
-                                // 마이페이지(관심정책/추천/읽음/프로필), 최근 본 정책, 챗봇 프로필 동의
+                                // 마이페이지(관심정책/추천/읽음/프로필), 최근 본 정책
                                 .requestMatchers(
                                         "/api/v1/auth/me",
                                         "/api/v1/auth/logout",
                                         "/api/v1/users",
                                         "/api/v1/me/**",
-                                        "/api/v1/policy-recent-views",
-                                        "/api/v1/policy-chat/profile-consent")
+                                        "/api/v1/policy-recent-views")
                                 .authenticated()
                                 // 회원 전용 — 정책 신청관리(관심정책 흡수) + 체크리스트.
                                 .requestMatchers(

@@ -10,7 +10,7 @@ import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.RegionRepository;
-import com.bop.youthpick.user.dto.OnboardingProfileRequest;
+import com.bop.youthpick.user.dto.UserProfileRequest;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.entity.UserProfile;
 import com.bop.youthpick.user.exception.UserError;
@@ -27,7 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
-class OnboardingServiceTest {
+class UserProfileServiceTest {
 
     @Mock private UserRepository userRepository;
 
@@ -35,22 +35,26 @@ class OnboardingServiceTest {
 
     @Mock private RegionRepository regionRepository;
 
-    private OnboardingService onboardingService;
+    private UserProfileService userProfileService;
 
     private static final Long USER_ID = 1L;
-    private static final OnboardingProfileRequest REQUEST =
-            new OnboardingProfileRequest(
+    private static final UserProfileRequest REQUEST =
+            new UserProfileRequest(
                     2000,
                     "11110",
                     "EMPLOYED",
                     "UNIVERSITY",
+                    "SINGLE",
+                    List.of("COMPUTER_SCIENCE"),
+                    List.of("LOW_INCOME"),
+                    3000,
                     List.of("취업", "주거"),
                     List.of("청년", "공모전"));
 
     @BeforeEach
     void setUp() {
-        onboardingService =
-                new OnboardingService(userRepository, userProfileRepository, regionRepository);
+        userProfileService =
+                new UserProfileService(userRepository, userProfileRepository, regionRepository);
     }
 
     @Test
@@ -62,10 +66,15 @@ class OnboardingServiceTest {
         when(userProfileRepository.save(any(UserProfile.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        UserProfile result = onboardingService.submit(USER_ID, REQUEST);
+        UserProfile result = userProfileService.submit(USER_ID, REQUEST);
 
         assertThat(result.getBirthYear()).isEqualTo(REQUEST.birthYear());
         assertThat(result.getEmploymentStatus()).isEqualTo(REQUEST.employmentStatus());
+        assertThat(result.getEducationLevel()).isEqualTo(REQUEST.educationLevel());
+        assertThat(result.getMerryStatus()).isEqualTo(REQUEST.merryStatus());
+        assertThat(result.getMajor()).isEqualTo("COMPUTER_SCIENCE");
+        assertThat(result.getSpecialCondition()).isEqualTo("LOW_INCOME");
+        assertThat(result.getIncome()).isEqualTo(REQUEST.income());
         assertThat(result.getCategories()).isEqualTo("취업,주거");
         assertThat(result.getKeywords()).isEqualTo("청년,공모전");
     }
@@ -74,7 +83,7 @@ class OnboardingServiceTest {
     void 존재하지_않는_사용자면_USER_NOT_FOUND_예외를_던진다() {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> onboardingService.submit(USER_ID, REQUEST))
+        assertThatThrownBy(() -> userProfileService.submit(USER_ID, REQUEST))
                 .isInstanceOf(UserException.class)
                 .extracting(ex -> ((UserException) ex).getErrorCode())
                 .isEqualTo(UserError.USER_NOT_FOUND);
@@ -85,7 +94,7 @@ class OnboardingServiceTest {
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
         when(userProfileRepository.existsByUserId(USER_ID)).thenReturn(true);
 
-        assertThatThrownBy(() -> onboardingService.submit(USER_ID, REQUEST))
+        assertThatThrownBy(() -> userProfileService.submit(USER_ID, REQUEST))
                 .isInstanceOf(UserException.class)
                 .extracting(ex -> ((UserException) ex).getErrorCode())
                 .isEqualTo(UserError.PROFILE_ALREADY_EXISTS);
@@ -100,10 +109,29 @@ class OnboardingServiceTest {
         when(userProfileRepository.save(any(UserProfile.class)))
                 .thenThrow(new DataIntegrityViolationException("uk_user_profiles_user"));
 
-        assertThatThrownBy(() -> onboardingService.submit(USER_ID, REQUEST))
+        assertThatThrownBy(() -> userProfileService.submit(USER_ID, REQUEST))
                 .isInstanceOf(UserException.class)
                 .extracting(ex -> ((UserException) ex).getErrorCode())
                 .isEqualTo(UserError.PROFILE_ALREADY_EXISTS);
+    }
+
+    @Test
+    void 프로필이_있으면_조회한다() {
+        UserProfile profile = mock(UserProfile.class);
+        when(userProfileRepository.findByUserId(USER_ID)).thenReturn(Optional.of(profile));
+
+        UserProfile result = userProfileService.getMyProfile(USER_ID);
+
+        assertThat(result).isEqualTo(profile);
+    }
+
+    @Test
+    void 프로필이_없으면_null을_반환한다() {
+        when(userProfileRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
+
+        UserProfile result = userProfileService.getMyProfile(USER_ID);
+
+        assertThat(result).isNull();
     }
 
     @Test
@@ -112,7 +140,7 @@ class OnboardingServiceTest {
         when(userProfileRepository.existsByUserId(USER_ID)).thenReturn(false);
         when(regionRepository.findById(REQUEST.regionCode())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> onboardingService.submit(USER_ID, REQUEST))
+        assertThatThrownBy(() -> userProfileService.submit(USER_ID, REQUEST))
                 .isInstanceOf(CustomException.class)
                 .extracting(ex -> ((CustomException) ex).getErrorCode())
                 .isEqualTo(PolicyErrorCode.REGION_NOT_FOUND);

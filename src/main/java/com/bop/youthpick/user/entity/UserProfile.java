@@ -43,11 +43,22 @@ public class UserProfile extends BaseEntity {
     @JoinColumn(name = "region_code", nullable = false)
     private Region region;
 
-    @Column(name = "employment_status", length = 16)
+    @Column(name = "employment_status", length = 16, nullable = false)
     private String employmentStatus;
 
-    @Column(name = "education_level", length = 16)
+    @Column(name = "education_level", length = 16, nullable = false)
     private String educationLevel;
+
+    @Column(name = "merry_status", length = 16)
+    private String merryStatus;
+
+    @Column(length = 255)
+    private String major;
+
+    @Column(name = "special_condition", length = 500)
+    private String specialCondition;
+
+    @Column private Integer income;
 
     @Column(length = 500)
     private String categories;
@@ -67,6 +78,10 @@ public class UserProfile extends BaseEntity {
             Integer birthYear,
             String employmentStatus,
             String educationLevel,
+            String merryStatus,
+            String major,
+            String specialCondition,
+            Integer income,
             String categories,
             String keywords) {
         UserProfile profile = new UserProfile();
@@ -75,6 +90,10 @@ public class UserProfile extends BaseEntity {
         profile.birthYear = birthYear;
         profile.employmentStatus = employmentStatus;
         profile.educationLevel = educationLevel;
+        profile.merryStatus = merryStatus;
+        profile.major = major;
+        profile.specialCondition = specialCondition;
+        profile.income = income;
         profile.categories = categories;
         profile.keywords = keywords;
         return profile;
