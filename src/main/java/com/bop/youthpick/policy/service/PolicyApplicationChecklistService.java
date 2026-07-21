@@ -6,7 +6,6 @@ import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
-import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,15 +14,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 정책 신청관리(PolicyApplication)에 딸린 준비 체크리스트의 비즈니스 로직. 체크리스트는 항상 부모 PolicyApplication을 통해서만 접근 가능하다 —
- * applicationId 하나 없이 체크리스트만 단독 조회하는 API는 없다. PolicyApplicationRepository를 직접 참조하는 것도 그래서다(체크리스트 자체
- * 레포만으론 소유권을 못 가린다).
+ * applicationId 하나 없이 체크리스트만 단독 조회하는 API는 없다. 부모 신청관리 조회는 PolicyApplicationRepository를 이 서비스가 직접 다시
+ * 부르지 않고 {@link PolicyApplicationService#findActive}를 재사용한다(체크리스트 자체 레포만으론 소유권을 못 가려 여전히 부모 조회가
+ * 필요하지만, 그 조회 자체는 한 곳에서만 구현한다).
  */
 @Service
 @RequiredArgsConstructor
 public class PolicyApplicationChecklistService {
 
     private final PolicyApplicationChecklistRepository applicationChecklistRepository;
-    private final PolicyApplicationRepository policyApplicationRepository;
+    private final PolicyApplicationService policyApplicationService;
 
     /**
      * 먼저 {@link #findActiveApplication}으로 부모 신청관리가 존재하고 요청자 소유인지 확인한 뒤에만 {@link
@@ -81,18 +81,11 @@ public class PolicyApplicationChecklistService {
     }
 
     /**
-     * {@link #add}/{@link #getByApplication}이 공통으로 쓰는 "부모 신청관리가 존재하고, 삭제되지 않았고, 요청자 소유인지" 확인.
-     * PolicyApplicationService.findActive()와 거의 같은 조회를 이 서비스가 별도로 다시 한다 — 두 서비스가 같은 Repository를 각자
-     * 호출하는 구조라 로직이 갈라져 있다.
+     * {@link #add}/{@link #getByApplication}이 공통으로 쓰는 "부모 신청관리가 존재하고, 삭제되지 않았고, 요청자 소유인지" 확인. 존재/삭제
+     * 여부 조회는 {@link PolicyApplicationService#findActive}에 위임하고, 여기선 체크리스트 쪽에서만 필요한 소유권 검증만 이어서 한다.
      */
     private PolicyApplication findActiveApplication(Long applicationId, Long userId) {
-        PolicyApplication application =
-                policyApplicationRepository
-                        .findByIdAndDeletedAtIsNull(applicationId)
-                        .orElseThrow(
-                                () ->
-                                        new CustomException(
-                                                PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
+        PolicyApplication application = policyApplicationService.findActive(applicationId);
         application.verifyOwner(userId);
         return application;
     }

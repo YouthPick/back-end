@@ -48,9 +48,9 @@ public class PolicyApplicationController {
 
     /**
      * {@code POST /api/v1/policy-applications} — "관심 등록" 액션의 진입점. {@code status} 문자열 → {@link
-     * ApplicationStatus} 변환은 {@link #parseStatus}를 거친다 — 평소엔 DTO의 {@code @Pattern}이 걸러준 값만 들어오지만, 그
-     * 화이트리스트가 {@link #changeStatus}의 {@code @Pattern}과 별도로 중복 관리되는 탓에 어긋날 경우를 대비해 {@link
-     * #parseStatus}가 500 대신 깔끔한 400(P007)으로 막아준다. 신규 등록 vs soft-delete 재활성화 vs 중복 예외 판단은 {@link
+     * ApplicationStatus} 변환은 {@link #parseStatus}를 거친다 — 평소엔 DTO의 {@code @Pattern}(={@link
+     * ApplicationStatus#VALUES_PATTERN})이 걸러준 값만 들어오지만, 만에 하나 어긋날 경우를 대비해 {@link #parseStatus}가 500
+     * 대신 깔끔한 400(P007)으로 막아준다. 신규 등록 vs soft-delete 재활성화 vs 중복 예외 판단은 {@link
      * PolicyApplicationService#create}가 전담한다.
      */
     @PostMapping
@@ -83,9 +83,9 @@ public class PolicyApplicationController {
 
     /**
      * {@code PATCH /api/v1/policy-applications/{id}/status} — 상태만 단독으로 바꾸는 엔드포인트. {@link #create}의
-     * DTO와 같은 4개 상태값 화이트리스트를 여기서도 별도로 유지한다(드리프트 위험 동일, {@link #parseStatus}가 같은 방식으로 방어한다). 소유권 검증은
-     * 여기가 아니라 {@link PolicyApplicationService#changeStatus} 안의 {@code verifyOwner()}에서 한다 — id로 조회한
-     * 신청이 진짜 이 userId 소유인지는 서비스 계층 책임이다.
+     * DTO와 같은 {@link ApplicationStatus#VALUES_PATTERN} 화이트리스트를 공유한다({@link #parseStatus}가 방어선 역할은
+     * 동일하게 유지). 소유권 검증은 여기가 아니라 {@link PolicyApplicationService#changeStatus} 안의 {@code
+     * verifyOwner()}에서 한다 — id로 조회한 신청이 진짜 이 userId 소유인지는 서비스 계층 책임이다.
      */
     @PatchMapping("/{id}/status")
     public ApiResponse<PolicyApplicationResponse> changeStatus(
@@ -93,9 +93,7 @@ public class PolicyApplicationController {
             @PathVariable Long id,
             @RequestParam
                     @NotBlank(message = "상태는 필수입니다.")
-                    @Pattern(
-                            regexp = "INTERESTED|PREPARING|APPLIED|COMPLETED",
-                            message = "유효하지 않은 상태값입니다.")
+                    @Pattern(regexp = ApplicationStatus.VALUES_PATTERN, message = "유효하지 않은 상태값입니다.")
                     String status) {
         PolicyApplication application =
                 policyApplicationService.changeStatus(id, userId, parseStatus(status));
@@ -145,9 +143,9 @@ public class PolicyApplicationController {
 
     /**
      * {@link #create}/{@link #changeStatus} 공통 — {@code ApplicationStatus.valueOf()}를 직접 부르지 않고 이걸
-     * 거친다. 평소엔 {@code @Pattern}이 이미 걸러준 값만 들어와서 아무 차이가 없지만, 두 {@code @Pattern}과 enum 상수가 어긋나는 드리프트가
-     * 생기면 {@code IllegalArgumentException}을 여기서 {@code CustomException(P007)}로 바꿔, 처리 못 한 예외로 새서
-     * 500이 되는 걸 막는다.
+     * 거친다. 평소엔 {@code @Pattern}(={@link ApplicationStatus#VALUES_PATTERN})이 이미 걸러준 값만 들어와서 아무 차이가
+     * 없지만, 그 문자열 상수와 enum 상수가 어긋나는 드리프트가 생기면 {@code IllegalArgumentException}을 여기서 {@code
+     * CustomException(P007)}로 바꿔, 처리 못 한 예외로 새서 500이 되는 걸 막는다.
      */
     private ApplicationStatus parseStatus(String status) {
         try {

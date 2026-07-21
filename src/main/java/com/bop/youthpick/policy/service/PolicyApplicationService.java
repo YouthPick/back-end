@@ -125,8 +125,12 @@ public class PolicyApplicationService {
         application.delete();
     }
 
-    /** id로 조회하되 soft-delete된 행은 제외한다. 없으면 {@link PolicyErrorCode#POLICY_APPLICATION_NOT_FOUND}. */
-    private PolicyApplication findActive(Long id) {
+    /**
+     * id로 조회하되 soft-delete된 행은 제외한다. 없으면 {@link PolicyErrorCode#POLICY_APPLICATION_NOT_FOUND}. 접근
+     * 제한자가 package-private인 이유: 같은 패키지의 {@link PolicyApplicationChecklistService}도 부모 신청관리를 조회할 때 이
+     * 메서드를 그대로 재사용한다(두 서비스가 각자 같은 Repository 조회를 중복 구현하던 것을 여기로 합쳤다).
+     */
+    PolicyApplication findActive(Long id) {
         return policyApplicationRepository
                 .findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(
