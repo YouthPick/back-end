@@ -15,6 +15,7 @@ import com.bop.youthpick.post.entity.PostCategory;
 import com.bop.youthpick.post.exception.BoardErrorCode;
 import com.bop.youthpick.post.exception.BoardException;
 import com.bop.youthpick.post.repository.PostRepository;
+import com.bop.youthpick.post.repository.PostSpecifications;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.exception.UserError;
 import com.bop.youthpick.user.exception.UserException;
@@ -23,6 +24,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,8 +53,9 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PostSummaryResponse> findAll(Pageable pageable) {
-        return postRepository.findAllByDeletedAtIsNull(pageable).map(PostSummaryResponse::from);
+    public Page<PostSummaryResponse> findAll(String category, String query, Pageable pageable) {
+        Specification<Post> spec = PostSpecifications.search(category, query);
+        return postRepository.findAll(spec, pageable).map(PostSummaryResponse::from);
     }
 
     @Transactional

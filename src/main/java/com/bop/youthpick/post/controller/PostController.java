@@ -34,12 +34,14 @@ public class PostController {
                 .body(ApiResponse.ok(response)); // 성공했을때 http status 201
     }
 
-    @GetMapping
-    public ApiResponse<List<PostSummaryResponse>> findAll( // 리스폰스엔티티로 감싸야함 수정필요
+    @GetMapping // 리스폰스엔티티로 감싸야함 수정필요
+    public ApiResponse<List<PostSummaryResponse>> findAll(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String query,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
                     Pageable pageable) {
 
-        Page<PostSummaryResponse> page = postService.findAll(pageable);
+        Page<PostSummaryResponse> page = postService.findAll(category, query, pageable);
         return ApiResponse.ok(page.getContent(), page);
     }
 
