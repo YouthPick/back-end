@@ -15,6 +15,8 @@ public class AdminRegionService {
 
     @Transactional(readOnly = true)
     public List<RegionResponse> findAll() {
-        return regionRepository.findAll().stream().map(RegionResponse::from).toList();
+        return regionRepository.findAllByOrderBySidoNameAscNameAsc().stream()
+                .map(RegionResponse::from)
+                .toList();
     }
 }

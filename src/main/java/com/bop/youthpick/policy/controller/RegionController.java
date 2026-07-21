@@ -20,6 +20,8 @@ public class RegionController {
     @GetMapping
     public ApiResponse<List<RegionResponse>> list() {
         return ApiResponse.ok(
-                regionRepository.findAll().stream().map(RegionResponse::from).toList());
+                regionRepository.findAllByOrderBySidoNameAscNameAsc().stream()
+                        .map(RegionResponse::from)
+                        .toList());
     }
 }
