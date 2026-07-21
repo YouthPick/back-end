@@ -17,8 +17,6 @@ public enum PolicyErrorCode implements ErrorCode {
      */
     POLICY_ALREADY_EXISTS("P002", "이미 존재하는 정책입니다.", HttpStatus.CONFLICT),
 
-    // policy-application 기능이 아니라 user 도메인의 UserProfileService에서 쓰인다(관심 지역 코드 검증) —
-    // "정책" 접두어(P)를 쓰지만 실제로는 지역 코드 조회 실패에 재사용되는 코드다.
     REGION_NOT_FOUND("P003", "존재하지 않는 지역 코드입니다.", HttpStatus.NOT_FOUND),
 
     /**
