@@ -4,8 +4,10 @@ import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyComparisonCreateRequest;
 import com.bop.youthpick.policy.dto.PolicyComparisonItemResponse;
 import com.bop.youthpick.policy.dto.PolicyComparisonResponse;
+import com.bop.youthpick.policy.dto.RegionResponse;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
+import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +38,7 @@ public class PolicyComparisonService {
     private static final int MAX_POLICY_COUNT = 3;
 
     private final PolicyRepository policyRepository;
+    private final PolicyRegionRepository policyRegionRepository;
 
     @Transactional(readOnly = true)
     public PolicyComparisonResponse create(PolicyComparisonCreateRequest request) {
@@ -56,13 +59,30 @@ public class PolicyComparisonService {
 
         Map<Long, Policy> policyById =
                 policies.stream().collect(Collectors.toMap(Policy::getId, Function.identity()));
+        Map<Long, List<RegionResponse>> regionsByPolicyId = findRegionsByPolicyId(policyIds);
         List<PolicyComparisonItemResponse> items =
                 policyIds.stream()
-                        .map(policyById::get)
-                        .map(PolicyComparisonItemResponse::from)
+                        .map(
+                                policyId ->
+                                        PolicyComparisonItemResponse.from(
+                                                policyById.get(policyId),
+                                                regionsByPolicyId.getOrDefault(
+                                                        policyId, List.of())))
                         .toList();
 
         return new PolicyComparisonResponse(encode(policyIds), items);
+    }
+
+    /** 지역은 전국 정책이면 정책당 최대 256행이라, fetch join 배치 조회로 한 번에 가져와 N+1을 피한다. */
+    private Map<Long, List<RegionResponse>> findRegionsByPolicyId(List<Long> policyIds) {
+        return policyRegionRepository.findWithRegionByPolicyIdIn(policyIds).stream()
+                .collect(
+                        Collectors.groupingBy(
+                                policyRegion -> policyRegion.getPolicy().getId(),
+                                Collectors.mapping(
+                                        policyRegion ->
+                                                RegionResponse.from(policyRegion.getRegion()),
+                                        Collectors.toList())));
     }
 
     private String encode(List<Long> policyIds) {

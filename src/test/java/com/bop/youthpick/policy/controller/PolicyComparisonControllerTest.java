@@ -11,6 +11,7 @@ import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyComparisonCreateRequest;
 import com.bop.youthpick.policy.dto.PolicyComparisonItemResponse;
 import com.bop.youthpick.policy.dto.PolicyComparisonResponse;
+import com.bop.youthpick.policy.dto.RegionResponse;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.service.PolicyComparisonService;
 import java.util.List;
@@ -45,11 +46,7 @@ class PolicyComparisonControllerTest {
                     null,
                     null,
                     null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null);
+                    List.of(new RegionResponse("11680", "서울특별시", "강남구")));
 
     @Test
     void create_유효한_요청이면_201과_비교결과를_반환한다() throws Exception {
@@ -64,7 +61,11 @@ class PolicyComparisonControllerTest {
                                 .content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.comparisonId").value("1-2"))
-                .andExpect(jsonPath("$.data.policies[0].policyId").value(1));
+                .andExpect(jsonPath("$.data.policies[0].policyId").value(1))
+                .andExpect(jsonPath("$.data.policies[0].regions[0].provinceName").value("서울특별시"))
+                // 자격 판정용 내부 코드는 상세 응답과 동일하게 노출하지 않는다.
+                .andExpect(jsonPath("$.data.policies[0].jobCodes").doesNotExist())
+                .andExpect(jsonPath("$.data.policies[0].maritalStatusCode").doesNotExist());
     }
 
     @Test

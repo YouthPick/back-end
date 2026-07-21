@@ -7,8 +7,12 @@ import static org.mockito.Mockito.when;
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyComparisonCreateRequest;
 import com.bop.youthpick.policy.dto.PolicyComparisonResponse;
+import com.bop.youthpick.policy.dto.RegionResponse;
 import com.bop.youthpick.policy.entity.Policy;
+import com.bop.youthpick.policy.entity.PolicyRegion;
+import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
+import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,12 +27,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 class PolicyComparisonServiceTest {
 
     @Mock private PolicyRepository policyRepository;
+    @Mock private PolicyRegionRepository policyRegionRepository;
 
     private PolicyComparisonService policyComparisonService;
 
     @BeforeEach
     void setUp() {
-        policyComparisonService = new PolicyComparisonService(policyRepository);
+        policyComparisonService =
+                new PolicyComparisonService(policyRepository, policyRegionRepository);
     }
 
     @Test
@@ -42,6 +48,26 @@ class PolicyComparisonServiceTest {
 
         assertThat(response.comparisonId()).isEqualTo("1-2");
         assertThat(response.policies()).extracting("policyId").containsExactly(1L, 2L);
+    }
+
+    @Test
+    void 정책별_지역을_묶어서_응답에_담고_지역이_없는_정책은_빈_목록으로_내려준다() {
+        Policy first = newPolicy(1L, "청년 월세 지원");
+        Policy second = newPolicy(2L, "청년 취업 장려금");
+        when(policyRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first, second));
+        when(policyRegionRepository.findWithRegionByPolicyIdIn(List.of(1L, 2L)))
+                .thenReturn(
+                        List.of(
+                                newPolicyRegion(first, "11680", "서울특별시", "강남구"),
+                                newPolicyRegion(first, "26110", "부산광역시", "중구")));
+
+        PolicyComparisonResponse response = policyComparisonService.find("1-2");
+
+        assertThat(response.policies().get(0).regions())
+                .containsExactly(
+                        new RegionResponse("11680", "서울특별시", "강남구"),
+                        new RegionResponse("26110", "부산광역시", "중구"));
+        assertThat(response.policies().get(1).regions()).isEmpty();
     }
 
     @Test
@@ -136,5 +162,14 @@ class PolicyComparisonServiceTest {
         ReflectionTestUtils.setField(policy, "policyNo", "R2026" + id);
         ReflectionTestUtils.setField(policy, "title", title);
         return policy;
+    }
+
+    private PolicyRegion newPolicyRegion(
+            Policy policy, String regionCode, String sidoName, String name) {
+        Region region = BeanUtils.instantiateClass(Region.class);
+        ReflectionTestUtils.setField(region, "code", regionCode);
+        ReflectionTestUtils.setField(region, "sidoName", sidoName);
+        ReflectionTestUtils.setField(region, "name", name);
+        return PolicyRegion.create(policy, region);
     }
 }

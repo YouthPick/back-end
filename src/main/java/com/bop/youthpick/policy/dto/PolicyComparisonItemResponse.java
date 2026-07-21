@@ -2,10 +2,14 @@ package com.bop.youthpick.policy.dto;
 
 import com.bop.youthpick.policy.entity.Policy;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
- * 비교표 한 열(정책 한 건)의 응답. 자격요건 원문 노출용 필드를 그대로 나열해 프론트가 항목별로 나란히 비교할 수 있게 한다. 자동판정 전용 코드값(job/school
- * /major/specialization/maritalStatus)은 디코딩 매핑표가 없어 화면에는 안 쓰이지만, 원본 코드를 그대로 보존해 내려준다.
+ * 비교표 한 열(정책 한 건)의 응답. 자격요건 원문 노출용 필드를 나열해 프론트가 항목별로 나란히 비교할 수 있게 한다.
+ *
+ * <p>필드 구성은 {@link PolicyDetailResponse}의 부분집합으로 유지한다 — 같은 정책을 상세로 볼 때는 감춰지는 값이 비교로 볼 때만 드러나면 안 되기
+ * 때문이다. 따라서 자격 판정용 내부 코드(jobCodes/schoolCodes/majorCodes/specializationCodes/maritalStatusCode)와 보류
+ * 필드, raw payload는 상세와 동일하게 노출하지 않는다.
  */
 public record PolicyComparisonItemResponse(
         Long policyId,
@@ -14,20 +18,16 @@ public record PolicyComparisonItemResponse(
         String organizationName,
         Integer minAge,
         Integer maxAge,
-        String jobCodes,
-        String schoolCodes,
         String incomeConditionCode,
         Integer incomeMaxAmount,
         String incomeEtcContent,
-        String maritalStatusCode,
-        String majorCodes,
-        String specializationCodes,
         String additionalQualification,
         String participationRestriction,
         LocalDate applicationEndDate,
-        String applicationUrl) {
+        String applicationUrl,
+        List<RegionResponse> regions) {
 
-    public static PolicyComparisonItemResponse from(Policy policy) {
+    public static PolicyComparisonItemResponse from(Policy policy, List<RegionResponse> regions) {
         return new PolicyComparisonItemResponse(
                 policy.getId(),
                 policy.getTitle(),
@@ -35,17 +35,13 @@ public record PolicyComparisonItemResponse(
                 policy.getOrganizationName(),
                 policy.getMinAge(),
                 policy.getMaxAge(),
-                policy.getJobCodes(),
-                policy.getSchoolCodes(),
                 policy.getIncomeConditionCode(),
                 policy.getIncomeMaxAmount(),
                 policy.getIncomeEtcContent(),
-                policy.getMaritalStatusCode(),
-                policy.getMajorCodes(),
-                policy.getSpecializationCodes(),
                 policy.getAdditionalQualification(),
                 policy.getParticipationRestriction(),
                 policy.getApplicationEndDate(),
-                policy.getApplicationUrl());
+                policy.getApplicationUrl(),
+                regions);
     }
 }

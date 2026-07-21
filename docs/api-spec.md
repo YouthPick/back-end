@@ -435,7 +435,7 @@ DB에 별도로 저장하지 않는 stateless 설계다. `comparisonId`는 비�
 
 ### 응답 필드 (`POST`/`GET` 공통)
 
-`data.comparisonId`(문자열)와 `data.policies[]`(비교 대상 정책 목록)로 구성된다. `policies[]`의 각 원소는 `Policy` 엔티티 전체가 아니라 비교에 필요한 필드만 담은 값이다.
+`data.comparisonId`(문자열)와 `data.policies[]`(비교 대상 정책 목록)로 구성된다. `policies[]`의 각 원소는 `Policy` 엔티티 전체가 아니라 비교에 필요한 필드만 담은 값이며, **정책 상세 조회 응답의 부분집합으로 유지한다** — 같은 정책을 상세로 볼 때 감춰지는 값이 비교로 볼 때만 드러나면 안 되기 때문이다. 따라서 자격 판정용 내부 코드(`jobCodes`, `schoolCodes`, `majorCodes`, `specializationCodes`, `maritalStatusCode`)와 보류 필드, raw payload는 상세와 동일하게 노출하지 않는다.
 
 | 필드 | 타입 | 내용 |
 |---|---|---|
@@ -444,18 +444,17 @@ DB에 별도로 저장하지 않는 stateless 설계다. `comparisonId`는 비�
 | `category` | string | 대분류 |
 | `organizationName` | string | 주관기관 |
 | `minAge` / `maxAge` | number \| null | 지원 나이 범위 (null = 제한없음) |
-| `jobCodes` | string \| null | 취업상태 조건 코드(콤마 다중) |
-| `schoolCodes` | string \| null | 학력 조건 코드(콤마 다중) |
 | `incomeConditionCode` | string \| null | 소득 조건 구분 코드 |
 | `incomeMaxAmount` | number \| null | 연소득 상한(만원) |
 | `incomeEtcContent` | string \| null | 소득 조건 기타 설명 |
-| `maritalStatusCode` | string \| null | 혼인상태 조건 코드 |
-| `majorCodes` | string \| null | 전공 조건 코드(콤마 다중) |
-| `specializationCodes` | string \| null | 특화분야 조건 코드(콤마 다중) |
 | `additionalQualification` | string \| null | 추가 자격조건 원문 |
 | `participationRestriction` | string \| null | 참여 제한사항 원문 |
 | `applicationEndDate` | string(`YYYY-MM-DD`) \| null | 신청 마감일 |
 | `applicationUrl` | string \| null | 신청 바로가기 링크 |
+| `regions[]` | array | 지원 지역 목록. 비어 있으면 지역 조건 없음 |
+| `regions[].regionCode` | string | 법정동 코드 |
+| `regions[].provinceName` | string | 시도명 |
+| `regions[].districtName` | string | 시군구명 |
 
 ## 정책 동기화
 
