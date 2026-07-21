@@ -111,12 +111,27 @@ class PostControllerTest {
     void 게시글_목록과_페이지_정보를_조회한다() throws Exception {
         PostSummaryResponse summary =
                 new PostSummaryResponse(3L, 1L, "작성자", null, null, "FREE", "제목", 0, null);
-        when(postService.findAll(any())).thenReturn(new PageImpl<>(List.of(summary)));
+        when(postService.findAll(eq(null), eq(null), any()))
+                .thenReturn(new PageImpl<>(List.of(summary)));
 
         mockMvc.perform(get("/api/v1/posts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value(3))
                 .andExpect(jsonPath("$.meta.totalCount").value(1));
+    }
+
+    @Test
+    void 카테고리와_검색어_파라미터를_그대로_서비스에_전달한다() throws Exception {
+        PostSummaryResponse summary =
+                new PostSummaryResponse(3L, 1L, "작성자", null, null, "FREE", "잡담글", 0, null);
+        when(postService.findAll(eq("FREE"), eq("잡담"), any()))
+                .thenReturn(new PageImpl<>(List.of(summary)));
+
+        mockMvc.perform(get("/api/v1/posts").param("category", "FREE").param("query", "잡담"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].title").value("잡담글"));
+
+        verify(postService).findAll(eq("FREE"), eq("잡담"), any());
     }
 
     @Test
