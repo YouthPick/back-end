@@ -4,7 +4,7 @@ import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.RegionRepository;
-import com.bop.youthpick.user.dto.OnboardingProfileRequest;
+import com.bop.youthpick.user.dto.UserProfileRequest;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.entity.UserProfile;
 import com.bop.youthpick.user.exception.UserError;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class OnboardingService {
+public class UserProfileService {
 
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
@@ -31,7 +31,7 @@ public class OnboardingService {
     }
 
     @Transactional
-    public UserProfile submit(Long userId, OnboardingProfileRequest request) {
+    public UserProfile submit(Long userId, UserProfileRequest request) {
         User user =
                 userRepository
                         .findById(userId)

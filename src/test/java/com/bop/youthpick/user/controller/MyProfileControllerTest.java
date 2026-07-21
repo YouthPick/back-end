@@ -10,7 +10,7 @@ import com.bop.youthpick.auth.dto.AuthPrincipal;
 import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.entity.UserProfile;
-import com.bop.youthpick.user.service.OnboardingService;
+import com.bop.youthpick.user.service.UserProfileService;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ class MyProfileControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @MockitoBean private OnboardingService onboardingService;
+    @MockitoBean private UserProfileService userProfileService;
 
     @AfterEach
     void clearContext() {
@@ -57,7 +57,7 @@ class MyProfileControllerTest {
         when(profile.getCategories()).thenReturn("취업,주거");
         when(profile.getKeywords()).thenReturn("청년,공모전");
         when(profile.getStatus()).thenReturn("COMPLETED");
-        when(onboardingService.getMyProfile(1L)).thenReturn(profile);
+        when(userProfileService.getMyProfile(1L)).thenReturn(profile);
         authenticateAs(1L);
 
         mockMvc.perform(get("/api/v1/me/profile"))
@@ -69,7 +69,7 @@ class MyProfileControllerTest {
 
     @Test
     void 온보딩하지_않은_사용자면_200과_null_데이터를_반환한다() throws Exception {
-        when(onboardingService.getMyProfile(1L)).thenReturn(null);
+        when(userProfileService.getMyProfile(1L)).thenReturn(null);
         authenticateAs(1L);
 
         mockMvc.perform(get("/api/v1/me/profile"))

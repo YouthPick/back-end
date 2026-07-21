@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.entity.UserProfile;
-import com.bop.youthpick.user.service.OnboardingService;
+import com.bop.youthpick.user.service.UserProfileService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -20,13 +20,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(controllers = OnboardingController.class)
+@WebMvcTest(controllers = UserProfileController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class OnboardingControllerTest {
+class UserProfileControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @MockitoBean private OnboardingService onboardingService;
+    @MockitoBean private UserProfileService userProfileService;
 
     private static final String VALID_BODY =
             """
@@ -64,7 +64,7 @@ class OnboardingControllerTest {
         when(profile.getCategories()).thenReturn("취업,주거");
         when(profile.getKeywords()).thenReturn("청년,공모전");
         when(profile.getStatus()).thenReturn("COMPLETED");
-        when(onboardingService.submit(eq(1L), any())).thenReturn(profile);
+        when(userProfileService.submit(eq(1L), any())).thenReturn(profile);
 
         mockMvc.perform(
                         post("/api/v1/users/{userId}/profile", 1L)
