@@ -144,7 +144,6 @@ class PolicyServiceTest {
                         isNull(),
                         isNull(),
                         isNull(),
-                        isNull(),
                         pageableCaptor.capture()))
                 .thenReturn(
                         new PageImpl<>(
@@ -192,7 +191,6 @@ class PolicyServiceTest {
                         isNull(),
                         isNull(),
                         isNull(),
-                        isNull(),
                         any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
         when(regionRepository.countDistinctSidoNames()).thenReturn(16L);
@@ -203,16 +201,14 @@ class PolicyServiceTest {
     }
 
     @Test
-    void region이_전국이면_시도명_대신_전_시도_커버_조건으로_필터한다() {
+    void region이_전국이면_지역_무관이라_시도명_필터를_걸지_않는다() {
         ArgumentCaptor<String> sidoNameCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<Long> totalSidoCountCaptor = ArgumentCaptor.forClass(Long.class);
         when(policyRepository.findCards(
                         eq(PolicyVisibility.VISIBLE),
                         any(LocalDate.class),
                         isNull(),
                         isNull(),
                         sidoNameCaptor.capture(),
-                        totalSidoCountCaptor.capture(),
                         isNull(),
                         isNull(),
                         any(Pageable.class)))
@@ -222,7 +218,26 @@ class PolicyServiceTest {
         policyService.getCards(null, null, "전국", null, null, PageRequest.of(0, 20));
 
         assertThat(sidoNameCaptor.getValue()).isNull();
-        assertThat(totalSidoCountCaptor.getValue()).isEqualTo(16L);
+    }
+
+    @Test
+    void region이_시도명이면_그대로_시도명_필터로_전달한다() {
+        ArgumentCaptor<String> sidoNameCaptor = ArgumentCaptor.forClass(String.class);
+        when(policyRepository.findCards(
+                        eq(PolicyVisibility.VISIBLE),
+                        any(LocalDate.class),
+                        isNull(),
+                        isNull(),
+                        sidoNameCaptor.capture(),
+                        isNull(),
+                        isNull(),
+                        any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+        when(regionRepository.countDistinctSidoNames()).thenReturn(16L);
+
+        policyService.getCards(null, null, "서울특별시", null, null, PageRequest.of(0, 20));
+
+        assertThat(sidoNameCaptor.getValue()).isEqualTo("서울특별시");
     }
 
     @Test
@@ -232,7 +247,6 @@ class PolicyServiceTest {
         when(policyRepository.findCards(
                         eq(PolicyVisibility.VISIBLE),
                         any(LocalDate.class),
-                        isNull(),
                         isNull(),
                         isNull(),
                         isNull(),
