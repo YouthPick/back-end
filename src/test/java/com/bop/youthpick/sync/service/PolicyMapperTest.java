@@ -171,6 +171,59 @@ class PolicyMapperTest {
     }
 
     @Test
+    @DisplayName("X: aplyYmd가 비어있고 상시(0057002)가 아니면 사업기간으로 신청기간을 대체한다 (#123)")
+    void fallsBackToBusinessPeriodWhenApplyPeriodMissing() throws IOException {
+        Policy fallback =
+                mapper.toEntity(
+                        item(
+                                "{\"plcyNo\":\"X5\",\"aplyPrdSeCd\":\"0057003\","
+                                        + "\"bizPrdBgngYmd\":\"20260301\",\"bizPrdEndYmd\":\"20260630\"}"));
+        assertThat(fallback.getApplicationStartDate()).isEqualTo(LocalDate.of(2026, 3, 1));
+        assertThat(fallback.getApplicationEndDate()).isEqualTo(LocalDate.of(2026, 6, 30));
+
+        // 상시(0057002)는 사업기간이 있어도 대체하지 않는다 — 원본이 명시한 "상시" 의미를 그대로 존중.
+        Policy alwaysOpenWithBusinessPeriod =
+                mapper.toEntity(
+                        item(
+                                "{\"plcyNo\":\"X6\",\"aplyPrdSeCd\":\"0057002\","
+                                        + "\"bizPrdBgngYmd\":\"20260301\",\"bizPrdEndYmd\":\"20260630\"}"));
+        assertThat(alwaysOpenWithBusinessPeriod.getApplicationStartDate()).isNull();
+        assertThat(alwaysOpenWithBusinessPeriod.getApplicationEndDate()).isNull();
+
+        // 사업기간마저 없으면 그대로 null (판단 근거가 없는 경우)
+        Policy noSignalAtAll =
+                mapper.toEntity(item("{\"plcyNo\":\"X7\",\"aplyPrdSeCd\":\"0057003\"}"));
+        assertThat(noSignalAtAll.getApplicationStartDate()).isNull();
+        assertThat(noSignalAtAll.getApplicationEndDate()).isNull();
+    }
+
+    @Test
+    @DisplayName("X: 신청·참고 URL은 스킴 없는 도메인에 https://를 붙이고, URL이 아닌 자유 텍스트는 null로 버린다 (#123)")
+    void normalizesUrls() throws IOException {
+        Policy schemeAdded =
+                mapper.toEntity(
+                        item(
+                                "{\"plcyNo\":\"X8\",\"aplyUrlAddr\":\"www.bokjiro.go.kr\","
+                                        + "\"refUrlAddr1\":\"www.khug.or.kr/jeonse/index.js\"}"));
+        assertThat(schemeAdded.getApplicationUrl()).isEqualTo("https://www.bokjiro.go.kr");
+        assertThat(schemeAdded.getReferenceUrl1())
+                .isEqualTo("https://www.khug.or.kr/jeonse/index.js");
+
+        Policy notAUrl =
+                mapper.toEntity(
+                        item(
+                                "{\"plcyNo\":\"X9\",\"aplyUrlAddr\":\"전화문의\","
+                                        + "\"refUrlAddr1\":\"-\"}"));
+        assertThat(notAUrl.getApplicationUrl()).isNull();
+        assertThat(notAUrl.getReferenceUrl1()).isNull();
+
+        Policy alreadyPrefixed =
+                mapper.toEntity(
+                        item("{\"plcyNo\":\"X10\",\"aplyUrlAddr\":\"https://www.molit.go.kr\"}"));
+        assertThat(alreadyPrefixed.getApplicationUrl()).isEqualTo("https://www.molit.go.kr");
+    }
+
+    @Test
     @DisplayName("X: 주관기관이 비면 운영기관으로 fallback, 둘 다 비면 null / N은 false")
     void organizationFallbackAndBooleanN() throws IOException {
         Policy fallback =

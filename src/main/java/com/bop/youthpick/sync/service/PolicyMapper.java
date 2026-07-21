@@ -61,7 +61,11 @@ public class PolicyMapper {
     /** 신규/변경 정책 1건 전처리. Policy.create 파라미터 순서 = Policy 필드 선언 순서. */
     public Policy toEntity(YouthPolicyItem item) {
         String plcyNo = trimToNull(item.plcyNo());
-        ApplyPeriod applyPeriod = parseApplyPeriod(plcyNo, item.aplyPrdSeCd(), item.aplyYmd());
+        LocalDate businessBegin = toDate(plcyNo, "bizPrdBgngYmd", item.bizPrdBgngYmd());
+        LocalDate businessEnd = toDate(plcyNo, "bizPrdEndYmd", item.bizPrdEndYmd());
+        ApplyPeriod applyPeriod =
+                parseApplyPeriod(
+                        plcyNo, item.aplyPrdSeCd(), item.aplyYmd(), businessBegin, businessEnd);
         return Policy.create(
                 plcyNo,
                 trimToNull(item.plcyNm()),
@@ -87,14 +91,14 @@ public class PolicyMapper {
                 trimToNull(item.aplyYmd()),
                 applyPeriod.start(),
                 applyPeriod.end(),
-                toDate(plcyNo, "bizPrdBgngYmd", item.bizPrdBgngYmd()),
-                toDate(plcyNo, "bizPrdEndYmd", item.bizPrdEndYmd()),
+                businessBegin,
+                businessEnd,
                 trimToNull(item.bizPrdEtcCn()),
                 toInt(plcyNo, "sprtSclCnt", item.sprtSclCnt()),
                 toBoolean(item.sprtArvlSeqYn()),
-                trimToNull(item.aplyUrlAddr()),
-                trimToNull(item.refUrlAddr1()),
-                trimToNull(item.refUrlAddr2()),
+                normalizeUrl(plcyNo, "aplyUrlAddr", item.aplyUrlAddr()),
+                normalizeUrl(plcyNo, "refUrlAddr1", item.refUrlAddr1()),
+                normalizeUrl(plcyNo, "refUrlAddr2", item.refUrlAddr2()),
                 trimToNull(item.plcyAplyMthdCn()),
                 trimToNull(item.sbmsnDcmntCn()),
                 trimToNull(item.srngMthdCn()),
@@ -158,19 +162,50 @@ public class PolicyMapper {
 
     private record ApplyPeriod(LocalDate start, LocalDate end) {}
 
-    /** "yyyyMMdd ~ yyyyMMdd" 파싱. 상시(0057002)·빈값은 스킵(경고 없음), 형식 이상은 경고 + null. */
-    private ApplyPeriod parseApplyPeriod(String plcyNo, String aplyPrdSeCd, String aplyYmd) {
-        String raw = trimToNull(aplyYmd);
-        if (raw == null || ALWAYS_OPEN_CODE.equals(trimToNull(aplyPrdSeCd))) {
+    /**
+     * "yyyyMMdd ~ yyyyMMdd" 파싱. 상시(0057002)는 스킵(경고 없음). 그 외 코드에서 aplyYmd가 비어 있거나 형식이 이상하면
+     * 사업기간(bizPrdBgngYmd~bizPrdEndYmd)으로 대체한다 — 신청기간 자체를 안 주는 정책(주로 0057003 지역 단발성 모집)이 실제로는 이미
+     * 끝났는데도 신청마감일 없음("상시")으로 계속 노출되는 문제를 막기 위함(#123). 형식 이상은 경고 로그를 남긴다.
+     */
+    private ApplyPeriod parseApplyPeriod(
+            String plcyNo,
+            String aplyPrdSeCd,
+            String aplyYmd,
+            LocalDate businessBegin,
+            LocalDate businessEnd) {
+        if (ALWAYS_OPEN_CODE.equals(trimToNull(aplyPrdSeCd))) {
             return new ApplyPeriod(null, null);
+        }
+        String raw = trimToNull(aplyYmd);
+        if (raw == null) {
+            return new ApplyPeriod(businessBegin, businessEnd);
         }
         String[] parts = raw.split("~");
         if (parts.length != 2) {
             log.warn("정책 {} 필드 aplyYmd 형식 이상 — 원문 '{}'", plcyNo, raw);
-            return new ApplyPeriod(null, null);
+            return new ApplyPeriod(businessBegin, businessEnd);
         }
         return new ApplyPeriod(
                 toDate(plcyNo, "aplyYmd(시작일)", parts[0]), toDate(plcyNo, "aplyYmd(마감일)", parts[1]));
+    }
+
+    /**
+     * 신청·참고 URL 정규화. 이미 http(s)://면 그대로, "www.xxx.go.kr"처럼 스킴만 빠진 도메인이면 https://를 붙인다. "-",
+     * "전화문의"처럼 URL이 아닌 자유 텍스트는 깨진 링크를 만들지 않도록 null로 버린다(#123).
+     */
+    private static String normalizeUrl(String plcyNo, String field, String value) {
+        String v = trimToNull(value);
+        if (v == null) {
+            return null;
+        }
+        if (v.startsWith("http://") || v.startsWith("https://")) {
+            return v;
+        }
+        if (v.contains(" ") || v.contains("\t") || !v.contains(".")) {
+            log.warn("정책 {} 필드 {} URL 형식 아님(자유 텍스트로 판단) — 원문 '{}'", plcyNo, field, v);
+            return null;
+        }
+        return "https://" + v;
     }
 
     /** sprvsnInstCdNm(주관기관) 우선, 비어 있으면 operInstCdNm(운영기관) fallback */
