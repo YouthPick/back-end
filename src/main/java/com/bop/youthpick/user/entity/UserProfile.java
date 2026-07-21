@@ -98,4 +98,27 @@ public class UserProfile extends BaseEntity {
         profile.keywords = keywords;
         return profile;
     }
+
+    public void update(
+            Region region,
+            Integer birthYear,
+            String employmentStatus,
+            String educationLevel,
+            String merryStatus,
+            String major,
+            String specialCondition,
+            Integer income,
+            String categories,
+            String keywords) {
+        this.region = region;
+        this.birthYear = birthYear;
+        this.employmentStatus = employmentStatus;
+        this.educationLevel = educationLevel;
+        this.merryStatus = merryStatus;
+        this.major = major;
+        this.specialCondition = specialCondition;
+        this.income = income;
+        this.categories = categories;
+        this.keywords = keywords;
+    }
 }

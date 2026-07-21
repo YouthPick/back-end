@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -176,6 +177,48 @@ class UserProfileControllerTest {
     @Test
     void 미인증_요청이면_401과_A001을_반환한다() throws Exception {
         mockMvc.perform(get("/api/v1/me/profile"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("A001"));
+    }
+
+    @Test
+    void 유효한_수정_요청이면_200과_수정된_프로필을_반환한다() throws Exception {
+        UserProfile profile = mock(UserProfile.class);
+        User user = mock(User.class);
+        Region region = mock(Region.class);
+        when(user.getId()).thenReturn(1L);
+        when(region.getCode()).thenReturn("11110");
+        when(profile.getId()).thenReturn(10L);
+        when(profile.getUser()).thenReturn(user);
+        when(profile.getRegion()).thenReturn(region);
+        when(profile.getBirthYear()).thenReturn(2000);
+        when(profile.getEmploymentStatus()).thenReturn("EMPLOYED");
+        when(profile.getEducationLevel()).thenReturn("UNIVERSITY");
+        when(profile.getMerryStatus()).thenReturn("SINGLE");
+        when(profile.getMajor()).thenReturn("COMPUTER_SCIENCE");
+        when(profile.getSpecialCondition()).thenReturn("LOW_INCOME");
+        when(profile.getIncome()).thenReturn(3000);
+        when(profile.getCategories()).thenReturn("취업,주거");
+        when(profile.getKeywords()).thenReturn("청년,공모전");
+        when(profile.getStatus()).thenReturn("COMPLETED");
+        when(userProfileService.update(eq(1L), any())).thenReturn(profile);
+        authenticateAs(1L);
+
+        mockMvc.perform(
+                        patch("/api/v1/me/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BODY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(10))
+                .andExpect(jsonPath("$.data.regionCode").value("11110"));
+    }
+
+    @Test
+    void 미인증_수정_요청이면_401과_A001을_반환한다() throws Exception {
+        mockMvc.perform(
+                        patch("/api/v1/me/profile")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BODY))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("A001"));
     }

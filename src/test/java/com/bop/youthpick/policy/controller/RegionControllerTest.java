@@ -26,7 +26,7 @@ class RegionControllerTest {
     @Test
     void 지역_목록은_200과_전체_목록을_반환한다() throws Exception {
         Region region = Region.create("11110", "서울특별시", "종로구");
-        when(regionRepository.findAll()).thenReturn(List.of(region));
+        when(regionRepository.findAllByOrderBySidoNameAscNameAsc()).thenReturn(List.of(region));
 
         mockMvc.perform(get("/api/v1/regions"))
                 .andExpect(status().isOk())

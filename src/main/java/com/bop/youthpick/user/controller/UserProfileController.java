@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,5 +36,12 @@ public class UserProfileController {
     public ApiResponse<UserProfileResponse> getMyProfile(@CurrentUser Long userId) {
         UserProfile profile = userProfileService.getMyProfile(userId);
         return ApiResponse.ok(profile == null ? null : UserProfileResponse.from(profile));
+    }
+
+    @PatchMapping("/api/v1/me/profile")
+    public ApiResponse<UserProfileResponse> updateMyProfile(
+            @CurrentUser Long userId, @Valid @RequestBody UserProfileRequest request) {
+        UserProfile profile = userProfileService.update(userId, request);
+        return ApiResponse.ok(UserProfileResponse.from(profile));
     }
 }
