@@ -1,9 +1,15 @@
 package com.bop.youthpick.user.dto;
 
+import com.bop.youthpick.user.entity.EducationLevel;
+import com.bop.youthpick.user.entity.EmploymentStatus;
+import com.bop.youthpick.user.entity.Major;
+import com.bop.youthpick.user.entity.MaritalStatus;
+import com.bop.youthpick.user.entity.SpecialCondition;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
@@ -18,13 +24,17 @@ public record UserProfileRequest(
                 Integer birthYear,
         @NotBlank(message = "거주 지역은 필수입니다.") @Size(max = 10, message = "지역 코드 형식이 올바르지 않습니다.")
                 String regionCode,
-        @NotBlank(message = "취업상태는 필수입니다.") @Size(max = 16, message = "취업상태 코드 형식이 올바르지 않습니다.")
+        @NotBlank(message = "취업상태는 필수입니다.")
+                @Pattern(regexp = EmploymentStatus.PATTERN, message = "취업상태 코드 형식이 올바르지 않습니다.")
                 String employmentStatus,
-        @NotBlank(message = "학력은 필수입니다.") @Size(max = 16, message = "학력 코드 형식이 올바르지 않습니다.")
+        @NotBlank(message = "학력은 필수입니다.")
+                @Pattern(regexp = EducationLevel.PATTERN, message = "학력 코드 형식이 올바르지 않습니다.")
                 String educationLevel,
-        @Size(max = 16, message = "결혼여부 코드 형식이 올바르지 않습니다.") String merryStatus,
-        List<@NotBlank String> major,
-        List<@NotBlank String> specialCondition,
+        @Pattern(regexp = MaritalStatus.PATTERN, message = "결혼여부 코드 형식이 올바르지 않습니다.")
+                String merryStatus,
+        List<@Pattern(regexp = Major.PATTERN, message = "전공 코드 형식이 올바르지 않습니다.") String> major,
+        List<@Pattern(regexp = SpecialCondition.PATTERN, message = "특화조건 코드 형식이 올바르지 않습니다.") String>
+                specialCondition,
         @Min(value = 0, message = "연소득이 올바르지 않습니다.") Integer income,
         @Size(max = 3, message = "관심분야는 최대 3개까지 선택할 수 있습니다.") List<@NotBlank String> categories,
         @Size(max = 19, message = "관심키워드는 최대 19개까지 선택할 수 있습니다.") List<@NotBlank String> keywords) {}

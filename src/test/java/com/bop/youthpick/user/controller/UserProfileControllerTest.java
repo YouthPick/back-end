@@ -43,10 +43,10 @@ class UserProfileControllerTest {
                 "birthYear": 2000,
                 "regionCode": "11110",
                 "employmentStatus": "EMPLOYED",
-                "educationLevel": "UNIVERSITY",
+                "educationLevel": "UNIV_GRADUATE",
                 "merryStatus": "SINGLE",
-                "major": ["COMPUTER_SCIENCE"],
-                "specialCondition": ["LOW_INCOME"],
+                "major": ["ENGINEERING"],
+                "specialCondition": ["BASIC_LIVELIHOOD"],
                 "income": 3000,
                 "categories": ["취업", "주거"],
                 "keywords": ["청년", "공모전"]
@@ -70,10 +70,10 @@ class UserProfileControllerTest {
         when(profile.getRegion()).thenReturn(region);
         when(profile.getBirthYear()).thenReturn(2000);
         when(profile.getEmploymentStatus()).thenReturn("EMPLOYED");
-        when(profile.getEducationLevel()).thenReturn("UNIVERSITY");
+        when(profile.getEducationLevel()).thenReturn("UNIV_GRADUATE");
         when(profile.getMerryStatus()).thenReturn("SINGLE");
-        when(profile.getMajor()).thenReturn("COMPUTER_SCIENCE");
-        when(profile.getSpecialCondition()).thenReturn("LOW_INCOME");
+        when(profile.getMajor()).thenReturn("ENGINEERING");
+        when(profile.getSpecialCondition()).thenReturn("BASIC_LIVELIHOOD");
         when(profile.getIncome()).thenReturn(3000);
         when(profile.getCategories()).thenReturn("취업,주거");
         when(profile.getKeywords()).thenReturn("청년,공모전");
@@ -89,8 +89,8 @@ class UserProfileControllerTest {
                 .andExpect(jsonPath("$.data.userId").value(1))
                 .andExpect(jsonPath("$.data.regionCode").value("11110"))
                 .andExpect(jsonPath("$.data.merryStatus").value("SINGLE"))
-                .andExpect(jsonPath("$.data.major[0]").value("COMPUTER_SCIENCE"))
-                .andExpect(jsonPath("$.data.specialCondition[0]").value("LOW_INCOME"))
+                .andExpect(jsonPath("$.data.major[0]").value("ENGINEERING"))
+                .andExpect(jsonPath("$.data.specialCondition[0]").value("BASIC_LIVELIHOOD"))
                 .andExpect(jsonPath("$.data.income").value(3000))
                 .andExpect(jsonPath("$.data.categories[0]").value("취업"))
                 .andExpect(jsonPath("$.data.categories[1]").value("주거"));
@@ -103,7 +103,7 @@ class UserProfileControllerTest {
                 {
                     "regionCode": "11110",
                     "employmentStatus": "EMPLOYED",
-                    "educationLevel": "UNIVERSITY"
+                    "educationLevel": "UNIV_GRADUATE"
                 }
                 """;
 
@@ -122,7 +122,7 @@ class UserProfileControllerTest {
                 {
                     "birthYear": 2000,
                     "regionCode": "11110",
-                    "educationLevel": "UNIVERSITY"
+                    "educationLevel": "UNIV_GRADUATE"
                 }
                 """;
 
@@ -132,6 +132,29 @@ class UserProfileControllerTest {
                                 .content(invalidBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    void 어휘에_없는_취업상태면_400과_C001을_반환한다() throws Exception {
+        // 검증이 없던 시절에는 이런 값도 그대로 저장돼, 맞춤정책 취업 축이 조용히 0점이 됐다.
+        mockMvc.perform(
+                        post("/api/v1/users/{userId}/profile", 1L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BODY.replace("\"EMPLOYED\"", "\"MILITARY\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"))
+                .andExpect(jsonPath("$.errors[0].field").value("employmentStatus"));
+    }
+
+    @Test
+    void 어휘에_없는_학력이면_400과_C001을_반환한다() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/users/{userId}/profile", 1L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BODY.replace("\"UNIV_GRADUATE\"", "\"UNIVERSITY\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"))
+                .andExpect(jsonPath("$.errors[0].field").value("educationLevel"));
     }
 
     @Test
@@ -146,10 +169,10 @@ class UserProfileControllerTest {
         when(profile.getRegion()).thenReturn(region);
         when(profile.getBirthYear()).thenReturn(2000);
         when(profile.getEmploymentStatus()).thenReturn("EMPLOYED");
-        when(profile.getEducationLevel()).thenReturn("UNIVERSITY");
+        when(profile.getEducationLevel()).thenReturn("UNIV_GRADUATE");
         when(profile.getMerryStatus()).thenReturn("SINGLE");
-        when(profile.getMajor()).thenReturn("COMPUTER_SCIENCE");
-        when(profile.getSpecialCondition()).thenReturn("LOW_INCOME");
+        when(profile.getMajor()).thenReturn("ENGINEERING");
+        when(profile.getSpecialCondition()).thenReturn("BASIC_LIVELIHOOD");
         when(profile.getIncome()).thenReturn(3000);
         when(profile.getCategories()).thenReturn("취업,주거");
         when(profile.getKeywords()).thenReturn("청년,공모전");
