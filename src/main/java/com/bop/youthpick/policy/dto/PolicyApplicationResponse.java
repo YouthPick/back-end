@@ -22,10 +22,12 @@ public record PolicyApplicationResponse(
         LocalDateTime endAt,
         LocalDateTime createdAt) {
 
-    // PolicyApplicationController의 register/changeStatus/updateMemo/updateEndAt과
-    // PolicyApplicationService.getApplications()(Page.map)에서 호출된다.
-    // application.getPolicy()는 PolicyApplicationRepository.findByUser_IdAndDeletedAtIsNull()의
-    // @EntityGraph(attributePaths = "policy") 덕분에 지연 로딩(N+1) 없이 이미 로드돼 있다.
+    /**
+     * PolicyApplicationController의 create/changeStatus/updateMemo/updateEndAt과
+     * PolicyApplicationService.getApplications()(Page.map)에서 호출된다. {@code application.getPolicy()}는
+     * {@code PolicyApplicationRepository.findByUser_IdAndDeletedAtIsNull()}의
+     * {@code @EntityGraph(attributePaths = "policy")} 덕분에 지연 로딩(N+1) 없이 이미 로드돼 있다.
+     */
     public static PolicyApplicationResponse from(PolicyApplication application) {
         var policy = application.getPolicy();
         return new PolicyApplicationResponse(

@@ -15,8 +15,10 @@ public record PolicyApplicationChecklistResponse(
         boolean checked,
         LocalDateTime createdAt) {
 
-    // PolicyApplicationChecklistController.add()/update()와
-    // PolicyApplicationChecklistService.getByApplication()(Page.map)에서 호출된다.
+    /**
+     * PolicyApplicationChecklistController.add()/update()와
+     * PolicyApplicationChecklistService.getByApplication()(Page.map)에서 호출된다.
+     */
     public static PolicyApplicationChecklistResponse from(PolicyApplicationChecklist checklist) {
         return new PolicyApplicationChecklistResponse(
                 checklist.getId(),

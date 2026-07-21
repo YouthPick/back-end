@@ -17,7 +17,6 @@ import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
-import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
 import com.bop.youthpick.user.entity.User;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +34,7 @@ import org.springframework.data.domain.Pageable;
 class PolicyApplicationChecklistServiceTest {
 
     @Mock private PolicyApplicationChecklistRepository applicationChecklistRepository;
-    @Mock private PolicyApplicationRepository policyApplicationRepository;
+    @Mock private PolicyApplicationService policyApplicationService;
 
     private PolicyApplicationChecklistService checklistService;
 
@@ -47,22 +46,21 @@ class PolicyApplicationChecklistServiceTest {
     void setUp() {
         checklistService =
                 new PolicyApplicationChecklistService(
-                        applicationChecklistRepository, policyApplicationRepository);
+                        applicationChecklistRepository, policyApplicationService);
     }
 
     /** 소유자가 USER_ID인 활성 신청. owner.getId()는 소유권 검증에 안 걸리는 테스트에선 안 쓰일 수 있어 lenient로 둔다. */
     private PolicyApplication application() {
         User owner = mock(User.class);
         lenient().when(owner.getId()).thenReturn(USER_ID);
-        return PolicyApplication.register(
+        return PolicyApplication.create(
                 owner, mock(Policy.class), ApplicationStatus.APPLIED, null, null);
     }
 
     @Test
     void add_체크리스트를_정상적으로_생성한다() {
         PolicyApplication application = application();
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
-                .thenReturn(Optional.of(application));
+        when(policyApplicationService.findActive(APPLICATION_ID)).thenReturn(application);
         when(applicationChecklistRepository.save(any(PolicyApplicationChecklist.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -75,8 +73,8 @@ class PolicyApplicationChecklistServiceTest {
 
     @Test
     void add_대상_신청관리가_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
-                .thenReturn(Optional.empty());
+        when(policyApplicationService.findActive(APPLICATION_ID))
+                .thenThrow(new CustomException(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
 
         assertThatThrownBy(() -> checklistService.add(APPLICATION_ID, USER_ID, "제출 서류 준비"))
                 .isInstanceOf(CustomException.class)
@@ -87,8 +85,7 @@ class PolicyApplicationChecklistServiceTest {
     @Test
     void add_소유자가_아니면_FORBIDDEN_예외를_던진다() {
         PolicyApplication application = application();
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
-                .thenReturn(Optional.of(application));
+        when(policyApplicationService.findActive(APPLICATION_ID)).thenReturn(application);
 
         assertThatThrownBy(() -> checklistService.add(APPLICATION_ID, OTHER_USER_ID, "제출 서류 준비"))
                 .isInstanceOf(AuthException.class)
@@ -310,8 +307,7 @@ class PolicyApplicationChecklistServiceTest {
                 PolicyApplicationChecklist.create(application, "제출 서류 준비");
         Pageable pageable = PageRequest.of(0, 20);
         Page<PolicyApplicationChecklist> page = new PageImpl<>(List.of(checklist), pageable, 1);
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
-                .thenReturn(Optional.of(application));
+        when(policyApplicationService.findActive(APPLICATION_ID)).thenReturn(application);
         when(applicationChecklistRepository.findByApplication_IdAndDeletedAtIsNullOrderByIdAsc(
                         APPLICATION_ID, pageable))
                 .thenReturn(page);
@@ -325,8 +321,8 @@ class PolicyApplicationChecklistServiceTest {
 
     @Test
     void getByApplication_대상_신청관리가_없으면_POLICY_APPLICATION_NOT_FOUND_예외를_던진다() {
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
-                .thenReturn(Optional.empty());
+        when(policyApplicationService.findActive(APPLICATION_ID))
+                .thenThrow(new CustomException(PolicyErrorCode.POLICY_APPLICATION_NOT_FOUND));
 
         assertThatThrownBy(
                         () ->
@@ -340,8 +336,7 @@ class PolicyApplicationChecklistServiceTest {
     @Test
     void getByApplication_소유자가_아니면_FORBIDDEN_예외를_던진다() {
         PolicyApplication application = application();
-        when(policyApplicationRepository.findByIdAndDeletedAtIsNull(APPLICATION_ID))
-                .thenReturn(Optional.of(application));
+        when(policyApplicationService.findActive(APPLICATION_ID)).thenReturn(application);
 
         assertThatThrownBy(
                         () ->

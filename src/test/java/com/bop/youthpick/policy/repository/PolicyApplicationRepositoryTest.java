@@ -38,7 +38,7 @@ class PolicyApplicationRepositoryTest {
         entityManager.persistAndFlush(policy);
 
         PolicyApplication application =
-                PolicyApplication.register(user, policy, ApplicationStatus.INTERESTED, null, null);
+                PolicyApplication.create(user, policy, ApplicationStatus.INTERESTED, null, null);
         entityManager.persistAndFlush(application);
         application.delete();
         entityManager.flush();
@@ -61,16 +61,16 @@ class PolicyApplicationRepositoryTest {
         ReflectionTestUtils.setField(policy, "visibility", PolicyVisibility.VISIBLE);
         entityManager.persistAndFlush(policy);
 
-        PolicyApplication registered =
-                policyApplicationService.register(
+        PolicyApplication created =
+                policyApplicationService.create(
                         user.getId(), policy.getId(), ApplicationStatus.INTERESTED, null, null);
-        Long applicationId = registered.getId();
+        Long applicationId = created.getId();
         policyApplicationService.delete(applicationId, user.getId());
         entityManager.flush();
         entityManager.clear();
 
         PolicyApplication reactivated =
-                policyApplicationService.register(
+                policyApplicationService.create(
                         user.getId(), policy.getId(), ApplicationStatus.INTERESTED, null, null);
 
         assertThat(reactivated.getId()).isEqualTo(applicationId);
