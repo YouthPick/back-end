@@ -13,7 +13,7 @@ public enum PolicyErrorCode implements ErrorCode {
     // PolicyApplicationService.register()에서 두 번 쓰인다: ①활성 상태인 기존 신청이 있을 때(중복 등록 시도),
     // ②동시 요청으로 UNIQUE(user, policy) 제약을 위반한 DataIntegrityViolationException을 잡았을 때 — 같은 도메인 에러로 통일.
     POLICY_ALREADY_EXISTS("P002", "이미 존재하는 정책입니다.", HttpStatus.CONFLICT),
-    // policy-application 기능이 아니라 user 도메인의 OnboardingService에서 쓰인다(관심 지역 코드 검증) —
+    // policy-application 기능이 아니라 user 도메인의 UserProfileService에서 쓰인다(관심 지역 코드 검증) —
     // "정책" 접두어(P)를 쓰지만 실제로는 지역 코드 조회 실패에 재사용되는 코드다.
     REGION_NOT_FOUND("P003", "존재하지 않는 지역 코드입니다.", HttpStatus.NOT_FOUND),
     // PolicyApplicationService.findActive(id)가 못 찾을 때(changeStatus/updateMemo/updateEndAt/delete 공통

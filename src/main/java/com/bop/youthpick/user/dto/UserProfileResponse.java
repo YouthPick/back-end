@@ -4,7 +4,7 @@ import com.bop.youthpick.user.entity.UserProfile;
 import java.util.Arrays;
 import java.util.List;
 
-public record OnboardingProfileResponse(
+public record UserProfileResponse(
         Long id,
         Long userId,
         Integer birthYear,
@@ -18,8 +18,8 @@ public record OnboardingProfileResponse(
         List<String> categories,
         List<String> keywords,
         String status) {
-    public static OnboardingProfileResponse from(UserProfile profile) {
-        return new OnboardingProfileResponse(
+    public static UserProfileResponse from(UserProfile profile) {
+        return new UserProfileResponse(
                 profile.getId(),
                 profile.getUser().getId(),
                 profile.getBirthYear(),
