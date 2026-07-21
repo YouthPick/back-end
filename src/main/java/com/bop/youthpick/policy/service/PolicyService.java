@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,9 +37,12 @@ public class PolicyService {
     private static final String NATIONWIDE_REGION = "전국";
 
     /**
-     * 정책 목록(카드) 조회 (비회원 허용). 삭제·숨김·신청 마감 지난 정책은 제외하고 최신순(id 내림차순, 서버 고정 정렬)으로 내린다. category(표준 5분류)
-     * exact match, keyword는 5개 필드 LIKE 부분일치, region은 시도명 필터('전국'은 지역 무관이라 필터 미적용), age는 [ageMin,
-     * ageMax] 구간과 정책 자격 구간의 겹침(overlap)만 필터한다. 지역 라벨은 페이지 단위 배치 조회(fetch join)로 조립해 N+1을 피한다.
+     * 정책 목록(카드) 조회 (비회원 허용). 삭제·숨김·신청 마감 지난 정책은 제외한다. category(표준 5분류) exact match, keyword는 5개 필드
+     * LIKE 부분일치, region은 시도명 필터('전국'은 지역 무관이라 필터 미적용), age는 [ageMin, ageMax] 구간과 정책 자격 구간의
+     * 겹침(overlap), jobCode는 온통청년 취업상태 코드 필터다. 지역 라벨은 페이지 단위 배치 조회(fetch join)로 조립해 N+1을 피한다.
+     *
+     * <p>정렬은 리포지토리 쿼리가 고정한다({@code PolicyRepository.findCards} 참고) — 지역·취업상태 필터가 걸렸을 때만 '조건 없는 정책'을
+     * 뒤로 미뤄야 해서 파라미터에 따라 순서가 달라지기 때문이다. 여기서는 정렬 없는 Pageable을 넘긴다.
      */
     @Transactional(readOnly = true)
     public Page<PolicyCardResponse> getCards(
@@ -49,6 +51,7 @@ public class PolicyService {
             @Nullable String region,
             @Nullable Integer ageMin,
             @Nullable Integer ageMax,
+            @Nullable String jobCode,
             Pageable pageable) {
         String categoryFilter = trimToNull(category);
         String keywordPattern = toLikePattern(keyword);
@@ -57,8 +60,7 @@ public class PolicyService {
         // 전국 대상 정책은 policy_regions에 전 시도가 들어 있어 개별 시도 조회에도 이미 포함된다.
         String sidoName = NATIONWIDE_REGION.equals(regionFilter) ? null : regionFilter;
 
-        Pageable sorted =
-                PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sortFor(sidoName));
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
 
         Page<Policy> page =
                 policyRepository.findCards(
@@ -69,7 +71,8 @@ public class PolicyService {
                         sidoName,
                         ageMin,
                         ageMax,
-                        sorted);
+                        trimToNull(jobCode),
+                        unsorted);
 
         List<Long> policyIds = page.getContent().stream().map(Policy::getId).toList();
         Map<Long, List<String>> sidoNamesByPolicyId =
@@ -91,19 +94,6 @@ public class PolicyService {
                                         .distinct()
                                         .sorted()
                                         .toList()));
-    }
-
-    /**
-     * 목록 정렬. 지역 필터가 없으면 최신순만, 특정 시도를 고르면 전국 정책(is_nationwide)을 뒤로 밀어 그 지역 전용 정책이 먼저 보이게 한다. 전국 정책은
-     * 어느 시도를 골라도 걸리므로 그대로 두면 지역 선택이 무의미해진다.
-     *
-     * <p>지역 무필터에는 적용하지 않는다 — 대상이 넓은 정책을 뒤로 미룰 이유가 없다.
-     */
-    private static Sort sortFor(@Nullable String sidoName) {
-        Sort latestFirst = Sort.by(Sort.Direction.DESC, "id");
-        return sidoName == null
-                ? latestFirst
-                : Sort.by(Sort.Order.asc("nationwide")).and(latestFirst);
     }
 
     @Nullable
