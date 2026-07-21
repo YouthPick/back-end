@@ -128,6 +128,34 @@ class PolicySyncServiceTest {
     }
 
     @Test
+    void 전_시도를_커버하는_정책만_전국으로_표시한다() throws IOException {
+        // 지역 마스터의 시도가 서울·부산 둘뿐인 상태 — 둘 다 걸린 정책이 '전국'이다.
+        regionRepository.save(Region.create("11000", "서울특별시", "서울특별시"));
+        regionRepository.save(Region.create("11680", "서울특별시", "강남구"));
+        regionRepository.save(Region.create("26000", "부산광역시", "부산광역시"));
+        when(policyApiClient.fetchAll())
+                .thenReturn(
+                        List.of(
+                                item(
+                                        "{\"plcyNo\":\"P-ALL\",\"plcyNm\":\"전국 정책\","
+                                                + "\"zipCd\":\"11000,26000\"}"),
+                                // 같은 시도 안에서 시군구만 여러 개 — 시도 수로 세므로 전국이 아니다.
+                                item(
+                                        "{\"plcyNo\":\"P-SEOUL\",\"plcyNm\":\"서울 정책\","
+                                                + "\"zipCd\":\"11000,11680\"}"),
+                                item("{\"plcyNo\":\"P-NONE\",\"plcyNm\":\"지역 없는 정책\"}")));
+
+        policySyncService.runFullSync();
+
+        assertThat(policyRepository.findByPolicyNoIn(List.of("P-ALL")).getFirst().isNationwide())
+                .isTrue();
+        assertThat(policyRepository.findByPolicyNoIn(List.of("P-SEOUL")).getFirst().isNationwide())
+                .isFalse();
+        assertThat(policyRepository.findByPolicyNoIn(List.of("P-NONE")).getFirst().isNationwide())
+                .isFalse();
+    }
+
+    @Test
     void fetch가_실패하면_DB에_손대지_않고_FAILED_이력을_남긴_뒤_예외를_다시_던진다() {
         policyRepository.save(policy("P-KEEP", "건드리면 안 됨", null));
         when(policyApiClient.fetchAll())

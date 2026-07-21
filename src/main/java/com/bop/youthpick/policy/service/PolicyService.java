@@ -9,7 +9,6 @@ import com.bop.youthpick.policy.entity.PolicyVisibility;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
-import com.bop.youthpick.policy.repository.RegionRepository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,6 @@ public class PolicyService {
 
     private final PolicyRepository policyRepository;
     private final PolicyRegionRepository policyRegionRepository;
-    private final RegionRepository regionRepository;
     private final PolicyRecentViewService policyRecentViewService;
 
     private static final String NATIONWIDE_REGION = "전국";
@@ -52,18 +50,15 @@ public class PolicyService {
             @Nullable Integer ageMin,
             @Nullable Integer ageMax,
             Pageable pageable) {
-        Pageable sorted =
-                PageRequest.of(
-                        pageable.getPageNumber(),
-                        pageable.getPageSize(),
-                        Sort.by(Sort.Direction.DESC, "id"));
         String categoryFilter = trimToNull(category);
         String keywordPattern = toLikePattern(keyword);
         String regionFilter = trimToNull(region);
         // '전국'은 지역 드롭다운의 "지역 무관" 선택지 — 시도명 필터를 걸지 않는다.
         // 전국 대상 정책은 policy_regions에 전 시도가 들어 있어 개별 시도 조회에도 이미 포함된다.
         String sidoName = NATIONWIDE_REGION.equals(regionFilter) ? null : regionFilter;
-        long totalSidoCount = regionRepository.countDistinctSidoNames();
+
+        Pageable sorted =
+                PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sortFor(sidoName));
 
         Page<Policy> page =
                 policyRepository.findCards(
@@ -96,6 +91,19 @@ public class PolicyService {
                                         .distinct()
                                         .sorted()
                                         .toList()));
+    }
+
+    /**
+     * 목록 정렬. 지역 필터가 없으면 최신순만, 특정 시도를 고르면 전국 정책(is_nationwide)을 뒤로 밀어 그 지역 전용 정책이 먼저 보이게 한다. 전국 정책은
+     * 어느 시도를 골라도 걸리므로 그대로 두면 지역 선택이 무의미해진다.
+     *
+     * <p>지역 무필터에는 적용하지 않는다 — 대상이 넓은 정책을 뒤로 미룰 이유가 없다.
+     */
+    private static Sort sortFor(@Nullable String sidoName) {
+        Sort latestFirst = Sort.by(Sort.Direction.DESC, "id");
+        return sidoName == null
+                ? latestFirst
+                : Sort.by(Sort.Order.asc("nationwide")).and(latestFirst);
     }
 
     @Nullable

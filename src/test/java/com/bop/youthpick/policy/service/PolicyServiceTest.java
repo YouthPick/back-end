@@ -22,7 +22,6 @@ import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
-import com.bop.youthpick.policy.repository.RegionRepository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +45,6 @@ class PolicyServiceTest {
 
     @Mock private PolicyRepository policyRepository;
     @Mock private PolicyRegionRepository policyRegionRepository;
-    @Mock private RegionRepository regionRepository;
     @Mock private PolicyRecentViewService policyRecentViewService;
 
     private PolicyService policyService;
@@ -55,10 +53,7 @@ class PolicyServiceTest {
     void setUp() {
         policyService =
                 new PolicyService(
-                        policyRepository,
-                        policyRegionRepository,
-                        regionRepository,
-                        policyRecentViewService);
+                        policyRepository, policyRegionRepository, policyRecentViewService);
     }
 
     @Test
@@ -160,7 +155,6 @@ class PolicyServiceTest {
                                 newPolicyRegion(allSido, "11680", "서울특별시", "강남구"),
                                 newPolicyRegion(allSido, "26110", "부산광역시", "중구"),
                                 newPolicyRegion(allSido, "27110", "대구광역시", "중구")));
-        when(regionRepository.countDistinctSidoNames()).thenReturn(3L);
 
         Page<PolicyCardResponse> page =
                 policyService.getCards(null, null, null, null, null, PageRequest.of(0, 20));
@@ -193,7 +187,6 @@ class PolicyServiceTest {
                         isNull(),
                         any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
-        when(regionRepository.countDistinctSidoNames()).thenReturn(16L);
 
         policyService.getCards(null, "50% 지원_special!", null, null, null, PageRequest.of(0, 20));
 
@@ -213,11 +206,31 @@ class PolicyServiceTest {
                         isNull(),
                         any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
-        when(regionRepository.countDistinctSidoNames()).thenReturn(16L);
 
         policyService.getCards(null, null, "전국", null, null, PageRequest.of(0, 20));
 
         assertThat(sidoNameCaptor.getValue()).isNull();
+    }
+
+    @Test
+    void 시도를_고르면_전국_정책을_뒤로_밀어_그_지역_전용_정책이_먼저_나오게_정렬한다() {
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        when(policyRepository.findCards(
+                        eq(PolicyVisibility.VISIBLE),
+                        any(LocalDate.class),
+                        isNull(),
+                        isNull(),
+                        eq("세종특별자치시"),
+                        isNull(),
+                        isNull(),
+                        pageableCaptor.capture()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        policyService.getCards(null, null, "세종특별자치시", null, null, PageRequest.of(0, 20));
+
+        // nationwide=false(지역 전용)가 asc로 먼저, 같은 그룹 안에서는 최신순.
+        assertThat(pageableCaptor.getValue().getSort())
+                .isEqualTo(Sort.by(Sort.Order.asc("nationwide"), Sort.Order.desc("id")));
     }
 
     @Test
@@ -233,7 +246,6 @@ class PolicyServiceTest {
                         isNull(),
                         any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
-        when(regionRepository.countDistinctSidoNames()).thenReturn(16L);
 
         policyService.getCards(null, null, "서울특별시", null, null, PageRequest.of(0, 20));
 
@@ -254,7 +266,6 @@ class PolicyServiceTest {
                         ageMaxCaptor.capture(),
                         any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
-        when(regionRepository.countDistinctSidoNames()).thenReturn(16L);
 
         policyService.getCards(null, null, null, 19, 34, PageRequest.of(0, 20));
 

@@ -56,7 +56,8 @@ public class PolicyUpsertWriter {
             String policyNo = item.policy().getPolicyNo();
             // 실패한 청크에서 IDENTITY가 id를 부여한 채 롤백된 엔티티일 수 있어 재사용 금지 — 새 복사본으로 저장
             PolicyUpsertItem freshItem =
-                    new PolicyUpsertItem(Policy.copyOf(item.policy()), item.regions());
+                    new PolicyUpsertItem(
+                            Policy.copyOf(item.policy()), item.regions(), item.nationwide());
             try {
                 boolean isNew =
                         transactionTemplate.execute(
@@ -117,6 +118,8 @@ public class PolicyUpsertWriter {
         for (var region : item.regions()) {
             policyRegionRepository.save(PolicyRegion.create(target, region));
         }
+        // 지역 행과 같은 트랜잭션에서 갱신한다 — 따로 두면 둘이 어긋나 정렬이 조용히 틀린다(#120).
+        target.applyRegionCoverage(item.nationwide());
         return isNew;
     }
 

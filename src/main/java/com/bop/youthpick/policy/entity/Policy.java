@@ -239,7 +239,25 @@ public class Policy extends BaseEntity {
     @Column(name = "missing_count", nullable = false)
     private int missingCount;
 
+    /**
+     * [파생] 전 시도 커버 여부 (V13, #120). 지역 필터 조회에서 지역 특화 정책을 먼저 노출하기 위한 정렬 키다.
+     *
+     * <p>{@link #create} 파라미터에 넣지 않는다 — 전처리(PolicyMapper) 시점에는 zipCd가 아직 Region으로 해석되기 전이라 값을 알 수
+     * 없다. {@link #updateFrom}에서도 복사하지 않는다 — source는 지역 정보가 없는 전처리 결과라 항상 false여서, 복사하면 갱신되는 정책이 전부
+     * false로 덮인다. 반드시 {@link #applyRegionCoverage}로 지역 저장과 함께 갱신한다.
+     */
+    @Column(name = "is_nationwide", nullable = false)
+    private boolean nationwide;
+
     private static final int MISSING_THRESHOLD = 3;
+
+    /**
+     * 적용 지역 갱신과 반드시 함께 호출한다 — policy_regions와 어긋나면 정렬이 조용히 틀린다. 현재 유일한 호출 지점은
+     * PolicyUpsertWriter.writeOne()이며, 지역 행 저장과 같은 트랜잭션 안에 있다.
+     */
+    public void applyRegionCoverage(boolean nationwide) {
+        this.nationwide = nationwide;
+    }
 
     /**
      * id 없는 새 비영속 복사본. 청크 트랜잭션이 롤백돼도 IDENTITY가 이미 부여한 id는 엔티티 객체에 남으므로, 건별 재시도는 원본 재사용 대신 이 복사본으로
