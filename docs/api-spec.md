@@ -53,8 +53,7 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 | 최근 본 정책 | 최근 본 정책 목록 | `GET` | `/api/v1/policy-recent-views` | 회원 | query: page 기본 0, size 기본 20 |
 | 읽음 상태 | 읽음 상태 목록 조회 | `GET` | `/api/v1/policy-read-states` | 회원 | query: policyIds 반복 |
 | 읽음 상태 | 정책 읽음 처리 | `PUT` | `/api/v1/policy-read-states/{policyId}` | 회원 | path: policyId |
-| 정책 비교 | 정책 비교 생성 | `POST` | `/api/v1/policy-comparisons` | 비회원 | body: policyIds[] |
-| 정책 비교 | 정책 비교 조회 | `GET` | `/api/v1/policy-comparisons/{comparisonId}` | 비회원 | path: comparisonId |
+| 정책 비교 | 정책 비교 조회 | `GET` | `/api/v1/policy-comparisons` | 비회원 | query: policyIds 반복(2~3개) |
 | 정책 동기화 | 정책 수집 이력 목록 | `GET` | `/api/v1/policy-batch-histories` | 관리자 | query: page 기본 0, size 기본 20 |
 | 정책 동기화 | 정책 수집 실행 | `POST` | `/api/v1/policy-batch-histories` | 관리자 | body: mode(FULL 또는 DELTA) |
 | 정책 동기화 | 검색 인덱스 재생성 | `POST` | `/api/v1/search-indexes/rebuild` | 관리자 | 없음 |
@@ -407,35 +406,25 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 
 ## 정책 비교
 
-DB에 별도로 저장하지 않는 stateless 설계다. `comparisonId`는 비교 대상 `policyId`를 오름차순 정렬해 `-`로 이어붙인 문자열(예: `"1-2"`)이며, 조회 시 그 시점의 최신 정책 정보를 반환한다.
+비교 결과를 저장하지 않고 요청받은 정책들을 그때그때 조회해 내려주는 **순수 조회**다. 그래서 생성(`POST`) + 식별자(`comparisonId`) 재조회 구조가 아니라 쿼리 파라미터를 받는 **단일 `GET`**이다. 저장하는 것이 없으므로 `POST`는 만들 리소스가 없고, 식별자 역시 요청에 담긴 `policyIds`를 그대로 다시 표현한 값이라 정보를 더하지 않는다. 공유가 필요하면 이 요청 URL 자체가 공유 링크가 된다.
 
-### 정책 비교 생성
-
-여러 정책 ID를 기준으로 비교 결과를 생성한다.
-
-| 항목 | 내용 |
-|---|---|
-| 메서드 | `POST` |
-| 경로 | `/api/v1/policy-comparisons` |
-| 권한 | 비회원 |
-| 파라미터 | body: policyIds[] (2~3개, 중복 제거 후 오름차순 정렬되어 처리됨) |
-| 에러 | `policyIds`에 존재하지 않는 정책이 섞여 있으면 `P001 POLICY_NOT_FOUND` |
+응답은 항상 조회 시점의 최신 정책 정보이며, 요청에 담긴 `policyIds` 순서를 그대로 보존한다(비교표 열 순서 = 사용자가 고른 순서).
 
 ### 정책 비교 조회
 
-생성된 정책 비교 결과를 비교 ID로 조회한다.
+여러 정책을 나란히 비교할 수 있도록 항목별 값을 함께 조회한다.
 
 | 항목 | 내용 |
 |---|---|
 | 메서드 | `GET` |
-| 경로 | `/api/v1/policy-comparisons/{comparisonId}` |
+| 경로 | `/api/v1/policy-comparisons` |
 | 권한 | 비회원 |
-| 파라미터 | path: comparisonId (예: `"1-2"`) |
-| 에러 | 형식이 잘못됐거나 policyId 개수가 2~3개를 벗어나면 `P008 COMPARISON_NOT_FOUND`, 참조하는 정책이 더 이상 없으면 `P001 POLICY_NOT_FOUND` |
+| 파라미터 | query: `policyIds` 반복 — 서로 다른 정책 2~3개 (예: `?policyIds=1&policyIds=2`) |
+| 에러 | 개수가 2~3개를 벗어나거나 숫자가 아니거나 누락되면 `C001`, 중복된 정책이 있으면 `P008 INVALID_COMPARISON_REQUEST`, 존재하지 않는 정책이 섞여 있으면 `P001 POLICY_NOT_FOUND` |
 
-### 응답 필드 (`POST`/`GET` 공통)
+### 응답 필드
 
-`data.comparisonId`(문자열)와 `data.policies[]`(비교 대상 정책 목록)로 구성된다. `policies[]`의 각 원소는 `Policy` 엔티티 전체가 아니라 비교에 필요한 필드만 담은 값이며, **정책 상세 조회 응답의 부분집합으로 유지한다** — 같은 정책을 상세로 볼 때 감춰지는 값이 비교로 볼 때만 드러나면 안 되기 때문이다. 따라서 자격 판정용 내부 코드(`jobCodes`, `schoolCodes`, `majorCodes`, `specializationCodes`, `maritalStatusCode`)와 보류 필드, raw payload는 상세와 동일하게 노출하지 않는다.
+`data`는 비교 대상 정책 배열이다. 각 원소는 `Policy` 엔티티 전체가 아니라 비교에 필요한 필드만 담은 값이며, **정책 상세 조회 응답의 부분집합으로 유지한다** — 같은 정책을 상세로 볼 때 감춰지는 값이 비교로 볼 때만 드러나면 안 되기 때문이다. 따라서 자격 판정용 내부 코드(`jobCodes`, `schoolCodes`, `majorCodes`, `specializationCodes`, `maritalStatusCode`)와 보류 필드, raw payload는 상세와 동일하게 노출하지 않는다.
 
 | 필드 | 타입 | 내용 |
 |---|---|---|

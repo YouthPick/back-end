@@ -2,11 +2,12 @@ package com.bop.youthpick.policy.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bop.youthpick.global.error.CustomException;
-import com.bop.youthpick.policy.dto.PolicyComparisonCreateRequest;
-import com.bop.youthpick.policy.dto.PolicyComparisonResponse;
+import com.bop.youthpick.policy.dto.PolicyComparisonItemResponse;
 import com.bop.youthpick.policy.dto.RegionResponse;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyRegion;
@@ -38,20 +39,21 @@ class PolicyComparisonServiceTest {
     }
 
     @Test
-    void 생성_요청_순서와_무관하게_policyId_오름차순으로_정렬된_comparisonId를_발급한다() {
+    void 요청한_순서_그대로_비교_대상_정책을_반환한다() {
         Policy first = newPolicy(1L, "청년 월세 지원");
         Policy second = newPolicy(2L, "청년 취업 장려금");
-        when(policyRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first, second));
+        // repository가 요청과 다른 순서로 반환해도 응답은 요청 순서(2, 1)를 따라야 한다.
+        when(policyRepository.findAllById(List.of(2L, 1L))).thenReturn(List.of(first, second));
 
-        PolicyComparisonResponse response =
-                policyComparisonService.create(new PolicyComparisonCreateRequest(List.of(2L, 1L)));
+        List<PolicyComparisonItemResponse> policies =
+                policyComparisonService.compare(List.of(2L, 1L));
 
-        assertThat(response.comparisonId()).isEqualTo("1-2");
-        assertThat(response.policies()).extracting("policyId").containsExactly(1L, 2L);
+        assertThat(policies).extracting("policyId").containsExactly(2L, 1L);
+        assertThat(policies).extracting("title").containsExactly("청년 취업 장려금", "청년 월세 지원");
     }
 
     @Test
-    void 정책별_지역을_묶어서_응답에_담고_지역이_없는_정책은_빈_목록으로_내려준다() {
+    void 정책별_지역을_묶어서_담고_지역이_없는_정책은_빈_목록으로_내려준다() {
         Policy first = newPolicy(1L, "청년 월세 지원");
         Policy second = newPolicy(2L, "청년 취업 장려금");
         when(policyRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first, second));
@@ -61,99 +63,47 @@ class PolicyComparisonServiceTest {
                                 newPolicyRegion(first, "11680", "서울특별시", "강남구"),
                                 newPolicyRegion(first, "26110", "부산광역시", "중구")));
 
-        PolicyComparisonResponse response = policyComparisonService.find("1-2");
+        List<PolicyComparisonItemResponse> policies =
+                policyComparisonService.compare(List.of(1L, 2L));
 
-        assertThat(response.policies().get(0).regions())
+        assertThat(policies.get(0).regions())
                 .containsExactly(
                         new RegionResponse("11680", "서울특별시", "강남구"),
                         new RegionResponse("26110", "부산광역시", "중구"));
-        assertThat(response.policies().get(1).regions()).isEmpty();
+        assertThat(policies.get(1).regions()).isEmpty();
     }
 
     @Test
-    void 생성_요청에_중복된_policyId가_있으면_제거한_뒤_비교한다() {
-        Policy first = newPolicy(1L, "청년 월세 지원");
-        Policy second = newPolicy(2L, "청년 취업 장려금");
-        when(policyRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first, second));
-
-        PolicyComparisonResponse response =
-                policyComparisonService.create(
-                        new PolicyComparisonCreateRequest(List.of(1L, 1L, 2L)));
-
-        assertThat(response.comparisonId()).isEqualTo("1-2");
+    void policyIds에_중복이_있으면_INVALID_COMPARISON_REQUEST_예외를_던진다() {
+        assertThatThrownBy(() -> policyComparisonService.compare(List.of(1L, 1L)))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue(
+                        "errorCode", PolicyErrorCode.INVALID_COMPARISON_REQUEST);
+        verify(policyRepository, never()).findAllById(List.of(1L, 1L));
     }
 
     @Test
-    void 생성_존재하지_않는_정책이_포함되면_POLICY_NOT_FOUND_예외를_던진다() {
+    void 존재하지_않는_정책이_섞여있으면_POLICY_NOT_FOUND_예외를_던진다() {
         Policy first = newPolicy(1L, "청년 월세 지원");
         when(policyRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first));
 
-        assertThatThrownBy(
-                        () ->
-                                policyComparisonService.create(
-                                        new PolicyComparisonCreateRequest(List.of(1L, 2L))))
+        assertThatThrownBy(() -> policyComparisonService.compare(List.of(1L, 2L)))
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue("errorCode", PolicyErrorCode.POLICY_NOT_FOUND);
     }
 
     @Test
-    void 조회_comparisonId를_policyId_목록으로_분해해_그_시점의_정책_정보를_반환한다() {
-        Policy first = newPolicy(1L, "청년 월세 지원");
-        Policy second = newPolicy(2L, "청년 취업 장려금");
-        when(policyRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first, second));
-
-        PolicyComparisonResponse response = policyComparisonService.find("1-2");
-
-        assertThat(response.comparisonId()).isEqualTo("1-2");
-        assertThat(response.policies()).extracting("policyId").containsExactly(1L, 2L);
-        assertThat(response.policies())
-                .extracting("title")
-                .containsExactly("청년 월세 지원", "청년 취업 장려금");
-    }
-
-    @Test
-    void 조회_숫자가_아닌_값이_섞여있으면_COMPARISON_NOT_FOUND_예외를_던진다() {
-        assertThatThrownBy(() -> policyComparisonService.find("1-abc"))
-                .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", PolicyErrorCode.COMPARISON_NOT_FOUND);
-    }
-
-    @Test
-    void 조회_policyId가_1개뿐이면_COMPARISON_NOT_FOUND_예외를_던진다() {
-        assertThatThrownBy(() -> policyComparisonService.find("1"))
-                .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", PolicyErrorCode.COMPARISON_NOT_FOUND);
-    }
-
-    @Test
-    void 조회_policyId가_4개_이상이면_COMPARISON_NOT_FOUND_예외를_던진다() {
-        // create는 최대 3개까지만 허용하므로, 생성할 수 없는 comparisonId는 조회도 거부해야 한다.
-        assertThatThrownBy(() -> policyComparisonService.find("1-2-3-4"))
-                .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", PolicyErrorCode.COMPARISON_NOT_FOUND);
-    }
-
-    @Test
-    void 조회_policyId가_3개면_정상_조회된다() {
+    void 정책_3개도_정상_비교된다() {
         Policy first = newPolicy(1L, "청년 월세 지원");
         Policy second = newPolicy(2L, "청년 취업 장려금");
         Policy third = newPolicy(3L, "청년 도약계좌");
         when(policyRepository.findAllById(List.of(1L, 2L, 3L)))
                 .thenReturn(List.of(first, second, third));
 
-        PolicyComparisonResponse response = policyComparisonService.find("1-2-3");
+        List<PolicyComparisonItemResponse> policies =
+                policyComparisonService.compare(List.of(1L, 2L, 3L));
 
-        assertThat(response.comparisonId()).isEqualTo("1-2-3");
-        assertThat(response.policies()).extracting("policyId").containsExactly(1L, 2L, 3L);
-    }
-
-    @Test
-    void 조회_참조하는_정책이_더_이상_없으면_POLICY_NOT_FOUND_예외를_던진다() {
-        when(policyRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of());
-
-        assertThatThrownBy(() -> policyComparisonService.find("1-2"))
-                .isInstanceOf(CustomException.class)
-                .hasFieldOrPropertyWithValue("errorCode", PolicyErrorCode.POLICY_NOT_FOUND);
+        assertThat(policies).extracting("policyId").containsExactly(1L, 2L, 3L);
     }
 
     private Policy newPolicy(Long id, String title) {
