@@ -83,6 +83,12 @@ public class Policy extends BaseEntity {
     @Column(name = "max_age")
     private Integer maxAge;
 
+    /**
+     * jobCd '제한없음'. 실측 2,638건 중 1,962건(74%)이 이 값이며, 취업상태를 따지지 않는 정책이라는 뜻이다. 특정 상태로 필터링할 때도 이 정책들은
+     * 대상에 포함해야 한다 — 재직자를 골랐다고 K-패스가 빠지면 안 된다.
+     */
+    public static final String JOB_CODE_UNRESTRICTED = "0013010";
+
     /** jobCd — 콤마 다중 */
     @Column(name = "job_codes", length = 255)
     private String jobCodes;
