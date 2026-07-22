@@ -14,7 +14,8 @@ public record PostUpdateRequest(
                 String category,
         @NotBlank(message = "제목은 필수입니다.") @Size(max = 100, message = "제목은 100자 이하여야 합니다.")
                 String title,
-        @NotBlank(message = "내용은 필수입니다.") String content,
+        @NotBlank(message = "내용은 필수입니다.") @Size(max = 10_000, message = "내용은 10,000자 이하여야 합니다.")
+                String content,
         @Positive(message = "정책 ID는 양수여야 합니다.") Long policyId,
         @Size(max = 10, message = "이미지는 최대 10개까지 첨부할 수 있습니다.")
                 List<

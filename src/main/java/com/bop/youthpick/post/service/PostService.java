@@ -111,10 +111,10 @@ public class PostService {
 
     private Policy resolvePolicy(PostCategory category, Long policyId) {
         if (category == PostCategory.FREE) {
+            // 도메인 계약: policy가 NULL이면 자유글. 정책이 연결된 자유글을 허용하면
+            // 목록/상세 응답에 policyTitle이 붙어 프론트 분류가 깨지므로 명시적으로 거부한다.
             if (policyId != null) {
-                return policyRepository
-                        .findById(policyId)
-                        .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
+                throw new BoardException(BoardErrorCode.FREE_POST_POLICY_NOT_ALLOWED);
             }
             return null;
         }

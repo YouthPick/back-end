@@ -9,6 +9,7 @@ import com.bop.youthpick.post.dto.PostUpdateRequest;
 import com.bop.youthpick.post.service.PostService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,11 +18,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/posts")
 @RequiredArgsConstructor
+// @RequestParam 제약(@Pattern 등)을 활성화한다. 없으면 잘못된 값이 서비스까지 내려가
+// PostCategory.valueOf에서 IllegalArgumentException → 500(S001)으로 터진다.
+@Validated
 public class PostController {
 
     private final PostService postService;
@@ -36,7 +41,11 @@ public class PostController {
 
     @GetMapping // 리스폰스엔티티로 감싸야함 수정필요
     public ApiResponse<List<PostSummaryResponse>> findAll(
-            @RequestParam(required = false) String category,
+            @RequestParam(required = false)
+                    @Pattern(
+                            regexp = "QUESTION|REVIEW|FREE",
+                            message = "카테고리는 QUESTION, REVIEW, FREE 중 하나여야 합니다.")
+                    String category,
             @RequestParam(required = false) String query,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
                     Pageable pageable) {

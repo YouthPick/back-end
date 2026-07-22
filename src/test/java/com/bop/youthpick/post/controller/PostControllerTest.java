@@ -53,6 +53,20 @@ class PostControllerTest {
     }
 
     @Test
+    void 본문이_1만자를_넘으면_400과_C001을_반환한다() throws Exception {
+        String longContent = "가".repeat(10_001);
+        String body =
+                """
+                {"category": "FREE", "title": "제목", "content": "%s"}
+                """
+                        .formatted(longContent);
+
+        mockMvc.perform(post("/api/v1/posts").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
     void 게시글을_생성하면_201을_반환한다() throws Exception {
         when(postService.create(eq(1L), any())).thenReturn(detail(3L, "FREE", "제목", "내용"));
 
