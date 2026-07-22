@@ -96,7 +96,8 @@ public class SecurityConfig {
                                         "/api/v1/auth/logout",
                                         "/api/v1/users",
                                         "/api/v1/me/**",
-                                        "/api/v1/policy-recent-views")
+                                        "/api/v1/policy-recent-views",
+                                        "/api/v1/recommended-policies")
                                 .authenticated()
                                 // 회원 전용 — 정책 신청관리(관심정책 흡수) + 체크리스트.
                                 .requestMatchers(

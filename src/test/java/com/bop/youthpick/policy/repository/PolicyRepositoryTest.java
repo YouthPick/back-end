@@ -19,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 // @DataJpaTest는 슬라이스 스캔 대상에서 일반 @Configuration을 제외하므로, BaseEntity의
@@ -88,6 +89,29 @@ class PolicyRepositoryTest {
                 .isEqualTo(2);
         assertThat(policyRepository.countByVisibilityAndDeletedAtIsNull(PolicyVisibility.HIDDEN))
                 .isEqualTo(1);
+    }
+
+    // RecommendedPolicyService는 점수 계산을 위해 후보를 페이지 없이(Pageable.unpaged()) 전량 조회한다.
+    // 목록 조회(getCards)는 항상 PageRequest를 넘기므로 이 경로는 여기서만 실제로 실행된다.
+    @Test
+    void 카드_조회는_unpaged와_나이_조건_없이도_노출_중인_정책만_반환한다() {
+        policyRepository.save(newPolicy("P001", PolicyVisibility.VISIBLE, null));
+        policyRepository.save(newPolicy("P002", PolicyVisibility.VISIBLE, LocalDateTime.now()));
+        policyRepository.save(newPolicy("P003", PolicyVisibility.HIDDEN, null));
+
+        Page<Policy> page =
+                policyRepository.findCards(
+                        PolicyVisibility.VISIBLE,
+                        LocalDate.now(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        Pageable.unpaged());
+
+        assertThat(page.getContent()).extracting(Policy::getPolicyNo).containsExactly("P001");
     }
 
     @Test
