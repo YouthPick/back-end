@@ -6,6 +6,7 @@ import com.bop.youthpick.post.dto.PostCreateRequest;
 import com.bop.youthpick.post.dto.PostDetailResponse;
 import com.bop.youthpick.post.dto.PostSummaryResponse;
 import com.bop.youthpick.post.dto.PostUpdateRequest;
+import com.bop.youthpick.post.entity.PostCategory;
 import com.bop.youthpick.post.service.PostService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -36,12 +37,13 @@ public class PostController {
 
     @GetMapping // 리스폰스엔티티로 감싸야함 수정필요
     public ApiResponse<List<PostSummaryResponse>> findAll(
-            @RequestParam(required = false) String category,
+            @RequestParam(required = false) PostCategory category,
             @RequestParam(required = false) String query,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
                     Pageable pageable) {
 
-        Page<PostSummaryResponse> page = postService.findAll(category, query, pageable);
+        Page<PostSummaryResponse> page =
+                postService.findAll(category == null ? null : category.name(), query, pageable);
         return ApiResponse.ok(page.getContent(), page);
     }
 

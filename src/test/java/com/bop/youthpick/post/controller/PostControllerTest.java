@@ -135,6 +135,13 @@ class PostControllerTest {
     }
 
     @Test
+    void 유효하지_않은_목록_카테고리는_400과_C001을_반환한다() throws Exception {
+        mockMvc.perform(get("/api/v1/posts").param("category", "INVALID"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
     void 게시글_상세를_조회한다() throws Exception {
         when(postService.findById(eq(3L), eq(1L), any()))
                 .thenReturn(detail(3L, "FREE", "제목", "내용"));
