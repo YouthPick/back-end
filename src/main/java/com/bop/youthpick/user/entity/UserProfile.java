@@ -49,8 +49,8 @@ public class UserProfile extends BaseEntity {
     @Column(name = "education_level", length = 16, nullable = false)
     private String educationLevel;
 
-    @Column(name = "merry_status", length = 16)
-    private String merryStatus;
+    @Column(name = "marital_status", length = 16)
+    private String maritalStatus;
 
     @Column(length = 255)
     private String major;
@@ -78,7 +78,7 @@ public class UserProfile extends BaseEntity {
             Integer birthYear,
             String employmentStatus,
             String educationLevel,
-            String merryStatus,
+            String maritalStatus,
             String major,
             String specialCondition,
             Integer income,
@@ -90,7 +90,7 @@ public class UserProfile extends BaseEntity {
         profile.birthYear = birthYear;
         profile.employmentStatus = employmentStatus;
         profile.educationLevel = educationLevel;
-        profile.merryStatus = merryStatus;
+        profile.maritalStatus = maritalStatus;
         profile.major = major;
         profile.specialCondition = specialCondition;
         profile.income = income;
@@ -104,7 +104,7 @@ public class UserProfile extends BaseEntity {
             Integer birthYear,
             String employmentStatus,
             String educationLevel,
-            String merryStatus,
+            String maritalStatus,
             String major,
             String specialCondition,
             Integer income,
@@ -114,7 +114,7 @@ public class UserProfile extends BaseEntity {
         this.birthYear = birthYear;
         this.employmentStatus = employmentStatus;
         this.educationLevel = educationLevel;
-        this.merryStatus = merryStatus;
+        this.maritalStatus = maritalStatus;
         this.major = major;
         this.specialCondition = specialCondition;
         this.income = income;

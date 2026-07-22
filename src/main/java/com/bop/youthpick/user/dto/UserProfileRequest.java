@@ -31,7 +31,7 @@ public record UserProfileRequest(
                 @Pattern(regexp = EducationLevel.PATTERN, message = "학력 코드 형식이 올바르지 않습니다.")
                 String educationLevel,
         @Pattern(regexp = MaritalStatus.PATTERN, message = "결혼여부 코드 형식이 올바르지 않습니다.")
-                String merryStatus,
+                String maritalStatus,
         List<@Pattern(regexp = Major.PATTERN, message = "전공 코드 형식이 올바르지 않습니다.") String> major,
         List<@Pattern(regexp = SpecialCondition.PATTERN, message = "특화조건 코드 형식이 올바르지 않습니다.") String>
                 specialCondition,

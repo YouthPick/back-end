@@ -82,7 +82,7 @@ class AdminUserControllerTest {
         mockMvc.perform(get("/api/v1/admin/users/{userId}/profile", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userId").value(1))
-                .andExpect(jsonPath("$.data.merryStatus").value("SINGLE"))
+                .andExpect(jsonPath("$.data.maritalStatus").value("SINGLE"))
                 .andExpect(jsonPath("$.data.major[0]").value("COMPUTER_SCIENCE"))
                 .andExpect(jsonPath("$.data.specialCondition[0]").value("LOW_INCOME"))
                 .andExpect(jsonPath("$.data.income").value(3000))
