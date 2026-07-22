@@ -1,6 +1,6 @@
 package com.bop.youthpick.admin.board.dto;
 
-import com.bop.youthpick.board.entity.Comment;
+import com.bop.youthpick.post.entity.Comment;
 import java.time.LocalDateTime;
 
 public record AdminCommunityCommentResponse(

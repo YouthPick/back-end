@@ -9,7 +9,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bop.youthpick.board.repository.AttachmentRepository;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.post.dto.PostCreateRequest;
@@ -21,6 +20,7 @@ import com.bop.youthpick.post.entity.Post;
 import com.bop.youthpick.post.entity.PostCategory;
 import com.bop.youthpick.post.exception.BoardErrorCode;
 import com.bop.youthpick.post.exception.BoardException;
+import com.bop.youthpick.post.repository.AttachmentRepository;
 import com.bop.youthpick.post.repository.PostRepository;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.repository.UserRepository;

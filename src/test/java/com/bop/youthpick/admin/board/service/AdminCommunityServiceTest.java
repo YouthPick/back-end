@@ -7,12 +7,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bop.youthpick.board.entity.Comment;
-import com.bop.youthpick.board.exception.BoardErrorCode;
-import com.bop.youthpick.board.exception.BoardException;
-import com.bop.youthpick.board.repository.AttachmentRepository;
-import com.bop.youthpick.board.repository.CommentRepository;
+import com.bop.youthpick.post.entity.Comment;
 import com.bop.youthpick.post.entity.Post;
+import com.bop.youthpick.post.exception.BoardErrorCode;
+import com.bop.youthpick.post.exception.BoardException;
+import com.bop.youthpick.post.repository.AttachmentRepository;
+import com.bop.youthpick.post.repository.CommentRepository;
 import com.bop.youthpick.post.repository.PostRepository;
 import com.bop.youthpick.user.entity.User;
 import java.util.List;

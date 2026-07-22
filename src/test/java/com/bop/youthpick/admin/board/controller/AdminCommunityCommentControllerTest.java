@@ -7,8 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.bop.youthpick.admin.board.dto.AdminCommunityCommentResponse;
 import com.bop.youthpick.admin.board.service.AdminCommunityService;
-import com.bop.youthpick.board.exception.BoardErrorCode;
-import com.bop.youthpick.board.exception.BoardException;
+import com.bop.youthpick.post.exception.BoardErrorCode;
+import com.bop.youthpick.post.exception.BoardException;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,12 +38,12 @@ class AdminCommunityCommentControllerTest {
     }
 
     @Test
-    void 삭제_대상이_없으면_404와_B002를_반환한다() throws Exception {
+    void 삭제_대상이_없으면_404와_B005를_반환한다() throws Exception {
         when(adminCommunityService.deleteComment(2L))
                 .thenThrow(new BoardException(BoardErrorCode.COMMENT_NOT_FOUND));
 
         mockMvc.perform(delete("/api/v1/admin/community-comments/{commentId}", 2L))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("B002"));
+                .andExpect(jsonPath("$.code").value("B005"));
     }
 }

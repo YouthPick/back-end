@@ -1,6 +1,6 @@
-package com.bop.youthpick.board.repository;
+package com.bop.youthpick.post.repository;
 
-import com.bop.youthpick.board.entity.Comment;
+import com.bop.youthpick.post.entity.Comment;
 import java.util.List;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
