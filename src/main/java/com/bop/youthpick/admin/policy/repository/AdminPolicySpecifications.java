@@ -32,8 +32,16 @@ public final class AdminPolicySpecifications {
         if (visibilityStatus == null || visibilityStatus.isBlank()) {
             return null;
         }
-        PolicyVisibility visibility = PolicyVisibility.valueOf(visibilityStatus);
-        return (root, query, cb) -> cb.equal(root.get("visibility"), visibility);
+        if ("VISIBLE".equals(visibilityStatus)) {
+            return (root, query, cb) ->
+                    cb.and(
+                            cb.equal(root.get("visibility"), PolicyVisibility.VISIBLE),
+                            cb.isFalse(root.get("adminHidden")));
+        }
+        return (root, query, cb) ->
+                cb.or(
+                        cb.equal(root.get("visibility"), PolicyVisibility.HIDDEN),
+                        cb.isTrue(root.get("adminHidden")));
     }
 
     /** 정책의 [applicationStartDate, applicationEndDate] 구간이 [startDate, endDate]와 겹치는 정책만 남긴다. */

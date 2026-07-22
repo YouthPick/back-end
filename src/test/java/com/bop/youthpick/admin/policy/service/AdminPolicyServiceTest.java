@@ -12,7 +12,6 @@ import com.bop.youthpick.admin.policy.dto.AdminPolicyUpdateRequest;
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyRegion;
-import com.bop.youthpick.policy.entity.PolicyVisibility;
 import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
@@ -136,7 +135,18 @@ class AdminPolicyServiceTest {
 
         adminPolicyService.updateVisibility(POLICY_ID, "HIDDEN");
 
-        verify(policy).changeVisibility(PolicyVisibility.HIDDEN);
+        verify(policy).hideByAdmin();
+    }
+
+    @Test
+    void 노출상태_VISIBLE은_관리자_숨김을_해제한다() {
+        Policy policy = mock(Policy.class);
+        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
+        when(policyRegionRepository.findByPolicyIdIn(eq(List.of(POLICY_ID)))).thenReturn(List.of());
+
+        adminPolicyService.updateVisibility(POLICY_ID, "VISIBLE");
+
+        verify(policy).unhideByAdmin();
     }
 
     @Test

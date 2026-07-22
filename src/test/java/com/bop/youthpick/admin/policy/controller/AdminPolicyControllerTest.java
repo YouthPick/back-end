@@ -52,6 +52,7 @@ class AdminPolicyControllerTest {
                     "https://example.com",
                     0,
                     PolicyVisibility.VISIBLE,
+                    true,
                     List.of("11110"),
                     LocalDateTime.now(),
                     LocalDateTime.now(),
@@ -146,7 +147,8 @@ class AdminPolicyControllerTest {
                         patch("/api/v1/admin/policies/{policyId}/visibility", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"visibilityStatus\":\"HIDDEN\"}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.adminHidden").value(true));
     }
 
     @Test
@@ -175,6 +177,7 @@ class AdminPolicyControllerTest {
                         "https://example.com",
                         0,
                         PolicyVisibility.VISIBLE,
+                        false,
                         List.of("11110"),
                         LocalDateTime.now(),
                         LocalDateTime.now(),

@@ -124,7 +124,8 @@ public class PolicyService {
     public PolicyDetailResponse getDetail(Long policyId, @Nullable Long userId) {
         Policy policy =
                 policyRepository
-                        .findByIdAndVisibilityAndDeletedAtIsNull(policyId, PolicyVisibility.VISIBLE)
+                        .findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                                policyId, PolicyVisibility.VISIBLE)
                         .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
 
         if (userId != null) {
