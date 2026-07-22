@@ -7,6 +7,7 @@ import com.bop.youthpick.global.config.JpaAuditingConfig;
 import com.bop.youthpick.policy.dto.PolicySyncSnapshot;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyVisibility;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 // @DataJpaTest는 슬라이스 스캔 대상에서 일반 @Configuration을 제외하므로, BaseEntity의
@@ -83,6 +85,38 @@ class PolicyRepositoryTest {
                 .isEqualTo(1);
     }
 
+    @Test
+    void 신청마감일이_없어도_사업기간이_이미_지났으면_카드_목록에서_제외한다() {
+        LocalDate today = LocalDate.of(2026, 7, 21);
+        // 신청기간 정보가 없는(0057003류) 일회성 모집 — 사업기간은 이미 끝났다: 제외돼야 한다.
+        policyRepository.save(
+                policyForCards("P001", null, LocalDate.of(2026, 3, 31), today.minusDays(1)));
+        // 신청기간 정보가 없고 사업기간도 없는 진짜 상시(0057002류): 포함돼야 한다.
+        policyRepository.save(policyForCards("P002", null, null, null));
+        // 사업기간이 아직 안 끝난 경우: 포함돼야 한다.
+        policyRepository.save(
+                policyForCards("P003", null, LocalDate.of(2026, 1, 1), today.plusDays(1)));
+        // 신청마감일 자체가 지난 경우: 기존 조건으로도 이미 제외된다.
+        policyRepository.save(policyForCards("P004", today.minusDays(1), null, null));
+
+        List<Policy> result =
+                policyRepository
+                        .findCards(
+                                PolicyVisibility.VISIBLE,
+                                today,
+                                null,
+                                null,
+                                null,
+                                null,
+                                null,
+                                PageRequest.of(0, 20))
+                        .getContent();
+
+        assertThat(result)
+                .extracting(Policy::getPolicyNo)
+                .containsExactlyInAnyOrder("P002", "P003");
+    }
+
     private Policy newPolicy(
             String policyNo, PolicyVisibility visibility, LocalDateTime deletedAt) {
         Policy policy = BeanUtils.instantiateClass(Policy.class);
@@ -90,6 +124,18 @@ class PolicyRepositoryTest {
         ReflectionTestUtils.setField(policy, "title", policyNo + " title");
         ReflectionTestUtils.setField(policy, "visibility", visibility);
         ReflectionTestUtils.setField(policy, "deletedAt", deletedAt);
+        return policy;
+    }
+
+    private Policy policyForCards(
+            String policyNo,
+            LocalDate applicationEndDate,
+            LocalDate businessPeriodBegin,
+            LocalDate businessPeriodEnd) {
+        Policy policy = newPolicy(policyNo, PolicyVisibility.VISIBLE, null);
+        ReflectionTestUtils.setField(policy, "applicationEndDate", applicationEndDate);
+        ReflectionTestUtils.setField(policy, "businessPeriodBegin", businessPeriodBegin);
+        ReflectionTestUtils.setField(policy, "businessPeriodEnd", businessPeriodEnd);
         return policy;
     }
 }
