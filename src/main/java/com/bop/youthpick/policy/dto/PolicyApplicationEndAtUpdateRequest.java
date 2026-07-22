@@ -1,9 +1,7 @@
 package com.bop.youthpick.policy.dto;
 
-import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDateTime;
+import org.springframework.format.annotation.DateTimeFormat;
 
 public record PolicyApplicationEndAtUpdateRequest(
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-        LocalDateTime endAt
-) {}
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endAt) {}

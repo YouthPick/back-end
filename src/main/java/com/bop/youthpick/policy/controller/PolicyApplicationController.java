@@ -14,14 +14,11 @@ import com.bop.youthpick.policy.service.PolicyApplicationService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -103,27 +100,27 @@ public class PolicyApplicationController {
     }
 
     /**
-     * {@code PATCH /api/v1/policy-applications/{id}/memo} — 메모만 단독 수정. 컨트롤러는 {@code @Size}로 DTO 필드 길이를
-     * 검증하고, 빈 문자열/공백을 null로 통일하는 정규화는 서비스 계층이 담당한다.
+     * {@code PATCH /api/v1/policy-applications/{id}/memo} — 메모만 단독 수정. 컨트롤러는 {@code @Size}로 DTO 필드
+     * 길이를 검증하고, 빈 문자열/공백을 null로 통일하는 정규화는 서비스 계층이 담당한다.
      */
     @PatchMapping("/{id}/memo")
     public ApiResponse<PolicyApplicationResponse> updateMemo(
             @CurrentUser Long userId,
             @PathVariable Long id,
             @Valid @RequestBody PolicyApplicationMemoUpdateRequest request) {
-        PolicyApplication application = policyApplicationService.updateMemo(id, userId, request.memo());
+        PolicyApplication application =
+                policyApplicationService.updateMemo(id, userId, request.memo());
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 
-    /**
-     * {@code PATCH /api/v1/policy-applications/{id}/end-at} — 마감일 단독 수정.
-     */
+    /** {@code PATCH /api/v1/policy-applications/{id}/end-at} — 마감일 단독 수정. */
     @PatchMapping("/{id}/end-at")
     public ApiResponse<PolicyApplicationResponse> updateEndAt(
             @CurrentUser Long userId,
             @PathVariable Long id,
             @Valid @RequestBody PolicyApplicationEndAtUpdateRequest request) {
-        PolicyApplication application = policyApplicationService.updateEndAt(id, userId, request.endAt());
+        PolicyApplication application =
+                policyApplicationService.updateEndAt(id, userId, request.endAt());
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 

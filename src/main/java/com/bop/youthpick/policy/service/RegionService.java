@@ -2,10 +2,10 @@ package com.bop.youthpick.policy.service;
 
 import com.bop.youthpick.policy.dto.RegionResponse;
 import com.bop.youthpick.policy.repository.RegionRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
