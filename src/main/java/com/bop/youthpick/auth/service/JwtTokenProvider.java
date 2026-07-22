@@ -80,6 +80,8 @@ public class JwtTokenProvider {
     private Claims parseClaims(String token) {
         try {
             return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            throw new AuthException(AuthErrorCode.EXPIRED_TOKEN);
         } catch (JwtException | IllegalArgumentException e) {
             throw new AuthException(AuthErrorCode.INVALID_TOKEN);
         }

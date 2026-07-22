@@ -11,6 +11,7 @@ import com.bop.youthpick.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * 카카오/구글/네이버 OAuth2 authorization code 로그인 흐름. 인증은 JWT access/refresh token으로 발급하며, refresh token은
  * {@code RefreshTokenStore}(Redis, TTL)로 관리한다.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -73,7 +75,11 @@ public class AuthService {
         OAuthUserInfo userInfo = oAuthClient.fetchUserInfo(provider, accessToken);
 
         User user = findOrCreateUser(provider, userInfo);
-        loginHistoryRepository.save(LoginHistory.create(user));
+        try {
+            loginHistoryRepository.save(LoginHistory.create(user));
+        } catch (RuntimeException e) {
+            log.warn("로그인 이력(LoginHistory) 저장 실패 - 로그인 프로세스는 정상 진행합니다. userId={}", user.getId(), e);
+        }
         return issueTokens(user);
     }
 
