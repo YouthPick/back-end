@@ -88,7 +88,7 @@ class AdminPolicyServiceTest {
         Policy policy = mock(Policy.class);
         Region region = mock(Region.class);
         when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
-        when(regionRepository.findById("11110")).thenReturn(Optional.of(region));
+        when(regionRepository.findAllById(List.of("11110"))).thenReturn(List.of(region));
 
         adminPolicyService.update(POLICY_ID, UPDATE_REQUEST);
 
@@ -103,7 +103,7 @@ class AdminPolicyServiceTest {
                         LocalDate.of(2026, 12, 31),
                         "https://example.com");
         verify(policyRegionRepository).deleteByPolicyId(POLICY_ID);
-        verify(policyRegionRepository).save(any(PolicyRegion.class));
+        verify(policyRegionRepository).saveAll(any());
     }
 
     @Test
@@ -119,7 +119,7 @@ class AdminPolicyServiceTest {
     @Test
     void 존재하지_않는_지역코드로_수정하면_REGION_NOT_FOUND_예외를_던진다() {
         when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(mock(Policy.class)));
-        when(regionRepository.findById("11110")).thenReturn(Optional.empty());
+        when(regionRepository.findAllById(List.of("11110"))).thenReturn(List.of());
 
         assertThatThrownBy(() -> adminPolicyService.update(POLICY_ID, UPDATE_REQUEST))
                 .isInstanceOf(CustomException.class)

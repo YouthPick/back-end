@@ -67,7 +67,9 @@ public class AdminPolicyService {
                 request.applicationUrl());
 
         policyRegionRepository.deleteByPolicyId(policyId);
-        regions.forEach(region -> policyRegionRepository.save(PolicyRegion.create(policy, region)));
+        List<PolicyRegion> policyRegions =
+                regions.stream().map(region -> PolicyRegion.create(policy, region)).toList();
+        policyRegionRepository.saveAll(policyRegions);
 
         return AdminPolicyResponse.from(policy, request.regionCodes());
     }
@@ -97,16 +99,14 @@ public class AdminPolicyService {
     }
 
     private List<Region> resolveRegions(List<String> regionCodes) {
-        return regionCodes.stream()
-                .map(
-                        code ->
-                                regionRepository
-                                        .findById(code)
-                                        .orElseThrow(
-                                                () ->
-                                                        new CustomException(
-                                                                PolicyErrorCode.REGION_NOT_FOUND)))
-                .toList();
+        if (regionCodes == null || regionCodes.isEmpty()) {
+            return List.of();
+        }
+        List<Region> regions = regionRepository.findAllById(regionCodes);
+        if (regions.size() != regionCodes.size()) {
+            throw new CustomException(PolicyErrorCode.REGION_NOT_FOUND);
+        }
+        return regions;
     }
 
     private List<String> regionCodesOf(Long policyId) {

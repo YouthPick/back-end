@@ -94,19 +94,35 @@ public class PolicySyncService {
             SyncPlan plan = plan(items);
             PolicyWriteResult writeResult = policyUpsertWriter.upsertAll(plan.upserts());
             int missingMarked = policyUpsertWriter.hideMissing(plan.missingPolicyNos());
-            history.succeed(
-                    writeResult.newCount(),
-                    writeResult.updatedCount(),
-                    plan.unchangedCount(),
-                    missingMarked,
-                    writeResult.errorCount());
-            log.info(
-                    "정책 수집 완료 — 신규 {} / 변경 {} / 유지 {} / 누락 {} / 실패 {}",
-                    writeResult.newCount(),
-                    writeResult.updatedCount(),
-                    plan.unchangedCount(),
-                    missingMarked,
-                    writeResult.errorCount());
+
+            int totalProcessed = plan.upserts().size();
+            double errorRate = 0.0;
+            if (totalProcessed > 0) {
+                errorRate = (double) writeResult.errorCount() / totalProcessed;
+            }
+
+            if (errorRate > 0.1) {
+                String errorMsg =
+                        "정책 수집 실패율 10% 초과 — 에러 건수: %d/%d (%.2f%%)"
+                                .formatted(
+                                        writeResult.errorCount(), totalProcessed, errorRate * 100);
+                history.fail(errorMsg);
+                log.error("정책 수집 완료되었으나 실패율 기준 초과로 작업 실패 처리함: {}", errorMsg);
+            } else {
+                history.succeed(
+                        writeResult.newCount(),
+                        writeResult.updatedCount(),
+                        plan.unchangedCount(),
+                        missingMarked,
+                        writeResult.errorCount());
+                log.info(
+                        "정책 수집 완료 — 신규 {} / 변경 {} / 유지 {} / 누락 {} / 실패 {}",
+                        writeResult.newCount(),
+                        writeResult.updatedCount(),
+                        plan.unchangedCount(),
+                        missingMarked,
+                        writeResult.errorCount());
+            }
             return historyRepository.save(history);
         } catch (RuntimeException e) {
             history.fail(e.getMessage());
@@ -148,6 +164,8 @@ public class PolicySyncService {
             // 변경으로 취급해 updateFrom이 VISIBLE 복구 + missing_count 리셋을 수행하게 한다.
             if (snapshot != null
                     && snapshot.visibility() == PolicyVisibility.VISIBLE
+                    && snapshot.lastModifiedAt() != null
+                    && policy.getLastModifiedAt() != null
                     && Objects.equals(snapshot.lastModifiedAt(), policy.getLastModifiedAt())) {
                 unchangedCount++;
                 continue;
