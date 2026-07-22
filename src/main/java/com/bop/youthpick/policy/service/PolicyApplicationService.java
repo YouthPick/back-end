@@ -117,12 +117,18 @@ public class PolicyApplicationService {
                 .map(PolicyApplicationResponse::from);
     }
 
-    /** 신청관리 항목을 소프트 삭제(관심 해제)한다. 소유권 검증 후 처리한다. */
+    /**
+     * 신청관리 항목을 소프트 삭제(관심 해제)한다. 소유권 검증 후 처리하며, 딸린 체크리스트도 {@link
+     * PolicyApplicationChecklistRepository#softDeleteAllByApplicationId}로 함께 소프트 삭제한다 — 신청만 지우고
+     * 체크리스트를 남기면 "고아" 체크리스트가 생기고, "신청 삭제 후 재등록 시 체크리스트 초기화"라는 {@link #create}의 reactivate 분기 스펙과도
+     * 어긋나기 때문이다.
+     */
     @Transactional
     public void delete(Long id, Long userId) {
         PolicyApplication application = findActive(id);
         application.verifyOwner(userId);
         application.delete();
+        policyApplicationChecklistRepository.softDeleteAllByApplicationId(id);
     }
 
     /**

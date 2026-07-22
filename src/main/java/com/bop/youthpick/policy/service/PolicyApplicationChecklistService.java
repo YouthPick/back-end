@@ -62,7 +62,8 @@ public class PolicyApplicationChecklistService {
     /**
      * 항목 하나만 소프트 삭제한다. 부모 신청관리 전체가 삭제/재등록될 때 체크리스트를 일괄 정리하는 건 여기가 아니라 {@link
      * PolicyApplicationChecklistRepository#softDeleteAllByApplicationId}이고, 그건 {@link
-     * PolicyApplicationService#create}의 reactivate 분기에서 (이 서비스를 거치지 않고) 직접 호출된다.
+     * PolicyApplicationService#create}의 reactivate 분기와 {@link PolicyApplicationService#delete}에서 (이
+     * 서비스를 거치지 않고) 직접 호출된다.
      */
     @Transactional
     public void delete(Long id, Long userId) {
@@ -91,19 +92,18 @@ public class PolicyApplicationChecklistService {
     }
 
     /**
-     * update/check/uncheck/delete가 공통으로 쓰는 조회. 체크리스트 자신의 {@code deletedAt}뿐 아니라 {@code
-     * checklist.getApplication().isDeleted()}까지 한 번 더 확인하는 이유: 체크리스트는 안 지워졌는데 부모 PolicyApplication만
-     * 나중에 소프트 삭제된 경우를 걸러내기 위해서다(그런 상태의 체크리스트는 "고아"로 취급해 CHECKLIST_NOT_FOUND로 통일).
+     * update/check/uncheck/delete가 공통으로 쓰는 조회. 체크리스트 자신의 {@code deletedAt}과 부모 PolicyApplication의
+     * {@code deletedAt}을 리포지토리 쿼리({@code join fetch} + 명시적 deleted_at 조건)에서 한 번에 확인한다 — 부모만 소프트 삭제된
+     * "고아" 체크리스트도 CHECKLIST_NOT_FOUND로 통일된다. 부모를 서비스 코드에서 {@code isDeleted()}로 검사하지 않는 이유: LAZY 프록시
+     * 초기화 시점에 부모의 {@code @SQLRestriction}에 걸려 검사에 도달하기 전에 {@code EntityNotFoundException}(500)이 터지기
+     * 때문이다(그 검사는 도달 불가능한 죽은 코드였다).
      */
     private PolicyApplicationChecklist findActive(Long id, Long userId) {
         PolicyApplicationChecklist checklist =
                 applicationChecklistRepository
-                        .findByIdAndDeletedAtIsNull(id)
+                        .findActiveWithApplicationById(id)
                         .orElseThrow(
                                 () -> new CustomException(PolicyErrorCode.CHECKLIST_NOT_FOUND));
-        if (checklist.getApplication().isDeleted()) {
-            throw new CustomException(PolicyErrorCode.CHECKLIST_NOT_FOUND);
-        }
         checklist.getApplication().verifyOwner(userId);
         return checklist;
     }
