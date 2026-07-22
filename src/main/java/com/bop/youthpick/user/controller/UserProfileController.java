@@ -1,5 +1,7 @@
 package com.bop.youthpick.user.controller;
 
+import com.bop.youthpick.auth.exception.AuthErrorCode;
+import com.bop.youthpick.auth.exception.AuthException;
 import com.bop.youthpick.auth.service.CurrentUser;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.user.dto.UserProfileRequest;
@@ -23,11 +25,17 @@ public class UserProfileController {
 
     private final UserProfileService userProfileService;
 
-    // TODO: 인증 도입 후 @PathVariable userId를 인증 principal 기반으로 교체한다.
+    // 경로의 userId는 프론트 호환을 위해 유지하되, 실제 대상은 인증 principal이다.
+    // path와 principal이 다르면 타인 프로필 생성(IDOR)이므로 403으로 거부한다.
     @PostMapping("/api/v1/users/{userId}/profile")
     public ResponseEntity<ApiResponse<UserProfileResponse>> submit(
-            @PathVariable Long userId, @Valid @RequestBody UserProfileRequest request) {
-        UserProfile profile = userProfileService.submit(userId, request);
+            @CurrentUser Long currentUserId,
+            @PathVariable Long userId,
+            @Valid @RequestBody UserProfileRequest request) {
+        if (!userId.equals(currentUserId)) {
+            throw new AuthException(AuthErrorCode.FORBIDDEN);
+        }
+        UserProfile profile = userProfileService.submit(currentUserId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(UserProfileResponse.from(profile)));
     }
