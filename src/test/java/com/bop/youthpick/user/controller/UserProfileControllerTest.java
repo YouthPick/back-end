@@ -79,6 +79,7 @@ class UserProfileControllerTest {
         when(profile.getKeywords()).thenReturn("청년,공모전");
         when(profile.getStatus()).thenReturn("COMPLETED");
         when(userProfileService.submit(eq(1L), any())).thenReturn(profile);
+        authenticateAs(1L);
 
         authenticateAs(1L);
 
@@ -108,6 +109,7 @@ class UserProfileControllerTest {
                     "educationLevel": "UNIV_GRADUATE"
                 }
                 """;
+        authenticateAs(1L);
 
         authenticateAs(1L);
 
@@ -129,6 +131,7 @@ class UserProfileControllerTest {
                     "educationLevel": "UNIV_GRADUATE"
                 }
                 """;
+        authenticateAs(1L);
 
         authenticateAs(1L);
 
