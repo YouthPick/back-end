@@ -69,6 +69,7 @@ public class PolicyApiClient {
 
     private YouthPolicyApiResponse.Result fetchPageWithRetry(int pageNum) {
         RuntimeException lastFailure = null;
+        long delay = 1000;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
                 return requestPage(pageNum);
@@ -81,6 +82,16 @@ public class PolicyApiClient {
                         MAX_ATTEMPTS,
                         e.getMessage());
                 lastFailure = e;
+                if (attempt < MAX_ATTEMPTS) {
+                    try {
+                        long jitter = (long) (Math.random() * 500);
+                        Thread.sleep(delay + jitter);
+                        delay *= 2;
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new PolicySyncException("정책 수집 중 인터럽트 발생", ie);
+                    }
+                }
             }
         }
         throw new PolicySyncException(
