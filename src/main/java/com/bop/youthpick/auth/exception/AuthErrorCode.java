@@ -15,7 +15,8 @@ public enum AuthErrorCode implements ErrorCode {
     OAUTH_PROVIDER_ERROR(HttpStatus.BAD_GATEWAY, "A005", "소셜 로그인 서버와 통신 중 오류가 발생했습니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "A006", "유효하지 않은 토큰입니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "A007", "리프레시 토큰이 유효하지 않습니다. 다시 로그인해주세요."),
-    FORBIDDEN(HttpStatus.FORBIDDEN, "A008", "접근 권한이 없습니다.");
+    FORBIDDEN(HttpStatus.FORBIDDEN, "A008", "접근 권한이 없습니다."),
+    ACCOUNT_DISABLED(HttpStatus.FORBIDDEN, "A009", "이용이 제한된 계정입니다.");
 
     private final HttpStatus status;
     private final String code;

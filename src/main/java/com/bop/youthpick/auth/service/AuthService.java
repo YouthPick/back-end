@@ -82,9 +82,10 @@ public class AuthService {
         Claims claims = jwtTokenProvider.validateRefreshToken(refreshToken);
         Long userId = jwtTokenProvider.getUserId(claims);
 
+        // soft-delete(탈퇴/제재)된 사용자는 refresh token TTL이 남아 있어도 재발급을 거부한다.
         User user =
                 userRepository
-                        .findById(userId)
+                        .findByIdAndDeletedAtIsNull(userId)
                         .orElseThrow(() -> new AuthException(AuthErrorCode.UNAUTHORIZED));
 
         if (!refreshTokenStore.matches(userId, refreshToken)) {
@@ -106,14 +107,20 @@ public class AuthService {
     @Transactional(readOnly = true)
     public User getCurrentUser(Long userId) {
         return userRepository
-                .findById(userId)
+                .findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new AuthException(AuthErrorCode.UNAUTHORIZED));
     }
 
     private User findOrCreateUser(OAuthProvider provider, OAuthUserInfo userInfo) {
-        return userRepository
-                .findByProviderAndProviderId(provider.name(), userInfo.providerId())
-                .orElseGet(() -> createUser(provider, userInfo));
+        User user =
+                userRepository
+                        .findByProviderAndProviderId(provider.name(), userInfo.providerId())
+                        .orElseGet(() -> createUser(provider, userInfo));
+        // 탈퇴/제재(soft-delete)된 계정은 재로그인을 거부한다(재활성 아님, 팀 리뷰 결정사항).
+        if (user.getDeletedAt() != null) {
+            throw new AuthException(AuthErrorCode.ACCOUNT_DISABLED);
+        }
+        return user;
     }
 
     private User createUser(OAuthProvider provider, OAuthUserInfo userInfo) {

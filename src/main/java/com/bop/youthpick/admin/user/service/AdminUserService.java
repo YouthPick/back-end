@@ -3,6 +3,7 @@ package com.bop.youthpick.admin.user.service;
 import com.bop.youthpick.admin.user.dto.AdminUserProfileResponse;
 import com.bop.youthpick.admin.user.dto.AdminUserResponse;
 import com.bop.youthpick.admin.user.repository.AdminUserSpecifications;
+import com.bop.youthpick.auth.service.RefreshTokenStore;
 import com.bop.youthpick.user.entity.Role;
 import com.bop.youthpick.user.entity.User;
 import com.bop.youthpick.user.exception.UserError;
@@ -21,6 +22,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
+    private final RefreshTokenStore refreshTokenStore;
 
     @Transactional(readOnly = true)
     public Page<AdminUserResponse> search(
@@ -50,6 +52,8 @@ public class AdminUserService {
     public AdminUserResponse softDelete(Long userId) {
         User user = findUser(userId);
         user.softDelete();
+        // refresh token을 즉시 회수해 제재 실효성을 access token 만료 이내로 확보한다.
+        refreshTokenStore.delete(userId);
         return AdminUserResponse.from(user);
     }
 
