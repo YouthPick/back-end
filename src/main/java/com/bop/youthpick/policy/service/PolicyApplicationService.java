@@ -5,6 +5,7 @@ import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
+import com.bop.youthpick.policy.entity.PolicyVisibility;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
@@ -44,6 +45,15 @@ public class PolicyApplicationService {
             ApplicationStatus status,
             String memo,
             LocalDateTime endAt) {
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new UserException(UserError.USER_NOT_FOUND));
+        Policy policy =
+                policyRepository
+                        .findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                                policyId, PolicyVisibility.VISIBLE)
+                        .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
         PolicyApplication existing =
                 policyApplicationRepository
                         .findIncludingDeletedByUserIdAndPolicyId(userId, policyId)
@@ -54,18 +64,10 @@ public class PolicyApplicationService {
             if (!existing.isDeleted()) {
                 throw new CustomException(PolicyErrorCode.POLICY_ALREADY_EXISTS);
             }
-            existing.reactivate(status, normalizedMemo, resolveEndAt(endAt, existing.getPolicy()));
+            existing.reactivate(status, normalizedMemo, resolveEndAt(endAt, policy));
             policyApplicationChecklistRepository.softDeleteAllByApplicationId(existing.getId());
             return existing;
         }
-        User user =
-                userRepository
-                        .findById(userId)
-                        .orElseThrow(() -> new UserException(UserError.USER_NOT_FOUND));
-        Policy policy =
-                policyRepository
-                        .findById(policyId)
-                        .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
         PolicyApplication application =
                 PolicyApplication.create(
                         user, policy, status, normalizedMemo, resolveEndAt(endAt, policy));

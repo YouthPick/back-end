@@ -14,6 +14,7 @@ import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyApplication;
+import com.bop.youthpick.policy.entity.PolicyVisibility;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyApplicationChecklistRepository;
 import com.bop.youthpick.policy.repository.PolicyApplicationRepository;
@@ -66,7 +67,9 @@ class PolicyApplicationServiceTest {
                         USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
-        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(mock(Policy.class)));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(mock(Policy.class)));
         when(policyApplicationRepository.save(any(PolicyApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -86,7 +89,9 @@ class PolicyApplicationServiceTest {
                         USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
-        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(policy));
         when(policyApplicationRepository.save(any(PolicyApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -104,7 +109,9 @@ class PolicyApplicationServiceTest {
                         USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
-        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(policy));
         when(policyApplicationRepository.save(any(PolicyApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -124,7 +131,9 @@ class PolicyApplicationServiceTest {
                         USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
-        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(policy));
         when(policyApplicationRepository.save(any(PolicyApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -144,7 +153,9 @@ class PolicyApplicationServiceTest {
                         USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
-        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(policy));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(policy));
 
         LocalDateTime tooLateEndAt = LocalDateTime.of(2026, 9, 1, 0, 0);
         assertThatThrownBy(
@@ -166,7 +177,9 @@ class PolicyApplicationServiceTest {
                         USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
-        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(mock(Policy.class)));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(mock(Policy.class)));
         when(policyApplicationRepository.save(any(PolicyApplication.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -179,6 +192,10 @@ class PolicyApplicationServiceTest {
 
     @Test
     void 이미_등록된_행이_있으면_POLICY_ALREADY_EXISTS_예외를_던진다() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(mock(Policy.class)));
         PolicyApplication existing =
                 PolicyApplication.create(
                         mock(User.class),
@@ -201,6 +218,10 @@ class PolicyApplicationServiceTest {
 
     @Test
     void soft_delete된_행이_있으면_재활성화한다() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(mock(Policy.class)));
         PolicyApplication existing =
                 PolicyApplication.create(
                         mock(User.class),
@@ -227,6 +248,10 @@ class PolicyApplicationServiceTest {
     void soft_delete된_행을_재활성화할때_마감일을_지정하지_않으면_정책_마감일을_사용한다() {
         Policy policy = mock(Policy.class);
         when(policy.getApplicationEndDate()).thenReturn(LocalDate.of(2026, 10, 1));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(policy));
         PolicyApplication existing =
                 PolicyApplication.create(
                         mock(User.class), policy, ApplicationStatus.INTERESTED, null, null);
@@ -244,6 +269,10 @@ class PolicyApplicationServiceTest {
 
     @Test
     void soft_delete된_행을_재활성화하면_이전_체크리스트를_모두_소프트딜리트한다() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(mock(Policy.class)));
         PolicyApplication existing =
                 PolicyApplication.create(
                         mock(User.class),
@@ -267,7 +296,9 @@ class PolicyApplicationServiceTest {
                         USER_ID, POLICY_ID))
                 .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
-        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.of(mock(Policy.class)));
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.of(mock(Policy.class)));
         when(policyApplicationRepository.save(any(PolicyApplication.class)))
                 .thenThrow(
                         new DataIntegrityViolationException("uk_policy_applications_user_policy"));
@@ -287,9 +318,6 @@ class PolicyApplicationServiceTest {
 
     @Test
     void 존재하지_않는_사용자면_USER_NOT_FOUND_예외를_던진다() {
-        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
-                        USER_ID, POLICY_ID))
-                .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(
@@ -307,11 +335,10 @@ class PolicyApplicationServiceTest {
 
     @Test
     void 존재하지_않는_정책이면_POLICY_NOT_FOUND_예외를_던진다() {
-        when(policyApplicationRepository.findIncludingDeletedByUserIdAndPolicyId(
-                        USER_ID, POLICY_ID))
-                .thenReturn(Optional.empty());
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(mock(User.class)));
-        when(policyRepository.findById(POLICY_ID)).thenReturn(Optional.empty());
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        POLICY_ID, PolicyVisibility.VISIBLE))
+                .thenReturn(Optional.empty());
 
         assertThatThrownBy(
                         () ->

@@ -4,6 +4,7 @@ import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyComparisonItemResponse;
 import com.bop.youthpick.policy.dto.RegionResponse;
 import com.bop.youthpick.policy.entity.Policy;
+import com.bop.youthpick.policy.entity.PolicyVisibility;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
@@ -36,7 +37,9 @@ public class PolicyComparisonService {
             throw new CustomException(PolicyErrorCode.INVALID_COMPARISON_REQUEST);
         }
 
-        List<Policy> policies = policyRepository.findAllById(policyIds);
+        List<Policy> policies =
+                policyRepository.findAllByIdInAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        policyIds, PolicyVisibility.VISIBLE);
         if (policies.size() != policyIds.size()) {
             throw new CustomException(PolicyErrorCode.POLICY_NOT_FOUND);
         }
