@@ -75,6 +75,21 @@ class PostServiceTest {
     }
 
     @Test
+    void 자유글에_정책을_연결하면_B004_예외가_발생한다() {
+        // 정책 검증 전에 예외가 나므로 user.getId()가 호출되지 않는다 — id 스텁 없는 mock을 쓴다.
+        PostCreateRequest request = new PostCreateRequest("FREE", "제목", "내용", 5L, null);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(mock(User.class)));
+
+        assertThatThrownBy(() -> postService.create(1L, request))
+                .isInstanceOf(BoardException.class)
+                .extracting(exception -> ((BoardException) exception).getErrorCode())
+                .isEqualTo(BoardErrorCode.FREE_POST_POLICY_NOT_ALLOWED);
+        verify(policyRepository, never()).findById(any());
+        verify(postRepository, never()).save(any(Post.class));
+    }
+
+    @Test
     void 게시글을_생성할_때_업로드된_이미지를_첨부로_저장한다() {
         User user = user(1L);
         PostCreateRequest request =
