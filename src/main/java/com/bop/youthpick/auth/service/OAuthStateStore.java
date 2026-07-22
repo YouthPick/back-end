@@ -22,15 +22,13 @@ public class OAuthStateStore {
         redisTemplate.opsForValue().set(key(state), provider, TTL);
     }
 
-    /** state에 저장된 provider와 일치하면 소비(삭제)하고 true를 반환한다. */
+    /**
+     * state를 원자적으로 소비(GETDEL)하고, 저장된 provider와 일치하면 true를 반환한다. GET 후 DELETE 2단계로 나누면 동시 요청 2건이 모두
+     * 통과할 수 있어 getAndDelete로 1회 소비를 보장한다.
+     */
     public boolean consume(String state, String provider) {
-        String key = key(state);
-        String savedProvider = redisTemplate.opsForValue().get(key);
-        if (savedProvider == null || !savedProvider.equals(provider)) {
-            return false;
-        }
-        redisTemplate.delete(key);
-        return true;
+        String savedProvider = redisTemplate.opsForValue().getAndDelete(key(state));
+        return savedProvider != null && savedProvider.equals(provider);
     }
 
     private String key(String state) {

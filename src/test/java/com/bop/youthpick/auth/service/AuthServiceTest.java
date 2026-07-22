@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.bop.youthpick.auth.dto.OAuthUserInfo;
 import com.bop.youthpick.auth.dto.TokenResponse;
+import com.bop.youthpick.auth.exception.AuthErrorCode;
 import com.bop.youthpick.auth.exception.AuthException;
 import com.bop.youthpick.user.entity.LoginHistory;
 import com.bop.youthpick.user.entity.User;
@@ -149,12 +150,53 @@ class AuthServiceTest {
     }
 
     @Test
+    void soft_delete된_사용자면_로그인이_A009로_거부된다() {
+        when(oAuthStateStore.consume("state-value", "GOOGLE")).thenReturn(true);
+        when(oAuthClient.exchangeCodeForAccessToken(
+                        eq(OAuthProvider.GOOGLE),
+                        eq("client-id"),
+                        eq("client-secret"),
+                        anyString(),
+                        eq("code")))
+                .thenReturn("provider-access-token");
+        when(oAuthClient.fetchUserInfo(OAuthProvider.GOOGLE, "provider-access-token"))
+                .thenReturn(new OAuthUserInfo("GOOGLE", "provider-id-1", "a@a.com", "닉네임"));
+        User deletedUser = User.createSocialUser("GOOGLE", "provider-id-1", "a@a.com", "닉네임");
+        deletedUser.softDelete();
+        when(userRepository.findByProviderAndProviderId("GOOGLE", "provider-id-1"))
+                .thenReturn(Optional.of(deletedUser));
+
+        assertThatThrownBy(() -> authService.login("google", "code", "state-value"))
+                .isInstanceOf(AuthException.class)
+                .extracting(ex -> ((AuthException) ex).getErrorCode())
+                .isEqualTo(AuthErrorCode.ACCOUNT_DISABLED);
+
+        verify(jwtTokenProvider, never()).createAccessToken(any(), any());
+        verify(loginHistoryRepository, never()).save(any());
+    }
+
+    @Test
+    void soft_delete된_사용자면_refresh가_거부된다() {
+        io.jsonwebtoken.Claims claims = mock(io.jsonwebtoken.Claims.class);
+        when(jwtTokenProvider.validateRefreshToken("refresh-token")).thenReturn(claims);
+        when(jwtTokenProvider.getUserId(claims)).thenReturn(1L);
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.refresh("refresh-token"))
+                .isInstanceOf(AuthException.class)
+                .extracting(ex -> ((AuthException) ex).getErrorCode())
+                .isEqualTo(AuthErrorCode.UNAUTHORIZED);
+
+        verify(jwtTokenProvider, never()).createAccessToken(any(), any());
+    }
+
+    @Test
     void refresh_token이_저장된_값과_불일치하면_거부된다() {
         User user = mock(User.class);
         io.jsonwebtoken.Claims claims = mock(io.jsonwebtoken.Claims.class);
         when(jwtTokenProvider.validateRefreshToken("refresh-token")).thenReturn(claims);
         when(jwtTokenProvider.getUserId(claims)).thenReturn(1L);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
         when(refreshTokenStore.matches(1L, "refresh-token")).thenReturn(false);
 
         assertThatThrownBy(() -> authService.refresh("refresh-token"))
@@ -171,7 +213,7 @@ class AuthServiceTest {
         when(user.getRole()).thenReturn(com.bop.youthpick.user.entity.Role.USER);
         when(jwtTokenProvider.validateRefreshToken("refresh-token")).thenReturn(claims);
         when(jwtTokenProvider.getUserId(claims)).thenReturn(1L);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(user));
         when(refreshTokenStore.matches(1L, "refresh-token")).thenReturn(true);
         when(jwtTokenProvider.createAccessToken(1L, "USER")).thenReturn("new-access");
         when(jwtTokenProvider.accessTokenExpirationSeconds()).thenReturn(1800L);

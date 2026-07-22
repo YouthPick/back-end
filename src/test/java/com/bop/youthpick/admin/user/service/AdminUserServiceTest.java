@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bop.youthpick.auth.service.RefreshTokenStore;
 import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.user.entity.Role;
 import com.bop.youthpick.user.entity.User;
@@ -33,13 +34,16 @@ class AdminUserServiceTest {
 
     @Mock private UserProfileRepository userProfileRepository;
 
+    @Mock private RefreshTokenStore refreshTokenStore;
+
     private AdminUserService adminUserService;
 
     private static final Long USER_ID = 1L;
 
     @BeforeEach
     void setUp() {
-        adminUserService = new AdminUserService(userRepository, userProfileRepository);
+        adminUserService =
+                new AdminUserService(userRepository, userProfileRepository, refreshTokenStore);
     }
 
     @Test
@@ -138,6 +142,17 @@ class AdminUserServiceTest {
         adminUserService.softDelete(USER_ID);
 
         verify(user).softDelete();
+    }
+
+    @Test
+    void soft_delete_시_refresh_token을_즉시_회수한다() {
+        User user = mock(User.class);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(user.getId()).thenReturn(USER_ID);
+
+        adminUserService.softDelete(USER_ID);
+
+        verify(refreshTokenStore).delete(USER_ID);
     }
 
     @Test

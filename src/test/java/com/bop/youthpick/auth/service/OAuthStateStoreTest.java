@@ -1,8 +1,6 @@
 package com.bop.youthpick.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,34 +26,44 @@ class OAuthStateStoreTest {
     }
 
     @Test
-    void 저장된_provider와_일치하면_소비하고_true를_반환한다() {
+    void 저장된_provider와_일치하면_원자적으로_소비하고_true를_반환한다() {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("auth:oauth-state:state-1")).thenReturn("GOOGLE");
+        when(valueOperations.getAndDelete("auth:oauth-state:state-1")).thenReturn("GOOGLE");
 
         boolean consumed = oAuthStateStore.consume("state-1", "GOOGLE");
 
         assertThat(consumed).isTrue();
-        verify(redisTemplate).delete("auth:oauth-state:state-1");
+        verify(valueOperations).getAndDelete("auth:oauth-state:state-1");
     }
 
     @Test
-    void provider가_다르면_소비하지_않고_false를_반환한다() {
+    void provider가_다르면_false를_반환한다() {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("auth:oauth-state:state-1")).thenReturn("KAKAO");
+        when(valueOperations.getAndDelete("auth:oauth-state:state-1")).thenReturn("KAKAO");
 
         boolean consumed = oAuthStateStore.consume("state-1", "GOOGLE");
 
         assertThat(consumed).isFalse();
-        verify(redisTemplate, never()).delete(any(String.class));
     }
 
     @Test
     void state가_없으면_false를_반환한다() {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.get("auth:oauth-state:unknown")).thenReturn(null);
+        when(valueOperations.getAndDelete("auth:oauth-state:unknown")).thenReturn(null);
 
         boolean consumed = oAuthStateStore.consume("unknown", "GOOGLE");
 
         assertThat(consumed).isFalse();
+    }
+
+    @Test
+    void 이미_소비된_state는_다시_소비할_수_없다() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.getAndDelete("auth:oauth-state:state-1"))
+                .thenReturn("GOOGLE")
+                .thenReturn(null);
+
+        assertThat(oAuthStateStore.consume("state-1", "GOOGLE")).isTrue();
+        assertThat(oAuthStateStore.consume("state-1", "GOOGLE")).isFalse();
     }
 }
