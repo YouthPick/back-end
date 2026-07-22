@@ -19,8 +19,10 @@ import lombok.NoArgsConstructor;
 /**
  * 신청관리별 준비 체크리스트 (제출서류 등). PolicyApplicationChecklistService를 통해서만 생성/변경되고, application
  * FK(policy_application_checklists.application_id)로 부모 {@link PolicyApplication}에 종속된다 — 부모가 소프트
- * 삭제되면 이 엔티티는 개별적으로는 안 지워지고 남아있는 채로 "고아" 상태가 되는데, 그건
- * PolicyApplicationChecklistService.findActive()가 checklist.getApplication().isDeleted()로 걸러낸다.
+ * 삭제되면(PolicyApplicationService.delete()) 딸린 체크리스트도
+ * PolicyApplicationChecklistRepository.softDeleteAllByApplicationId()로 함께 소프트 삭제된다. 혹시 정리 전에 남아있던
+ * "고아" 체크리스트라도 PolicyApplicationChecklistRepository.findActiveWithApplicationById()가 부모의 deleted_at
+ * 조건까지 쿼리에서 확인하므로 CHECKLIST_NOT_FOUND로 걸러진다.
  */
 @Entity
 @Table(

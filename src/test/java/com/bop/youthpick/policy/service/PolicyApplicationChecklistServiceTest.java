@@ -97,7 +97,7 @@ class PolicyApplicationChecklistServiceTest {
     void update_체크리스트_내용을_수정한다() {
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application(), "제출 서류 준비");
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.of(checklist));
 
         PolicyApplicationChecklist result = checklistService.update(5L, USER_ID, "서류 다시 준비");
@@ -107,7 +107,7 @@ class PolicyApplicationChecklistServiceTest {
 
     @Test
     void update_대상이_없으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> checklistService.update(5L, USER_ID, "수정"))
@@ -120,7 +120,7 @@ class PolicyApplicationChecklistServiceTest {
     void update_소유자가_아니면_FORBIDDEN_예외를_던진다() {
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application(), "제출 서류 준비");
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.of(checklist));
 
         assertThatThrownBy(() -> checklistService.update(5L, OTHER_USER_ID, "수정"))
@@ -130,25 +130,10 @@ class PolicyApplicationChecklistServiceTest {
     }
 
     @Test
-    void update_상위_신청관리가_삭제되었으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
-        PolicyApplication deletedApplication = application();
-        deletedApplication.delete();
-        PolicyApplicationChecklist checklist =
-                PolicyApplicationChecklist.create(deletedApplication, "제출 서류 준비");
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
-                .thenReturn(Optional.of(checklist));
-
-        assertThatThrownBy(() -> checklistService.update(5L, USER_ID, "수정"))
-                .isInstanceOf(CustomException.class)
-                .extracting(ex -> ((CustomException) ex).getErrorCode())
-                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
-    }
-
-    @Test
     void check_체크상태로_변경한다() {
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application(), "제출 서류 준비");
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.of(checklist));
 
         checklistService.check(5L, USER_ID);
@@ -161,7 +146,7 @@ class PolicyApplicationChecklistServiceTest {
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application(), "제출 서류 준비");
         checklist.check();
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.of(checklist));
 
         checklistService.uncheck(5L, USER_ID);
@@ -171,7 +156,7 @@ class PolicyApplicationChecklistServiceTest {
 
     @Test
     void check_대상이_없으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> checklistService.check(5L, USER_ID))
@@ -182,7 +167,7 @@ class PolicyApplicationChecklistServiceTest {
 
     @Test
     void uncheck_대상이_없으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> checklistService.uncheck(5L, USER_ID))
@@ -193,7 +178,7 @@ class PolicyApplicationChecklistServiceTest {
 
     @Test
     void delete_대상이_없으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> checklistService.delete(5L, USER_ID))
@@ -206,7 +191,7 @@ class PolicyApplicationChecklistServiceTest {
     void delete_soft_delete한다() {
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application(), "제출 서류 준비");
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.of(checklist));
 
         checklistService.delete(5L, USER_ID);
@@ -214,57 +199,15 @@ class PolicyApplicationChecklistServiceTest {
         assertThat(checklist.getDeletedAt()).isNotNull();
     }
 
-    @Test
-    void check_상위_신청관리가_삭제되었으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
-        PolicyApplication deletedApplication = application();
-        deletedApplication.delete();
-        PolicyApplicationChecklist checklist =
-                PolicyApplicationChecklist.create(deletedApplication, "제출 서류 준비");
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
-                .thenReturn(Optional.of(checklist));
-
-        assertThatThrownBy(() -> checklistService.check(5L, USER_ID))
-                .isInstanceOf(CustomException.class)
-                .extracting(ex -> ((CustomException) ex).getErrorCode())
-                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
-    }
-
-    @Test
-    void uncheck_상위_신청관리가_삭제되었으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
-        PolicyApplication deletedApplication = application();
-        deletedApplication.delete();
-        PolicyApplicationChecklist checklist =
-                PolicyApplicationChecklist.create(deletedApplication, "제출 서류 준비");
-        checklist.check();
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
-                .thenReturn(Optional.of(checklist));
-
-        assertThatThrownBy(() -> checklistService.uncheck(5L, USER_ID))
-                .isInstanceOf(CustomException.class)
-                .extracting(ex -> ((CustomException) ex).getErrorCode())
-                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
-    }
-
-    @Test
-    void delete_상위_신청관리가_삭제되었으면_CHECKLIST_NOT_FOUND_예외를_던진다() {
-        PolicyApplication deletedApplication = application();
-        deletedApplication.delete();
-        PolicyApplicationChecklist checklist =
-                PolicyApplicationChecklist.create(deletedApplication, "제출 서류 준비");
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
-                .thenReturn(Optional.of(checklist));
-
-        assertThatThrownBy(() -> checklistService.delete(5L, USER_ID))
-                .isInstanceOf(CustomException.class)
-                .extracting(ex -> ((CustomException) ex).getErrorCode())
-                .isEqualTo(PolicyErrorCode.CHECKLIST_NOT_FOUND);
-    }
+    // "상위 신청관리가 삭제된 고아 체크리스트 → CHECKLIST_NOT_FOUND" 케이스는 이제 리포지토리 쿼리
+    // (findActiveWithApplicationById의 부모 deleted_at 조건)가 담당한다. 목으로는 JPA 프록시/쿼리 동작이
+    // 재현되지 않으므로 H2 통합 테스트(PolicyApplicationChecklistOrphanIntegrationTest)에서 검증한다.
 
     @Test
     void check_소유자가_아니면_FORBIDDEN_예외를_던진다() {
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application(), "제출 서류 준비");
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.of(checklist));
 
         assertThatThrownBy(() -> checklistService.check(5L, OTHER_USER_ID))
@@ -278,7 +221,7 @@ class PolicyApplicationChecklistServiceTest {
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application(), "제출 서류 준비");
         checklist.check();
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.of(checklist));
 
         assertThatThrownBy(() -> checklistService.uncheck(5L, OTHER_USER_ID))
@@ -291,7 +234,7 @@ class PolicyApplicationChecklistServiceTest {
     void delete_소유자가_아니면_FORBIDDEN_예외를_던진다() {
         PolicyApplicationChecklist checklist =
                 PolicyApplicationChecklist.create(application(), "제출 서류 준비");
-        when(applicationChecklistRepository.findByIdAndDeletedAtIsNull(5L))
+        when(applicationChecklistRepository.findActiveWithApplicationById(5L))
                 .thenReturn(Optional.of(checklist));
 
         assertThatThrownBy(() -> checklistService.delete(5L, OTHER_USER_ID))

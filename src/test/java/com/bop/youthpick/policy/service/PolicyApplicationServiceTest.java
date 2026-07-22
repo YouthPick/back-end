@@ -549,6 +549,7 @@ class PolicyApplicationServiceTest {
         policyApplicationService.delete(10L, USER_ID);
 
         assertThat(existing.isDeleted()).isTrue();
+        verify(policyApplicationChecklistRepository).softDeleteAllByApplicationId(10L);
     }
 
     @Test
