@@ -44,7 +44,7 @@ class UserProfileControllerTest {
                 "regionCode": "11110",
                 "employmentStatus": "EMPLOYED",
                 "educationLevel": "UNIV_GRADUATE",
-                "merryStatus": "SINGLE",
+                "maritalStatus": "SINGLE",
                 "major": ["ENGINEERING"],
                 "specialCondition": ["BASIC_LIVELIHOOD"],
                 "income": 3000,
@@ -71,7 +71,7 @@ class UserProfileControllerTest {
         when(profile.getBirthYear()).thenReturn(2000);
         when(profile.getEmploymentStatus()).thenReturn("EMPLOYED");
         when(profile.getEducationLevel()).thenReturn("UNIV_GRADUATE");
-        when(profile.getMerryStatus()).thenReturn("SINGLE");
+        when(profile.getMaritalStatus()).thenReturn("SINGLE");
         when(profile.getMajor()).thenReturn("ENGINEERING");
         when(profile.getSpecialCondition()).thenReturn("BASIC_LIVELIHOOD");
         when(profile.getIncome()).thenReturn(3000);
@@ -91,7 +91,7 @@ class UserProfileControllerTest {
                 .andExpect(jsonPath("$.data.id").value(10))
                 .andExpect(jsonPath("$.data.userId").value(1))
                 .andExpect(jsonPath("$.data.regionCode").value("11110"))
-                .andExpect(jsonPath("$.data.merryStatus").value("SINGLE"))
+                .andExpect(jsonPath("$.data.maritalStatus").value("SINGLE"))
                 .andExpect(jsonPath("$.data.major[0]").value("ENGINEERING"))
                 .andExpect(jsonPath("$.data.specialCondition[0]").value("BASIC_LIVELIHOOD"))
                 .andExpect(jsonPath("$.data.income").value(3000))
@@ -205,7 +205,7 @@ class UserProfileControllerTest {
         when(profile.getBirthYear()).thenReturn(2000);
         when(profile.getEmploymentStatus()).thenReturn("EMPLOYED");
         when(profile.getEducationLevel()).thenReturn("UNIV_GRADUATE");
-        when(profile.getMerryStatus()).thenReturn("SINGLE");
+        when(profile.getMaritalStatus()).thenReturn("SINGLE");
         when(profile.getMajor()).thenReturn("ENGINEERING");
         when(profile.getSpecialCondition()).thenReturn("BASIC_LIVELIHOOD");
         when(profile.getIncome()).thenReturn(3000);
@@ -252,7 +252,7 @@ class UserProfileControllerTest {
         when(profile.getBirthYear()).thenReturn(2000);
         when(profile.getEmploymentStatus()).thenReturn("EMPLOYED");
         when(profile.getEducationLevel()).thenReturn("UNIVERSITY");
-        when(profile.getMerryStatus()).thenReturn("SINGLE");
+        when(profile.getMaritalStatus()).thenReturn("SINGLE");
         when(profile.getMajor()).thenReturn("COMPUTER_SCIENCE");
         when(profile.getSpecialCondition()).thenReturn("LOW_INCOME");
         when(profile.getIncome()).thenReturn(3000);

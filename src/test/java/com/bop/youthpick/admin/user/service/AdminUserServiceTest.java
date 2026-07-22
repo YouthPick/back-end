@@ -75,7 +75,7 @@ class AdminUserServiceTest {
         when(profile.getRegion()).thenReturn(region);
         when(region.getSidoName()).thenReturn("서울특별시");
         when(region.getName()).thenReturn("강남구");
-        when(profile.getMerryStatus()).thenReturn("SINGLE");
+        when(profile.getMaritalStatus()).thenReturn("SINGLE");
         when(profile.getMajor()).thenReturn("COMPUTER_SCIENCE");
         when(profile.getSpecialCondition()).thenReturn("LOW_INCOME");
         when(profile.getIncome()).thenReturn(3000);
@@ -84,7 +84,7 @@ class AdminUserServiceTest {
 
         assertThat(result.userId()).isEqualTo(USER_ID);
         assertThat(result.regionLabel()).isEqualTo("서울특별시 강남구");
-        assertThat(result.merryStatus()).isEqualTo("SINGLE");
+        assertThat(result.maritalStatus()).isEqualTo("SINGLE");
         assertThat(result.major()).containsExactly("COMPUTER_SCIENCE");
         assertThat(result.specialCondition()).containsExactly("LOW_INCOME");
         assertThat(result.income()).isEqualTo(3000);

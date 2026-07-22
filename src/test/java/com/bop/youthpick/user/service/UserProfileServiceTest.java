@@ -71,7 +71,7 @@ class UserProfileServiceTest {
         assertThat(result.getBirthYear()).isEqualTo(REQUEST.birthYear());
         assertThat(result.getEmploymentStatus()).isEqualTo(REQUEST.employmentStatus());
         assertThat(result.getEducationLevel()).isEqualTo(REQUEST.educationLevel());
-        assertThat(result.getMerryStatus()).isEqualTo(REQUEST.merryStatus());
+        assertThat(result.getMaritalStatus()).isEqualTo(REQUEST.maritalStatus());
         assertThat(result.getMajor()).isEqualTo("COMPUTER_SCIENCE");
         assertThat(result.getSpecialCondition()).isEqualTo("LOW_INCOME");
         assertThat(result.getIncome()).isEqualTo(REQUEST.income());
@@ -172,7 +172,7 @@ class UserProfileServiceTest {
         assertThat(result.getBirthYear()).isEqualTo(REQUEST.birthYear());
         assertThat(result.getEmploymentStatus()).isEqualTo(REQUEST.employmentStatus());
         assertThat(result.getEducationLevel()).isEqualTo(REQUEST.educationLevel());
-        assertThat(result.getMerryStatus()).isEqualTo(REQUEST.merryStatus());
+        assertThat(result.getMaritalStatus()).isEqualTo(REQUEST.maritalStatus());
         assertThat(result.getMajor()).isEqualTo("COMPUTER_SCIENCE");
         assertThat(result.getSpecialCondition()).isEqualTo("LOW_INCOME");
         assertThat(result.getIncome()).isEqualTo(REQUEST.income());

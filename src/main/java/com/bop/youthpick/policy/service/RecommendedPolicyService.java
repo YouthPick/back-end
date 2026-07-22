@@ -117,7 +117,7 @@ public class RecommendedPolicyService {
                         userSidoName,
                         userJobCode,
                         userSchoolCode,
-                        YouthPolicyCodeMapper.toMaritalCode(profile.getMerryStatus()),
+                        YouthPolicyCodeMapper.toMaritalCode(profile.getMaritalStatus()),
                         mapAll(profile.getMajor(), YouthPolicyCodeMapper::toMajorCode),
                         mapAll(
                                 profile.getSpecialCondition(),
