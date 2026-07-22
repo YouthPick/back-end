@@ -73,7 +73,11 @@ public class AuthService {
         OAuthUserInfo userInfo = oAuthClient.fetchUserInfo(provider, accessToken);
 
         User user = findOrCreateUser(provider, userInfo);
-        loginHistoryRepository.save(LoginHistory.create(user));
+        try {
+            loginHistoryRepository.save(LoginHistory.create(user));
+        } catch (RuntimeException e) {
+            log.warn("로그인 이력(LoginHistory) 저장 실패 - 로그인 프로세스는 정상 진행합니다. userId={}", user.getId(), e);
+        }
         return issueTokens(user);
     }
 

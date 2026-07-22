@@ -42,8 +42,8 @@ Notion `API 명세 DB`의 현재 데이터를 기준으로 생성한 백엔드 A
 | 신청관리 | 신청 등록 | `POST` | `/api/v1/policy-applications` | 회원 | body: policyId, status(INTERESTED\|PREPARING\|APPLIED\|COMPLETED), memo 선택, endAt 선택 |
 | 신청관리 | 신청 목록 조회 | `GET` | `/api/v1/policy-applications` | 회원 | query: page 기본 1, size 기본 20 |
 | 신청관리 | 상태 변경 | `PATCH` | `/api/v1/policy-applications/{id}/status` | 회원 | path: id. query: status(INTERESTED\|PREPARING\|APPLIED\|COMPLETED) |
-| 신청관리 | 메모 수정 | `PATCH` | `/api/v1/policy-applications/{id}/memo` | 회원 | path: id. query: memo (필수, 최대 2000자) |
-| 신청관리 | 마감일 수정 | `PATCH` | `/api/v1/policy-applications/{id}/end-at` | 회원 | path: id. query: endAt 선택(ISO-8601 date-time, 생략 시 마감일 초기화) |
+| 신청관리 | 메모 수정 | `PATCH` | `/api/v1/policy-applications/{id}/memo` | 회원 | path: id. body: memo (필수, 최대 2000자) |
+| 신청관리 | 마감일 수정 | `PATCH` | `/api/v1/policy-applications/{id}/end-at` | 회원 | path: id. body: endAt 선택(ISO-8601 date-time, 생략 시 마감일 초기화) |
 | 신청관리 | 신청 삭제 | `DELETE` | `/api/v1/policy-applications/{id}` | 회원 | path: id |
 | 신청관리 | 체크리스트 추가 | `POST` | `/api/v1/policy-application-checklists` | 회원 | body: applicationId, message |
 | 신청관리 | 체크리스트 조회 | `GET` | `/api/v1/policy-application-checklists/application/{applicationId}` | 회원 | path: applicationId. query: page 기본 1, size 기본 20 |
@@ -288,7 +288,7 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 메서드 | `PATCH` |
 | 경로 | `/api/v1/policy-applications/{id}/memo` |
 | 권한 | 회원 |
-| 파라미터 | path: id. query: memo (필수, 최대 2000자) |
+| 파라미터 | path: id. body: memo (필수, 최대 2000자) |
 
 ### 마감일 수정
 
@@ -299,7 +299,7 @@ OAuth 인가 코드로 로그인을 완료하고 사용자 정보와 토큰을 �
 | 메서드 | `PATCH` |
 | 경로 | `/api/v1/policy-applications/{id}/end-at` |
 | 권한 | 회원 |
-| 파라미터 | path: id. query: endAt 선택(ISO-8601 date-time, 생략 시 마감일 초기화) |
+| 파라미터 | path: id. body: endAt 선택(ISO-8601 date-time, 생략 시 마감일 초기화) |
 
 ### 신청 삭제
 

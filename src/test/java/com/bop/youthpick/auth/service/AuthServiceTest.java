@@ -265,6 +265,34 @@ class AuthServiceTest {
         verify(refreshTokenStore).delete(1L);
     }
 
+    @Test
+    void 로그인_히스토리_저장에_실패해도_로그인은_성공한다() {
+        when(oAuthStateStore.consume("state-value", "GOOGLE")).thenReturn(true);
+        when(oAuthClient.exchangeCodeForAccessToken(
+                        eq(OAuthProvider.GOOGLE),
+                        eq("client-id"),
+                        eq("client-secret"),
+                        anyString(),
+                        eq("code")))
+                .thenReturn("provider-access-token");
+        when(oAuthClient.fetchUserInfo(OAuthProvider.GOOGLE, "provider-access-token"))
+                .thenReturn(new OAuthUserInfo("GOOGLE", "provider-id-1", "a@a.com", "닉네임"));
+        User user = User.createSocialUser("GOOGLE", "provider-id-1", "a@a.com", "닉네임");
+        when(userRepository.findByProviderAndProviderId("GOOGLE", "provider-id-1"))
+                .thenReturn(Optional.of(user));
+        when(jwtTokenProvider.createAccessToken(any(), any())).thenReturn("jwt-access");
+        when(jwtTokenProvider.createRefreshToken(any())).thenReturn("jwt-refresh");
+        when(jwtTokenProvider.refreshTokenExpiration()).thenReturn(Duration.ofDays(14));
+        when(jwtTokenProvider.accessTokenExpirationSeconds()).thenReturn(1800L);
+        when(loginHistoryRepository.save(any(LoginHistory.class)))
+                .thenThrow(new RuntimeException("DB 저장소 장애"));
+
+        TokenResponse tokens = authService.login("google", "code", "state-value");
+
+        assertThat(tokens.accessToken()).isEqualTo("jwt-access");
+        verify(loginHistoryRepository).save(any(LoginHistory.class));
+    }
+
     private Map<String, String> parseQuery(String url) {
         String query = URI.create(url).getRawQuery();
         Map<String, String> params = new HashMap<>();

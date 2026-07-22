@@ -3,19 +3,15 @@ package com.bop.youthpick.sync.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
  * 정책 전량 수집을 매일 1회 실행하는 스케줄러. 로컬 기본 off — 팀원이 앱을 켤 때마다 실 API를 호출하는 사고 방지
  * (`youthpick.sync.scheduler.enabled`).
- *
- * <p>{@code @EnableScheduling}을 이 클래스에 두어 스케줄러가 꺼져 있으면 스케줄링 인프라 자체가 뜨지 않는다.
  */
 @Slf4j
 @Component
-@EnableScheduling
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "youthpick.sync.scheduler.enabled", havingValue = "true")
 public class PolicySyncScheduler {

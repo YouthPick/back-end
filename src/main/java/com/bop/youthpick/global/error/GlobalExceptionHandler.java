@@ -216,6 +216,18 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(errorCode, details));
     }
 
+    // Redis 연결 실패 혹은 쿼리 타임아웃 시 503(REDIS_CONNECTION_FAILURE) 처리
+    @ExceptionHandler({
+        org.springframework.data.redis.RedisConnectionFailureException.class,
+        org.springframework.dao.QueryTimeoutException.class
+    })
+    public ResponseEntity<ErrorResponse> handleRedisConnectionFailure(Exception exception) {
+        log.error("Redis 통신 오류", exception);
+        com.bop.youthpick.auth.exception.AuthErrorCode errorCode =
+                com.bop.youthpick.auth.exception.AuthErrorCode.REDIS_CONNECTION_FAILURE;
+        return ResponseEntity.status(errorCode.getStatus()).body(ErrorResponse.of(errorCode));
+    }
+
     // 개발자가 예상치 못한 에러 — application_logs 테이블에 남도록 ERROR로 로깅한다.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception exception) {

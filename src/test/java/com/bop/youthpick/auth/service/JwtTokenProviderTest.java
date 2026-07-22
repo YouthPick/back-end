@@ -80,7 +80,9 @@ class JwtTokenProviderTest {
         await();
 
         assertThatThrownBy(() -> expiredTokenProvider.validateAccessToken(token))
-                .isInstanceOf(AuthException.class);
+                .isInstanceOf(AuthException.class)
+                .extracting(ex -> ((AuthException) ex).getErrorCode())
+                .isEqualTo(com.bop.youthpick.auth.exception.AuthErrorCode.EXPIRED_TOKEN);
     }
 
     private void await() {
