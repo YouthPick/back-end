@@ -39,6 +39,7 @@ public final class ApplicationLogDataSource {
         config.setPoolName("application-log-jdbc-appender");
         config.setMaximumPoolSize(2);
         config.setMinimumIdle(0);
+        config.setConnectionTimeout(2000);
         return new HikariDataSource(config);
     }
 

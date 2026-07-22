@@ -35,7 +35,7 @@ import org.springframework.stereotype.Service;
 public class PolicySyncService {
 
     private final PolicySyncLock policySyncLock;
-    private final TaskExecutor taskExecutor;
+    private final TaskExecutor batchTaskExecutor;
     private final PolicyApiClient policyApiClient;
     private final PolicyMapper policyMapper;
     private final PolicyUpsertWriter policyUpsertWriter;
@@ -72,7 +72,7 @@ public class PolicySyncService {
                 policySyncLock
                         .tryAcquire()
                         .orElseThrow(() -> new CustomException(SyncErrorCode.SYNC_ALREADY_RUNNING));
-        taskExecutor.execute(
+        batchTaskExecutor.execute(
                 () -> {
                     try {
                         doRunFullSync();

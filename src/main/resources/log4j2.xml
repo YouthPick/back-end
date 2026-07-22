@@ -7,12 +7,17 @@
 
         <!-- com.bop.youthpick 로거의 WARN 이상 로그를 application_logs 테이블에 적재. DB 장애 시에도 앱은 죽지 않는다(ignoreExceptions). -->
         <ApplicationLog name="ApplicationLogAppender"/>
+
+        <!-- DB 적재를 비동기식으로 실행하여 요청 스레드의 블로킹을 방지한다. -->
+        <Async name="AsyncApplicationLogAppender" bufferSize="1024" blocking="false">
+            <AppenderRef ref="ApplicationLogAppender"/>
+        </Async>
     </Appenders>
 
     <Loggers>
         <Logger name="com.bop.youthpick" level="INFO" additivity="false">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="ApplicationLogAppender" level="WARN"/>
+            <AppenderRef ref="AsyncApplicationLogAppender" level="WARN"/>
         </Logger>
         <Root level="INFO">
             <AppenderRef ref="Console"/>

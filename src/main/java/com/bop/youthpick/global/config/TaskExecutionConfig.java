@@ -23,4 +23,15 @@ public class TaskExecutionConfig {
         executor.setThreadNamePrefix("application-");
         return executor;
     }
+
+    @Bean
+    TaskExecutor batchTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(1);
+        executor.setQueueCapacity(1);
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+        executor.setThreadNamePrefix("batch-sync-");
+        return executor;
+    }
 }
