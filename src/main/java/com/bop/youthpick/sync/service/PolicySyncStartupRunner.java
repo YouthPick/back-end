@@ -35,6 +35,10 @@ public class PolicySyncStartupRunner implements ApplicationRunner {
             return;
         }
         log.info("policies 비어 있음 — 초기 수집을 시작합니다");
-        policySyncService.runFullSync();
+        try {
+            policySyncService.runFullSync();
+        } catch (RuntimeException e) {
+            log.warn("초기 수집 실패 — 외부 API 혹은 DB 장애가 의심됩니다. 수동 실행을 수행하거나 확인하세요.", e);
+        }
     }
 }
