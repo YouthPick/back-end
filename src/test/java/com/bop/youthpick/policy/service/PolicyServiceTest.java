@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bop.youthpick.global.error.CustomException;
+import com.bop.youthpick.log.service.SearchLogService;
 import com.bop.youthpick.policy.dto.PolicyCardResponse;
 import com.bop.youthpick.policy.dto.PolicyDetailResponse;
 import com.bop.youthpick.policy.dto.RegionResponse;
@@ -46,6 +47,7 @@ class PolicyServiceTest {
     @Mock private PolicyRepository policyRepository;
     @Mock private PolicyRegionRepository policyRegionRepository;
     @Mock private PolicyRecentViewService policyRecentViewService;
+    @Mock private SearchLogService searchLogService;
 
     private PolicyService policyService;
 
@@ -53,7 +55,10 @@ class PolicyServiceTest {
     void setUp() {
         policyService =
                 new PolicyService(
-                        policyRepository, policyRegionRepository, policyRecentViewService);
+                        policyRepository,
+                        policyRegionRepository,
+                        policyRecentViewService,
+                        searchLogService);
     }
 
     @Test

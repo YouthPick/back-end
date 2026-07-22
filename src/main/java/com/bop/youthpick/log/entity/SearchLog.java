@@ -47,4 +47,12 @@ public class SearchLog {
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public static SearchLog create(String query, int resultCount) {
+        SearchLog searchLog = new SearchLog();
+        searchLog.query = query;
+        searchLog.normalized = query.trim().toLowerCase();
+        searchLog.resultCount = resultCount;
+        return searchLog;
+    }
 }
