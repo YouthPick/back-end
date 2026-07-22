@@ -10,7 +10,6 @@ import com.bop.youthpick.post.entity.PostCategory;
 import com.bop.youthpick.post.service.PostService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
