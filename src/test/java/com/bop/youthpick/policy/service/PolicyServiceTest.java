@@ -67,7 +67,7 @@ class PolicyServiceTest {
         when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
                         1L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.of(policy));
-        when(policyRegionRepository.findByPolicyIdIn(List.of(1L)))
+        when(policyRegionRepository.findWithRegionByPolicyIdIn(List.of(1L)))
                 .thenReturn(List.of(newPolicyRegion(policy, "11680", "서울특별시", "강남구")));
 
         PolicyDetailResponse response = policyService.getDetail(1L, null);
@@ -95,7 +95,7 @@ class PolicyServiceTest {
         when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
                         1L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.of(policy));
-        when(policyRegionRepository.findByPolicyIdIn(anyList())).thenReturn(List.of());
+        when(policyRegionRepository.findWithRegionByPolicyIdIn(anyList())).thenReturn(List.of());
 
         policyService.getDetail(1L, 7L);
 
@@ -108,7 +108,7 @@ class PolicyServiceTest {
         when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
                         1L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.of(policy));
-        when(policyRegionRepository.findByPolicyIdIn(anyList())).thenReturn(List.of());
+        when(policyRegionRepository.findWithRegionByPolicyIdIn(anyList())).thenReturn(List.of());
         doThrow(new DataAccessResourceFailureException("DB 연결 실패"))
                 .when(policyRecentViewService)
                 .record(7L, policy);
@@ -125,7 +125,7 @@ class PolicyServiceTest {
         when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
                         1L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.of(policy));
-        when(policyRegionRepository.findByPolicyIdIn(anyList())).thenReturn(List.of());
+        when(policyRegionRepository.findWithRegionByPolicyIdIn(anyList())).thenReturn(List.of());
 
         policyService.getDetail(1L, null);
 

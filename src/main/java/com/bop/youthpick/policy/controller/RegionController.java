@@ -2,7 +2,7 @@ package com.bop.youthpick.policy.controller;
 
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.RegionResponse;
-import com.bop.youthpick.policy.repository.RegionRepository;
+import com.bop.youthpick.policy.service.RegionService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,13 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class RegionController {
 
-    private final RegionRepository regionRepository;
+    private final RegionService regionService;
 
     @GetMapping
     public ApiResponse<List<RegionResponse>> list() {
-        return ApiResponse.ok(
-                regionRepository.findAllByOrderBySidoNameAscNameAsc().stream()
-                        .map(RegionResponse::from)
-                        .toList());
+        return ApiResponse.ok(regionService.getAllRegions());
     }
 }

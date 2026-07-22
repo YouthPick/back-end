@@ -270,7 +270,8 @@ class PolicyApplicationControllerTest {
                 () ->
                         mockMvc.perform(
                                         patch("/api/v1/policy-applications/{id}/memo", 10L)
-                                                .param("memo", "새 메모"))
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"memo\":\"새 메모\"}"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.memo").value("새 메모")));
     }
@@ -283,7 +284,8 @@ class PolicyApplicationControllerTest {
                 () ->
                         mockMvc.perform(
                                         patch("/api/v1/policy-applications/{id}/memo", 10L)
-                                                .param("memo", tooLongMemo))
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"memo\":\"" + tooLongMemo + "\"}"))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
     }
@@ -292,7 +294,9 @@ class PolicyApplicationControllerTest {
     void updateMemo_파라미터를_생략하면_400과_C001을_반환한다() throws Exception {
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(patch("/api/v1/policy-applications/{id}/memo", 10L))
+                        mockMvc.perform(
+                                        patch("/api/v1/policy-applications/{id}/memo", 10L)
+                                                .contentType(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
     }
@@ -312,7 +316,8 @@ class PolicyApplicationControllerTest {
                 () ->
                         mockMvc.perform(
                                         patch("/api/v1/policy-applications/{id}/memo", 10L)
-                                                .param("memo", ""))
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"memo\":\"\"}"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.memo").value("")));
     }
@@ -332,7 +337,8 @@ class PolicyApplicationControllerTest {
                 () ->
                         mockMvc.perform(
                                         patch("/api/v1/policy-applications/{id}/end-at", 10L)
-                                                .param("endAt", "2026-12-31T23:59:00"))
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"endAt\":\"2026-12-31T23:59:00\"}"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.endAt").value("2026-12-31T23:59:00")));
     }
@@ -353,7 +359,8 @@ class PolicyApplicationControllerTest {
                 () ->
                         mockMvc.perform(
                                         patch("/api/v1/policy-applications/{id}/end-at", 10L)
-                                                .param("endAt", ""))
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"endAt\":null}"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.endAt").doesNotExist()));
     }
@@ -372,7 +379,10 @@ class PolicyApplicationControllerTest {
 
         withAuthenticatedPrincipal(
                 () ->
-                        mockMvc.perform(patch("/api/v1/policy-applications/{id}/end-at", 10L))
+                        mockMvc.perform(
+                                        patch("/api/v1/policy-applications/{id}/end-at", 10L)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{}"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.endAt").doesNotExist()));
     }
@@ -383,7 +393,8 @@ class PolicyApplicationControllerTest {
                 () ->
                         mockMvc.perform(
                                         patch("/api/v1/policy-applications/{id}/end-at", 10L)
-                                                .param("endAt", "not-a-date"))
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"endAt\":\"not-a-date\"}"))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.code").value("C001")));
     }
