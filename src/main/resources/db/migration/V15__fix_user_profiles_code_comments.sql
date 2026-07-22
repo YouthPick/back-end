@@ -1,5 +1,5 @@
 -- ============================================================
--- V13 — user_profiles 취업/학력 컬럼 주석 정정
+-- V15 — user_profiles 취업/학력 컬럼 주석 정정
 --   V1/V11은 이 두 컬럼에 온통청년 jobCd/schoolCd가 그대로 들어간다고 적었지만,
 --   실제 온보딩(front-end profileOptions.ts)은 'UNEMPLOYED'/'UNIV_GRADUATE' 같은
 --   서비스 자체 코드를 저장한다. 잘못된 주석 때문에 맞춤정책 매칭이 두 코드 체계를
