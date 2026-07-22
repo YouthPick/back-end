@@ -58,3 +58,7 @@ youthpick:
       enabled: false
       # 새벽 4시: 온통청년 갱신 반영 + 트래픽 최저 시간대
       cron: "0 0 4 * * *"
+
+server:
+  forward-headers-strategy: framework
+

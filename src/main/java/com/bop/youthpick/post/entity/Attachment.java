@@ -26,9 +26,7 @@ public class Attachment extends BaseEntity {
     @Column(name = "file_url", length = 500, nullable = false)
     private String fileUrl;
 
-    /** byte */
-    @Column(name = "file_size")
-    private Long fileSize;
+
 
     public static Attachment create(Post post, String fileUrl) {
         Attachment attachment = new Attachment();

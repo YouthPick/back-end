@@ -101,7 +101,6 @@ class AdminCommunityPostControllerTest {
                                         3L,
                                         1L,
                                         "https://example.com/file.pdf",
-                                        1024L,
                                         LocalDateTime.now())));
 
         mockMvc.perform(get("/api/v1/admin/community-posts/{postId}/attachments", 1L))

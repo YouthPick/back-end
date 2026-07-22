@@ -60,11 +60,13 @@ public class PostService {
 
     @Transactional
     public PostDetailResponse findById(Long postId, Long userId, String ipAddress) {
+        Post post = findPost(postId);
         String identifier = userId != null ? "user:" + userId : "ip:" + ipAddress;
         if (postViewLogStore.isFirstView(postId, identifier)) {
             postRepository.incrementViewCount(postId);
+            post.incrementViewCount();
         }
-        return PostDetailResponse.from(findPost(postId));
+        return PostDetailResponse.from(post);
     }
 
     @Transactional
