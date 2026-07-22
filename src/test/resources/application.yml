@@ -20,6 +20,11 @@ spring:
         one-indexed-parameters: true
 
 youthpick:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:5173
+      - http://localhost:5174
   file:
     max-size: 10MB
   minio:

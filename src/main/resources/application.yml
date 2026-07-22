@@ -30,6 +30,8 @@ spring:
       max-request-size: ${FILE_MAX_REQUEST_SIZE:11MB}
 
 youthpick:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:5174}
   file:
     max-size: ${FILE_MAX_SIZE:10MB}
   minio:

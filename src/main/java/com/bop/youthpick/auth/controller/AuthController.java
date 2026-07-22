@@ -11,7 +11,7 @@ import com.bop.youthpick.auth.service.AuthService;
 import com.bop.youthpick.auth.service.CurrentUser;
 import com.bop.youthpick.auth.service.RefreshTokenCookieSupport;
 import com.bop.youthpick.global.common.ApiResponse;
-import com.bop.youthpick.global.config.SecurityConfig;
+import com.bop.youthpick.global.config.CorsProperties;
 import com.bop.youthpick.user.entity.User;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -36,6 +36,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final RefreshTokenCookieSupport refreshTokenCookieSupport;
+    private final CorsProperties corsProperties;
 
     @GetMapping("/oauth/{provider}/authorization-url")
     public ApiResponse<OAuthAuthorizationUrlResponse> authorizationUrl(
@@ -92,7 +93,7 @@ public class AuthController {
     }
 
     private void verifyOrigin(String origin) {
-        if (StringUtils.hasText(origin) && !SecurityConfig.ALLOWED_ORIGINS.contains(origin)) {
+        if (StringUtils.hasText(origin) && !corsProperties.allowedOrigins().contains(origin)) {
             throw new AuthException(AuthErrorCode.FORBIDDEN);
         }
     }

@@ -15,11 +15,13 @@ import com.bop.youthpick.auth.dto.AuthPrincipal;
 import com.bop.youthpick.auth.dto.TokenResponse;
 import com.bop.youthpick.auth.service.AuthService;
 import com.bop.youthpick.auth.service.RefreshTokenCookieSupport;
+import com.bop.youthpick.global.config.CorsProperties;
 import com.bop.youthpick.user.entity.Role;
 import com.bop.youthpick.user.entity.User;
 import jakarta.servlet.http.Cookie;
 import java.time.Duration;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -42,6 +44,13 @@ class AuthControllerTest {
     @MockitoBean private AuthService authService;
 
     @MockitoBean private RefreshTokenCookieSupport refreshTokenCookieSupport;
+
+    @MockitoBean private CorsProperties corsProperties;
+
+    @BeforeEach
+    void setUp() {
+        when(corsProperties.allowedOrigins()).thenReturn(List.of("http://localhost:5173"));
+    }
 
     @Test
     void 인가_url_요청시_ApiResponse로_url을_반환한다() throws Exception {
