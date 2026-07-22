@@ -95,6 +95,8 @@ public class SecurityConfig {
                                         "/api/v1/auth/me",
                                         "/api/v1/auth/logout",
                                         "/api/v1/users",
+                                        // 온보딩 프로필 제출 — path userId 신뢰 금지, 컨트롤러에서 principal 대조
+                                        "/api/v1/users/*/profile",
                                         "/api/v1/me/**",
                                         "/api/v1/policy-recent-views",
                                         "/api/v1/recommended-policies")
