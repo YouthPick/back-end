@@ -1,7 +1,6 @@
-package com.bop.youthpick.board.entity;
+package com.bop.youthpick.post.entity;
 
 import com.bop.youthpick.global.entity.BaseEntity;
-import com.bop.youthpick.post.entity.Post;
 import com.bop.youthpick.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

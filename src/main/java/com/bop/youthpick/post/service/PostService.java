@@ -1,6 +1,5 @@
 package com.bop.youthpick.post.service;
 
-import com.bop.youthpick.board.repository.AttachmentRepository;
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
@@ -14,6 +13,7 @@ import com.bop.youthpick.post.entity.Post;
 import com.bop.youthpick.post.entity.PostCategory;
 import com.bop.youthpick.post.exception.BoardErrorCode;
 import com.bop.youthpick.post.exception.BoardException;
+import com.bop.youthpick.post.repository.AttachmentRepository;
 import com.bop.youthpick.post.repository.PostRepository;
 import com.bop.youthpick.post.repository.PostSpecifications;
 import com.bop.youthpick.user.entity.User;

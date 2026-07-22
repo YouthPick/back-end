@@ -1,4 +1,4 @@
-package com.bop.youthpick.board.repository;
+package com.bop.youthpick.post.repository;
 
 import com.bop.youthpick.post.entity.Attachment;
 import java.util.List;
