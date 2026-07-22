@@ -26,7 +26,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  *
  * <h2>인가 규칙: API 명세서(docs)의 권한 컬럼 기준</h2>
  *
- * 관리자 전용은 {@code hasRole("ADMIN")}, 회원 전용은 {@code authenticated()}, 비회원/공통은 {@code permitAll()}로
+ * <p>관리자 전용은 {@code hasRole("ADMIN")}, 회원 전용은 {@code authenticated()}, 비회원/공통은 {@code permitAll()}로
  * 매핑한다. 아직 컨트롤러가 없는 경로도 명세에 있으면 미리 규칙을 걸어 둔다(나중에 컨트롤러가 추가돼도 기본값이 열려 있지 않도록). 명세에 없는 나머지 경로는 여전히 개발
  * 편의상 {@code anyRequest().permitAll()}로 열어 둔다.
  */
@@ -37,7 +37,7 @@ public class SecurityConfig {
 
     /** 프론트엔드 배포 주소. refresh token 쿠키 Origin 검증({@code AuthController})과 CORS 설정이 이 목록을 공유한다. */
     public static final List<String> ALLOWED_ORIGINS =
-            List.of("http://localhost:3000", "http://localhost:5173");
+            List.of("http://localhost:3000", "http://localhost:5173", "http://localhost:5174");
 
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
