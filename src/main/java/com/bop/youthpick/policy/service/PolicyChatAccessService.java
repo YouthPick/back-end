@@ -18,7 +18,8 @@ public class PolicyChatAccessService {
     @Transactional(readOnly = true)
     public Policy requireVisiblePolicy(Long policyId) {
         return policyRepository
-                .findByIdAndVisibilityAndDeletedAtIsNull(policyId, PolicyVisibility.VISIBLE)
+                .findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        policyId, PolicyVisibility.VISIBLE)
                 .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
     }
 }

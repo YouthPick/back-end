@@ -22,7 +22,7 @@ class PolicyChatAccessServiceTest {
 
     @Test
     void 숨김_삭제_미존재_정책은_모두_POLICY_NOT_FOUND로_거부한다() {
-        when(policyRepository.findByIdAndVisibilityAndDeletedAtIsNull(
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
                         10L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.empty());
 

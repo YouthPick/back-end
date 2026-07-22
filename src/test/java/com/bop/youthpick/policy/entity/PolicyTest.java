@@ -46,4 +46,15 @@ class PolicyTest {
         assertThat(policy.getMissingCount()).isZero();
         assertThat(policy.getVisibility()).isEqualTo(PolicyVisibility.VISIBLE);
     }
+
+    @Test
+    void 관리자_숨김은_수집_갱신_후에도_유지된다() {
+        Policy policy = policy("R2026-001", "옛 제목", LocalDateTime.of(2026, 1, 1, 0, 0));
+        policy.hideByAdmin();
+
+        policy.updateFrom(policy("R2026-001", "새 제목", LocalDateTime.of(2026, 7, 1, 0, 0)));
+
+        assertThat(policy.isAdminHidden()).isTrue();
+        assertThat(policy.getVisibility()).isEqualTo(PolicyVisibility.VISIBLE);
+    }
 }

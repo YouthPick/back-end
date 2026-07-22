@@ -39,6 +39,9 @@ class AdminPolicySpecificationsTest {
                         LocalDate.of(2026, 6, 1),
                         LocalDate.of(2026, 8, 31)));
         policyRepository.save(newPolicy("P003", "일자리", PolicyVisibility.VISIBLE, null, null));
+        Policy hiddenByAdmin = newPolicy("P004", "주거", PolicyVisibility.VISIBLE, null, null);
+        hiddenByAdmin.hideByAdmin();
+        policyRepository.save(hiddenByAdmin);
     }
 
     // 배치 수집(온통청년 API) 경로가 아직 없어 Policy 인스턴스를 만들 공개 팩토리가 없다.
@@ -75,7 +78,20 @@ class AdminPolicySpecificationsTest {
                 policyRepository.findAll(
                         AdminPolicySpecifications.filter(null, "HIDDEN", null, null));
 
-        assertThat(result).extracting(Policy::getPolicyNo).containsExactly("P002");
+        assertThat(result)
+                .extracting(Policy::getPolicyNo)
+                .containsExactlyInAnyOrder("P002", "P004");
+    }
+
+    @Test
+    void visibilityStatus_VISIBLE은_배치와_관리자_상태가_모두_노출인_정책만_반환한다() {
+        List<Policy> result =
+                policyRepository.findAll(
+                        AdminPolicySpecifications.filter(null, "VISIBLE", null, null));
+
+        assertThat(result)
+                .extracting(Policy::getPolicyNo)
+                .containsExactlyInAnyOrder("P001", "P003");
     }
 
     @Test
@@ -105,6 +121,6 @@ class AdminPolicySpecificationsTest {
         List<Policy> result =
                 policyRepository.findAll(AdminPolicySpecifications.filter(null, null, null, null));
 
-        assertThat(result).hasSize(3);
+        assertThat(result).hasSize(4);
     }
 }

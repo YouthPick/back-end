@@ -115,6 +115,32 @@ class PolicyRepositoryTest {
     }
 
     @Test
+    void 관리자_숨김_정책은_공개_카드와_상세_조회에서_제외한다() {
+        Policy visible = policyRepository.save(newPolicy("P001", PolicyVisibility.VISIBLE, null));
+        Policy hiddenByAdmin = newPolicy("P002", PolicyVisibility.VISIBLE, null);
+        hiddenByAdmin.hideByAdmin();
+        policyRepository.save(hiddenByAdmin);
+
+        Page<Policy> cards =
+                policyRepository.findCards(
+                        PolicyVisibility.VISIBLE,
+                        LocalDate.now(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        Pageable.unpaged());
+
+        assertThat(cards.getContent()).extracting(Policy::getId).containsExactly(visible.getId());
+        assertThat(
+                        policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                                hiddenByAdmin.getId(), PolicyVisibility.VISIBLE))
+                .isEmpty();
+    }
+
+    @Test
     void 신청마감일이_없어도_사업기간이_이미_지났으면_카드_목록에서_제외한다() {
         LocalDate today = LocalDate.of(2026, 7, 21);
         // 신청기간 정보가 없는(0057003류) 일회성 모집 — 사업기간은 이미 끝났다: 제외돼야 한다.

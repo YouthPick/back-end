@@ -59,7 +59,8 @@ class PolicyServiceTest {
     @Test
     void 노출_중인_정책이면_상세와_지역을_이름까지_반환한다() {
         Policy policy = newPolicy(1L, "청년 월세 지원");
-        when(policyRepository.findByIdAndVisibilityAndDeletedAtIsNull(1L, PolicyVisibility.VISIBLE))
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        1L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.of(policy));
         when(policyRegionRepository.findByPolicyIdIn(List.of(1L)))
                 .thenReturn(List.of(newPolicyRegion(policy, "11680", "서울특별시", "강남구")));
@@ -73,7 +74,7 @@ class PolicyServiceTest {
 
     @Test
     void 없거나_삭제_숨김된_정책이면_POLICY_NOT_FOUND_예외를_던진다() {
-        when(policyRepository.findByIdAndVisibilityAndDeletedAtIsNull(
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
                         99L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.empty());
 
@@ -86,7 +87,8 @@ class PolicyServiceTest {
     @Test
     void 로그인_사용자의_조회는_최근_본_정책으로_기록한다() {
         Policy policy = newPolicy(1L, "청년 월세 지원");
-        when(policyRepository.findByIdAndVisibilityAndDeletedAtIsNull(1L, PolicyVisibility.VISIBLE))
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        1L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.of(policy));
         when(policyRegionRepository.findByPolicyIdIn(anyList())).thenReturn(List.of());
 
@@ -98,7 +100,8 @@ class PolicyServiceTest {
     @Test
     void 기록_저장이_실패해도_상세_조회는_정상_응답한다() {
         Policy policy = newPolicy(1L, "청년 월세 지원");
-        when(policyRepository.findByIdAndVisibilityAndDeletedAtIsNull(1L, PolicyVisibility.VISIBLE))
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        1L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.of(policy));
         when(policyRegionRepository.findByPolicyIdIn(anyList())).thenReturn(List.of());
         doThrow(new DataAccessResourceFailureException("DB 연결 실패"))
@@ -114,7 +117,8 @@ class PolicyServiceTest {
     @Test
     void 비회원_조회는_기록하지_않는다() {
         Policy policy = newPolicy(1L, "청년 월세 지원");
-        when(policyRepository.findByIdAndVisibilityAndDeletedAtIsNull(1L, PolicyVisibility.VISIBLE))
+        when(policyRepository.findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        1L, PolicyVisibility.VISIBLE))
                 .thenReturn(Optional.of(policy));
         when(policyRegionRepository.findByPolicyIdIn(anyList())).thenReturn(List.of());
 

@@ -27,7 +27,8 @@ public interface PolicyRepository
 
     long countByVisibilityAndDeletedAtIsNull(PolicyVisibility visibility);
 
-    Optional<Policy> findByIdAndVisibilityAndDeletedAtIsNull(Long id, PolicyVisibility visibility);
+    Optional<Policy> findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+            Long id, PolicyVisibility visibility);
 
     /**
      * 목록 카드 조회 — 노출 중이고 신청 마감(applicationEndDate)이 지나지 않은 정책만. 마감일 없음(상시)은 포함하되,
@@ -42,7 +43,7 @@ public interface PolicyRepository
      * Sort}로는 파라미터에 따라 달라지는 순서를 표현할 수 없기 때문이다. 호출자는 정렬 없는 Pageable을 넘긴다.
      */
     @Query(
-            "select p from Policy p where p.visibility = :visibility and p.deletedAt is null"
+            "select p from Policy p where p.visibility = :visibility and p.adminHidden = false and p.deletedAt is null"
                     + " and (p.applicationEndDate is null or p.applicationEndDate >= :today)"
                     + " and (p.applicationEndDate is not null"
                     + "     or p.businessPeriodEnd is null or p.businessPeriodEnd >= :today)"

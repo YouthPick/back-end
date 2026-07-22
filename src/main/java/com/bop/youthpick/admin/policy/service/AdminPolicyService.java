@@ -75,7 +75,11 @@ public class AdminPolicyService {
     @Transactional
     public AdminPolicyResponse updateVisibility(Long policyId, String visibilityStatus) {
         Policy policy = findPolicy(policyId);
-        policy.changeVisibility(PolicyVisibility.valueOf(visibilityStatus));
+        if (PolicyVisibility.HIDDEN.name().equals(visibilityStatus)) {
+            policy.hideByAdmin();
+        } else {
+            policy.unhideByAdmin();
+        }
         return AdminPolicyResponse.from(policy, regionCodesOf(policyId));
     }
 

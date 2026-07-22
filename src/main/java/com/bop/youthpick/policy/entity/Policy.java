@@ -241,6 +241,10 @@ public class Policy extends BaseEntity {
     @Column(length = 20, nullable = false)
     private PolicyVisibility visibility = PolicyVisibility.VISIBLE;
 
+    /** 관리자 수동 숨김 여부. 수집 배치의 누락/재등장 상태({@link #visibility})와 독립적으로 유지한다. */
+    @Column(name = "admin_hidden", nullable = false)
+    private boolean adminHidden;
+
     /** 수집에서 안 보인 연속 횟수 — 3회 도달 시 HIDDEN, 재등장 시 0 리셋 (V2, 기획 §6) */
     @Column(name = "missing_count", nullable = false)
     private int missingCount;
@@ -444,8 +448,12 @@ public class Policy extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    public void changeVisibility(PolicyVisibility visibility) {
-        this.visibility = visibility;
+    public void hideByAdmin() {
+        this.adminHidden = true;
+    }
+
+    public void unhideByAdmin() {
+        this.adminHidden = false;
     }
 
     public void softDelete() {
