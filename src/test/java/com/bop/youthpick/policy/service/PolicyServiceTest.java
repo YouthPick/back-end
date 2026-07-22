@@ -139,6 +139,7 @@ class PolicyServiceTest {
                         isNull(),
                         isNull(),
                         isNull(),
+                        isNull(),
                         pageableCaptor.capture()))
                 .thenReturn(
                         new PageImpl<>(
@@ -157,10 +158,10 @@ class PolicyServiceTest {
                                 newPolicyRegion(allSido, "27110", "대구광역시", "중구")));
 
         Page<PolicyCardResponse> page =
-                policyService.getCards(null, null, null, null, null, PageRequest.of(0, 20));
+                policyService.getCards(null, null, null, null, null, null, PageRequest.of(0, 20));
 
-        assertThat(pageableCaptor.getValue().getSort())
-                .isEqualTo(Sort.by(Sort.Direction.DESC, "id"));
+        // 정렬은 리포지토리 쿼리(order by)가 고정한다 — 서비스는 정렬 없는 Pageable을 넘긴다.
+        assertThat(pageableCaptor.getValue().getSort()).isEqualTo(Sort.unsorted());
         PolicyCardResponse card = page.getContent().get(0);
         assertThat(card.id()).isEqualTo(1L);
         assertThat(card.title()).isEqualTo("한 시도 정책");
@@ -185,10 +186,12 @@ class PolicyServiceTest {
                         isNull(),
                         isNull(),
                         isNull(),
+                        isNull(),
                         any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        policyService.getCards(null, "50% 지원_special!", null, null, null, PageRequest.of(0, 20));
+        policyService.getCards(
+                null, "50% 지원_special!", null, null, null, null, PageRequest.of(0, 20));
 
         assertThat(keywordCaptor.getValue()).isEqualTo("%50!% 지원!_special!!%");
     }
@@ -204,33 +207,53 @@ class PolicyServiceTest {
                         sidoNameCaptor.capture(),
                         isNull(),
                         isNull(),
+                        isNull(),
                         any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        policyService.getCards(null, null, "전국", null, null, PageRequest.of(0, 20));
+        policyService.getCards(null, null, "전국", null, null, null, PageRequest.of(0, 20));
 
         assertThat(sidoNameCaptor.getValue()).isNull();
     }
 
     @Test
-    void 시도를_고르면_전국_정책을_뒤로_밀어_그_지역_전용_정책이_먼저_나오게_정렬한다() {
-        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+    void jobCode는_공백을_제거해_그대로_리포지토리에_전달한다() {
+        ArgumentCaptor<String> jobCodeCaptor = ArgumentCaptor.forClass(String.class);
         when(policyRepository.findCards(
                         eq(PolicyVisibility.VISIBLE),
                         any(LocalDate.class),
                         isNull(),
                         isNull(),
-                        eq("세종특별자치시"),
                         isNull(),
                         isNull(),
-                        pageableCaptor.capture()))
+                        isNull(),
+                        jobCodeCaptor.capture(),
+                        any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        policyService.getCards(null, null, "세종특별자치시", null, null, PageRequest.of(0, 20));
+        policyService.getCards(null, null, null, null, null, "  0013001  ", PageRequest.of(0, 20));
 
-        // nationwide=false(지역 전용)가 asc로 먼저, 같은 그룹 안에서는 최신순.
-        assertThat(pageableCaptor.getValue().getSort())
-                .isEqualTo(Sort.by(Sort.Order.asc("nationwide"), Sort.Order.desc("id")));
+        assertThat(jobCodeCaptor.getValue()).isEqualTo("0013001");
+    }
+
+    @Test
+    void jobCode가_빈_문자열이면_필터를_걸지_않는다() {
+        ArgumentCaptor<String> jobCodeCaptor = ArgumentCaptor.forClass(String.class);
+        when(policyRepository.findCards(
+                        eq(PolicyVisibility.VISIBLE),
+                        any(LocalDate.class),
+                        isNull(),
+                        isNull(),
+                        isNull(),
+                        isNull(),
+                        isNull(),
+                        jobCodeCaptor.capture(),
+                        any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        policyService.getCards(null, null, null, null, null, "   ", PageRequest.of(0, 20));
+
+        assertThat(jobCodeCaptor.getValue()).isNull();
     }
 
     @Test
@@ -244,10 +267,11 @@ class PolicyServiceTest {
                         sidoNameCaptor.capture(),
                         isNull(),
                         isNull(),
+                        isNull(),
                         any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        policyService.getCards(null, null, "서울특별시", null, null, PageRequest.of(0, 20));
+        policyService.getCards(null, null, "서울특별시", null, null, null, PageRequest.of(0, 20));
 
         assertThat(sidoNameCaptor.getValue()).isEqualTo("서울특별시");
     }
@@ -264,10 +288,11 @@ class PolicyServiceTest {
                         isNull(),
                         ageMinCaptor.capture(),
                         ageMaxCaptor.capture(),
+                        isNull(),
                         any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        policyService.getCards(null, null, null, 19, 34, PageRequest.of(0, 20));
+        policyService.getCards(null, null, null, 19, 34, null, PageRequest.of(0, 20));
 
         assertThat(ageMinCaptor.getValue()).isEqualTo(19);
         assertThat(ageMaxCaptor.getValue()).isEqualTo(34);

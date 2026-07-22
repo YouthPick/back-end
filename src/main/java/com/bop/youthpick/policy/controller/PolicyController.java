@@ -24,8 +24,9 @@ public class PolicyController {
     private final PolicyService policyService;
 
     /**
-     * 정책 목록(카드) 조회 (비회원 허용). 최신순 서버 고정 정렬. category(표준 5분류) exact match, keyword는 부분일치 검색, region은
-     * 시도명('전국'이면 전 시도 커버 정책만), ageMin/ageMax는 자격 구간과의 겹침 필터 — 모두 선택. meta에
+     * 정책 목록(카드) 조회 (비회원 허용). 기본 최신순이되, region·jobCode 필터가 걸리면 조건 없는 정책(전국/취업상태 제한없음)을 뒤로 민다.
+     * category(표준 5분류) exact match, keyword는 부분일치 검색, region은 시도명('전국'은 지역 무관이라 필터 미적용),
+     * ageMin/ageMax는 자격 구간과의 겹침, jobCode는 온통청년 취업상태 코드(예: 0013001 재직자) — 모두 선택. meta에
      * page/totalCount/totalPages.
      */
     @GetMapping
@@ -35,9 +36,11 @@ public class PolicyController {
             @RequestParam(required = false) String region,
             @RequestParam(required = false) Integer ageMin,
             @RequestParam(required = false) Integer ageMax,
+            @RequestParam(required = false) String jobCode,
             @PageableDefault(size = 20) Pageable pageable) {
         Page<PolicyCardResponse> page =
-                policyService.getCards(category, keyword, region, ageMin, ageMax, pageable);
+                policyService.getCards(
+                        category, keyword, region, ageMin, ageMax, jobCode, pageable);
         return ApiResponse.ok(page.getContent(), page);
     }
 
