@@ -29,11 +29,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final PolicyChatInboundInterceptor policyChatInboundInterceptor;
     private final ObjectMapper objectMapper;
+    private final CorsProperties corsProperties;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/api/ws")
-                .setAllowedOrigins(SecurityConfig.ALLOWED_ORIGINS.toArray(String[]::new));
+                .setAllowedOrigins(corsProperties.allowedOrigins().toArray(String[]::new));
         registry.setPreserveReceiveOrder(true);
     }
 
