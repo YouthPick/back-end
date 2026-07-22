@@ -30,6 +30,9 @@ public interface PolicyRepository
     Optional<Policy> findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
             Long id, PolicyVisibility visibility);
 
+    List<Policy> findAllByIdInAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+            Collection<Long> ids, PolicyVisibility visibility);
+
     /**
      * 목록 카드 조회 — 노출 중이고 신청 마감(applicationEndDate)이 지나지 않은 정책만. 마감일 없음(상시)은 포함하되,
      * businessPeriodEnd(사업기간 종료일)가 있고 이미 지났다면 제외한다 — aplyPrdSeCd가 진짜 상시(0057002)가 아닌데도

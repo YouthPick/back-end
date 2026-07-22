@@ -11,6 +11,7 @@ import com.bop.youthpick.policy.dto.PolicyComparisonItemResponse;
 import com.bop.youthpick.policy.dto.RegionResponse;
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyRegion;
+import com.bop.youthpick.policy.entity.PolicyVisibility;
 import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
@@ -43,7 +44,9 @@ class PolicyComparisonServiceTest {
         Policy first = newPolicy(1L, "청년 월세 지원");
         Policy second = newPolicy(2L, "청년 취업 장려금");
         // repository가 요청과 다른 순서로 반환해도 응답은 요청 순서(2, 1)를 따라야 한다.
-        when(policyRepository.findAllById(List.of(2L, 1L))).thenReturn(List.of(first, second));
+        when(policyRepository.findAllByIdInAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        List.of(2L, 1L), PolicyVisibility.VISIBLE))
+                .thenReturn(List.of(first, second));
 
         List<PolicyComparisonItemResponse> policies =
                 policyComparisonService.compare(List.of(2L, 1L));
@@ -56,7 +59,9 @@ class PolicyComparisonServiceTest {
     void 정책별_지역을_묶어서_담고_지역이_없는_정책은_빈_목록으로_내려준다() {
         Policy first = newPolicy(1L, "청년 월세 지원");
         Policy second = newPolicy(2L, "청년 취업 장려금");
-        when(policyRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first, second));
+        when(policyRepository.findAllByIdInAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        List.of(1L, 2L), PolicyVisibility.VISIBLE))
+                .thenReturn(List.of(first, second));
         when(policyRegionRepository.findWithRegionByPolicyIdIn(List.of(1L, 2L)))
                 .thenReturn(
                         List.of(
@@ -79,13 +84,17 @@ class PolicyComparisonServiceTest {
                 .isInstanceOf(CustomException.class)
                 .hasFieldOrPropertyWithValue(
                         "errorCode", PolicyErrorCode.INVALID_COMPARISON_REQUEST);
-        verify(policyRepository, never()).findAllById(List.of(1L, 1L));
+        verify(policyRepository, never())
+                .findAllByIdInAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        List.of(1L, 1L), PolicyVisibility.VISIBLE);
     }
 
     @Test
     void 존재하지_않는_정책이_섞여있으면_POLICY_NOT_FOUND_예외를_던진다() {
         Policy first = newPolicy(1L, "청년 월세 지원");
-        when(policyRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first));
+        when(policyRepository.findAllByIdInAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        List.of(1L, 2L), PolicyVisibility.VISIBLE))
+                .thenReturn(List.of(first));
 
         assertThatThrownBy(() -> policyComparisonService.compare(List.of(1L, 2L)))
                 .isInstanceOf(CustomException.class)
@@ -97,7 +106,8 @@ class PolicyComparisonServiceTest {
         Policy first = newPolicy(1L, "청년 월세 지원");
         Policy second = newPolicy(2L, "청년 취업 장려금");
         Policy third = newPolicy(3L, "청년 도약계좌");
-        when(policyRepository.findAllById(List.of(1L, 2L, 3L)))
+        when(policyRepository.findAllByIdInAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+                        List.of(1L, 2L, 3L), PolicyVisibility.VISIBLE))
                 .thenReturn(List.of(first, second, third));
 
         List<PolicyComparisonItemResponse> policies =
