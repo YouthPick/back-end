@@ -92,6 +92,7 @@ public class RecommendedPolicyService {
                         sidoName,
                         null,
                         null,
+                        null,
                         Pageable.unpaged());
 
         List<Long> policyIds = candidates.getContent().stream().map(Policy::getId).toList();

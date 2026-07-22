@@ -263,6 +263,7 @@ class RecommendedPolicyServiceTest {
                         isNull(),
                         isNull(),
                         isNull(),
+                        isNull(),
                         any(Pageable.class)))
                 .thenReturn(pageOf(policies));
 

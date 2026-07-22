@@ -108,6 +108,7 @@ class PolicyRepositoryTest {
                         null,
                         null,
                         null,
+                        null,
                         Pageable.unpaged());
 
         assertThat(page.getContent()).extracting(Policy::getPolicyNo).containsExactly("P001");
