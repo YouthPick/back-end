@@ -102,8 +102,10 @@ public class PolicySyncService {
             }
 
             if (errorRate > 0.1) {
-                String errorMsg = "정책 수집 실패율 10% 초과 — 에러 건수: %d/%d (%.2f%%)"
-                        .formatted(writeResult.errorCount(), totalProcessed, errorRate * 100);
+                String errorMsg =
+                        "정책 수집 실패율 10% 초과 — 에러 건수: %d/%d (%.2f%%)"
+                                .formatted(
+                                        writeResult.errorCount(), totalProcessed, errorRate * 100);
                 history.fail(errorMsg);
                 log.error("정책 수집 완료되었으나 실패율 기준 초과로 작업 실패 처리함: {}", errorMsg);
             } else {

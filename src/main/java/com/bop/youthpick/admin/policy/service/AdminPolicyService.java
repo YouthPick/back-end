@@ -67,9 +67,8 @@ public class AdminPolicyService {
                 request.applicationUrl());
 
         policyRegionRepository.deleteByPolicyId(policyId);
-        List<PolicyRegion> policyRegions = regions.stream()
-                .map(region -> PolicyRegion.create(policy, region))
-                .toList();
+        List<PolicyRegion> policyRegions =
+                regions.stream().map(region -> PolicyRegion.create(policy, region)).toList();
         policyRegionRepository.saveAll(policyRegions);
 
         return AdminPolicyResponse.from(policy, request.regionCodes());
