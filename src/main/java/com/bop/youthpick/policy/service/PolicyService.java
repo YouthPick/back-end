@@ -146,7 +146,7 @@ public class PolicyService {
         }
 
         List<RegionResponse> regions =
-                policyRegionRepository.findByPolicyIdIn(List.of(policyId)).stream()
+                policyRegionRepository.findWithRegionByPolicyIdIn(List.of(policyId)).stream()
                         .map(policyRegion -> RegionResponse.from(policyRegion.getRegion()))
                         .toList();
         return PolicyDetailResponse.from(policy, regions);

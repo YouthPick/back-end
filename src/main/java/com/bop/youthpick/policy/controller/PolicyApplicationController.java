@@ -4,6 +4,8 @@ import com.bop.youthpick.auth.service.CurrentUser;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.global.error.CustomException;
 import com.bop.youthpick.policy.dto.PolicyApplicationCreateRequest;
+import com.bop.youthpick.policy.dto.PolicyApplicationEndAtUpdateRequest;
+import com.bop.youthpick.policy.dto.PolicyApplicationMemoUpdateRequest;
 import com.bop.youthpick.policy.dto.PolicyApplicationResponse;
 import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.PolicyApplication;
@@ -101,32 +103,27 @@ public class PolicyApplicationController {
     }
 
     /**
-     * {@code PATCH /api/v1/policy-applications/{id}/memo} — 메모만 단독 수정. 컨트롤러는 {@code @Size}로 길이만
-     * 검증하고, 빈 문자열/공백을 null로 통일하는 정규화는 서비스 계층이 담당한다 — 여기서 값을 가공하지 않는다.
+     * {@code PATCH /api/v1/policy-applications/{id}/memo} — 메모만 단독 수정. 컨트롤러는 {@code @Size}로 DTO 필드 길이를
+     * 검증하고, 빈 문자열/공백을 null로 통일하는 정규화는 서비스 계층이 담당한다.
      */
     @PatchMapping("/{id}/memo")
     public ApiResponse<PolicyApplicationResponse> updateMemo(
             @CurrentUser Long userId,
             @PathVariable Long id,
-            @RequestParam @Size(max = 2000, message = "메모는 2000자를 초과할 수 없습니다.") String memo) {
-        PolicyApplication application = policyApplicationService.updateMemo(id, userId, memo);
+            @Valid @RequestBody PolicyApplicationMemoUpdateRequest request) {
+        PolicyApplication application = policyApplicationService.updateMemo(id, userId, request.memo());
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 
     /**
-     * {@code PATCH /api/v1/policy-applications/{id}/end-at} — memo와 달리 endAt은 생략 시 필수 에러가 아니라 마감일
-     * 초기화(clear)로 동작한다. {@code LocalDateTime}처럼 String이 아닌 타입은 Spring이 "파라미터 생략"과 "빈 문자열(endAt=)"을
-     * 바인딩 단계에서 이미 null로 합쳐 버려 required=true로는 이 둘을 구분할 수 없다(둘 다 "필수값 없음" 에러가 됨) — 그래서 memo처럼 필수로
-     * 강제하지 않고 의도적으로 생략=초기화로 둔다. 정책 마감일을 넘는지 검증하는 로직은 {@link PolicyApplicationService#updateEndAt}에
-     * 있다.
+     * {@code PATCH /api/v1/policy-applications/{id}/end-at} — 마감일 단독 수정.
      */
     @PatchMapping("/{id}/end-at")
     public ApiResponse<PolicyApplicationResponse> updateEndAt(
             @CurrentUser Long userId,
             @PathVariable Long id,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                    LocalDateTime endAt) {
-        PolicyApplication application = policyApplicationService.updateEndAt(id, userId, endAt);
+            @Valid @RequestBody PolicyApplicationEndAtUpdateRequest request) {
+        PolicyApplication application = policyApplicationService.updateEndAt(id, userId, request.endAt());
         return ApiResponse.ok(PolicyApplicationResponse.from(application));
     }
 
