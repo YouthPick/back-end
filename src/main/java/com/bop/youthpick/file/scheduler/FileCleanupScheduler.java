@@ -7,15 +7,14 @@ import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
 import io.minio.Result;
 import io.minio.messages.Item;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -32,15 +31,16 @@ public class FileCleanupScheduler {
         log.info("고아 파일(미참조 이미지) 정리 스케줄러 시작");
         try {
             // 1. DB의 모든 첨부파일 URL을 가져온 후 파일명(또는 키) 추출
-            Set<String> dbFileKeys = attachmentRepository.findAll().stream()
-                    .map(attachment -> extractFileKey(attachment.getFileUrl()))
-                    .filter(key -> key != null)
-                    .collect(Collectors.toSet());
+            Set<String> dbFileKeys =
+                    attachmentRepository.findAll().stream()
+                            .map(attachment -> extractFileKey(attachment.getFileUrl()))
+                            .filter(key -> key != null)
+                            .collect(Collectors.toSet());
 
             // 2. MinIO 버킷의 모든 객체 목록 긁어오기
-            Iterable<Result<Item>> results = minioClient.listObjects(
-                    ListObjectsArgs.builder().bucket(properties.bucket()).build()
-            );
+            Iterable<Result<Item>> results =
+                    minioClient.listObjects(
+                            ListObjectsArgs.builder().bucket(properties.bucket()).build());
 
             List<String> orphanKeys = new ArrayList<>();
             for (Result<Item> result : results) {
@@ -61,8 +61,7 @@ public class FileCleanupScheduler {
                             RemoveObjectArgs.builder()
                                     .bucket(properties.bucket())
                                     .object(key)
-                                    .build()
-                    );
+                                    .build());
                     log.info("고아 파일 삭제 완료: {}", key);
                 } catch (Exception e) {
                     log.error("고아 파일 삭제 실패: {}", key, e);

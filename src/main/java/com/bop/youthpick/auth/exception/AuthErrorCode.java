@@ -17,7 +17,8 @@ public enum AuthErrorCode implements ErrorCode {
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "A007", "리프레시 토큰이 유효하지 않습니다. 다시 로그인해주세요."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "A008", "접근 권한이 없습니다."),
     ACCOUNT_DISABLED(HttpStatus.FORBIDDEN, "A009", "이용이 제한된 계정입니다."),
-    REDIS_CONNECTION_FAILURE(HttpStatus.SERVICE_UNAVAILABLE, "A010", "인증 서비스가 일시적으로 원활하지 않습니다. 잠시 후 다시 시도해주세요."),
+    REDIS_CONNECTION_FAILURE(
+            HttpStatus.SERVICE_UNAVAILABLE, "A010", "인증 서비스가 일시적으로 원활하지 않습니다. 잠시 후 다시 시도해주세요."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "A011", "만료된 토큰입니다.");
 
     private final HttpStatus status;
