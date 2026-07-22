@@ -91,6 +91,9 @@ public class SecurityConfig {
                                 .authenticated()
                                 // 회원 전용 — 로그인 상태 조회/로그아웃, 회원 탈퇴(컨트롤러 미구현, 경로만 선점),
                                 // 마이페이지(관심정책/추천/읽음/프로필), 최근 본 정책
+                                // 온보딩 프로필 제출도 회원 전용 — 컨트롤러에서 본인 여부를 추가 검증한다.
+                                .requestMatchers(HttpMethod.POST, "/api/v1/users/*/profile")
+                                .authenticated()
                                 .requestMatchers(
                                         "/api/v1/auth/me",
                                         "/api/v1/auth/logout",

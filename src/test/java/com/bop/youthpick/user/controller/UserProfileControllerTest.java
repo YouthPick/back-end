@@ -79,6 +79,7 @@ class UserProfileControllerTest {
         when(profile.getKeywords()).thenReturn("청년,공모전");
         when(profile.getStatus()).thenReturn("COMPLETED");
         when(userProfileService.submit(eq(1L), any())).thenReturn(profile);
+        authenticateAs(1L);
 
         mockMvc.perform(
                         post("/api/v1/users/{userId}/profile", 1L)
@@ -106,6 +107,7 @@ class UserProfileControllerTest {
                     "educationLevel": "UNIV_GRADUATE"
                 }
                 """;
+        authenticateAs(1L);
 
         mockMvc.perform(
                         post("/api/v1/users/{userId}/profile", 1L)
@@ -125,6 +127,7 @@ class UserProfileControllerTest {
                     "educationLevel": "UNIV_GRADUATE"
                 }
                 """;
+        authenticateAs(1L);
 
         mockMvc.perform(
                         post("/api/v1/users/{userId}/profile", 1L)
@@ -137,6 +140,8 @@ class UserProfileControllerTest {
     @Test
     void 어휘에_없는_취업상태면_400과_C001을_반환한다() throws Exception {
         // 검증이 없던 시절에는 이런 값도 그대로 저장돼, 맞춤정책 취업 축이 조용히 0점이 됐다.
+        authenticateAs(1L);
+
         mockMvc.perform(
                         post("/api/v1/users/{userId}/profile", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -148,6 +153,8 @@ class UserProfileControllerTest {
 
     @Test
     void 어휘에_없는_학력이면_400과_C001을_반환한다() throws Exception {
+        authenticateAs(1L);
+
         mockMvc.perform(
                         post("/api/v1/users/{userId}/profile", 1L)
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -155,6 +162,28 @@ class UserProfileControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"))
                 .andExpect(jsonPath("$.errors[0].field").value("educationLevel"));
+    }
+
+    @Test
+    void 타인의_userId로_프로필을_제출하면_403과_A008을_반환한다() throws Exception {
+        authenticateAs(1L);
+
+        mockMvc.perform(
+                        post("/api/v1/users/{userId}/profile", 2L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BODY))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("A008"));
+    }
+
+    @Test
+    void 미인증_프로필_제출이면_401과_A001을_반환한다() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/users/{userId}/profile", 1L)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_BODY))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("A001"));
     }
 
     @Test

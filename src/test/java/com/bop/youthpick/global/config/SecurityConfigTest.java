@@ -133,6 +133,13 @@ class SecurityConfigTest {
     }
 
     @Test
+    void 프로필_제출은_인증없이_접근하면_401() throws Exception {
+        mockMvc.perform(post("/api/v1/users/1/profile"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("A001"));
+    }
+
+    @Test
     void 회원_탈퇴_경로에_인증없이_접근하면_401() throws Exception {
         mockMvc.perform(delete("/api/v1/users")).andExpect(status().isUnauthorized());
     }
