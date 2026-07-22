@@ -1,6 +1,7 @@
 package com.bop.youthpick.policy.service;
 
 import com.bop.youthpick.global.error.CustomException;
+import com.bop.youthpick.log.service.SearchLogService;
 import com.bop.youthpick.policy.dto.PolicyCardResponse;
 import com.bop.youthpick.policy.dto.PolicyDetailResponse;
 import com.bop.youthpick.policy.dto.RegionResponse;
@@ -33,6 +34,7 @@ public class PolicyService {
     private final PolicyRepository policyRepository;
     private final PolicyRegionRepository policyRegionRepository;
     private final PolicyRecentViewService policyRecentViewService;
+    private final SearchLogService searchLogService;
 
     private static final String NATIONWIDE_REGION = "전국";
 
@@ -73,6 +75,9 @@ public class PolicyService {
                         ageMax,
                         trimToNull(jobCode),
                         unsorted);
+        if (keywordPattern != null) {
+            searchLogService.record(trimToNull(keyword), (int) page.getTotalElements());
+        }
 
         List<Long> policyIds = page.getContent().stream().map(Policy::getId).toList();
         Map<Long, List<String>> sidoNamesByPolicyId =

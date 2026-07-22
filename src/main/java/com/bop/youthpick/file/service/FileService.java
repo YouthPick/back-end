@@ -11,10 +11,12 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
+@Slf4j
 public class FileService {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES =
@@ -51,6 +53,7 @@ public class FileService {
                     file.getContentType(),
                     metadata);
         } catch (IOException | ObjectStorageException exception) {
+            log.warn("파일 저장소 업로드에 실패했습니다. fileId={}, userId={}", fileId, userId, exception);
             throw new FileException(FileErrorCode.STORAGE_UNAVAILABLE);
         }
 
@@ -76,6 +79,7 @@ public class FileService {
             if (exception.isObjectNotFound()) {
                 throw new FileException(FileErrorCode.FILE_NOT_FOUND);
             }
+            log.warn("파일 저장소 조회에 실패했습니다. fileId={}", fileId, exception);
             throw new FileException(FileErrorCode.STORAGE_UNAVAILABLE);
         }
     }
