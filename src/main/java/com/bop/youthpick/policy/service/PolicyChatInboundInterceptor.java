@@ -14,12 +14,15 @@ import java.security.Principal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -39,6 +42,18 @@ public class PolicyChatInboundInterceptor implements ChannelInterceptor {
     private final UserRepository userRepository;
     private final PolicyChatAccessService accessService;
     private final PolicyChatSubscriptionRegistry subscriptionRegistry;
+
+    /**
+     * Spring의 {@code StompSubProtocolHandler}는 DISCONNECT에만 RECEIPT를 자동 응답하고 SUBSCRIBE 등 다른 커맨드는
+     * 애플리케이션이 직접 echo해야 한다. 프론트({@code usePolicyChat.ts})는 SUBSCRIBE에 receipt를 걸어 구독 완료를 확인하므로, 이를
+     * 수동으로 echo하지 않으면 매번 receipt 대기가 타임아웃되어 실제로는 연결이 끊기지 않았는데도 "재연결 중" 상태로 잘못 표시된다.
+     *
+     * <p>{@code clientOutboundChannel}을 직접(eager) 주입하면 이 인터셉터를 등록하는 {@code WebSocketConfig} →
+     * {@code DelegatingWebSocketMessageBrokerConfiguration}(채널을 만드는 쪽) → 다시 {@code
+     * WebSocketConfig}로 순환 참조가 생겨 기동에 실패한다. {@link ObjectProvider}로 실제 사용 시점까지 조회를 미뤄 순환을 끊는다.
+     */
+    @Qualifier("clientOutboundChannel")
+    private final ObjectProvider<MessageChannel> clientOutboundChannelProvider;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -72,9 +87,24 @@ public class PolicyChatInboundInterceptor implements ChannelInterceptor {
         }
         if (accessor.getCommand() == StompCommand.SUBSCRIBE) {
             register(accessor);
+            sendReceiptIfRequested(accessor);
         } else if (accessor.getCommand() == StompCommand.UNSUBSCRIBE) {
             unregister(accessor);
         }
+    }
+
+    private void sendReceiptIfRequested(StompHeaderAccessor originalAccessor) {
+        String receiptId = originalAccessor.getReceipt();
+        if (!StringUtils.hasText(receiptId)) {
+            return;
+        }
+        StompHeaderAccessor receiptAccessor = StompHeaderAccessor.create(StompCommand.RECEIPT);
+        receiptAccessor.setReceiptId(receiptId);
+        receiptAccessor.setSessionId(originalAccessor.getSessionId());
+        receiptAccessor.setLeaveMutable(true);
+        Message<byte[]> receiptMessage =
+                MessageBuilder.createMessage(new byte[0], receiptAccessor.getMessageHeaders());
+        clientOutboundChannelProvider.getObject().send(receiptMessage);
     }
 
     private void authenticate(StompHeaderAccessor accessor) {

@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -39,6 +40,7 @@ class PolicyChatInboundInterceptorTest {
     private PolicyChatSubscriptionRegistry registry;
     private PolicyChatInboundInterceptor interceptor;
     private MessageChannel channel;
+    private MessageChannel clientOutboundChannel;
 
     @BeforeEach
     void setUp() {
@@ -51,9 +53,17 @@ class PolicyChatInboundInterceptorTest {
         accessService = mock(PolicyChatAccessService.class);
         userRepository = mock(UserRepository.class);
         registry = new PolicyChatSubscriptionRegistry();
+        clientOutboundChannel = mock(MessageChannel.class);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<MessageChannel> clientOutboundChannelProvider = mock(ObjectProvider.class);
+        when(clientOutboundChannelProvider.getObject()).thenReturn(clientOutboundChannel);
         interceptor =
                 new PolicyChatInboundInterceptor(
-                        jwtTokenProvider, userRepository, accessService, registry);
+                        jwtTokenProvider,
+                        userRepository,
+                        accessService,
+                        registry,
+                        clientOutboundChannelProvider);
         channel = mock(MessageChannel.class);
     }
 
@@ -196,6 +206,32 @@ class PolicyChatInboundInterceptorTest {
                 frame(StompCommand.UNSUBSCRIBE, null, user, "session-1", "sub-1");
         interceptor.afterSendCompletion(unsubscribe, channel, true, null);
         assertThat(registry.registrationCount()).isOne();
+    }
+
+    @Test
+    void receipt를_요청한_SUBSCRIBE에는_같은_session과_receiptId로_응답한다() {
+        JwtStompAuthentication user = new JwtStompAuthentication(7L, "USER");
+        Message<byte[]> subscribe =
+                frame(
+                        StompCommand.SUBSCRIBE,
+                        "/user/queue/policies/10/chat/messages",
+                        user,
+                        "session-1",
+                        "sub-1");
+        accessor(subscribe).setReceipt("receipt-1");
+
+        interceptor.afterSendCompletion(subscribe, channel, true, null);
+
+        verify(clientOutboundChannel)
+                .send(
+                        org.mockito.ArgumentMatchers.argThat(
+                                message -> {
+                                    StompHeaderAccessor receiptAccessor = accessor(message);
+                                    return receiptAccessor != null
+                                            && receiptAccessor.getCommand() == StompCommand.RECEIPT
+                                            && "session-1".equals(receiptAccessor.getSessionId())
+                                            && "receipt-1".equals(receiptAccessor.getReceiptId());
+                                }));
     }
 
     private Message<byte[]> frame(
