@@ -147,6 +147,7 @@ class PostServiceTest {
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().getFirst().title()).isEqualTo("제목");
+        assertThat(result.getContent().getFirst().contentExcerpt()).isEqualTo("내용");
     }
 
     @Test
