@@ -103,7 +103,7 @@ public class PolicySyncService {
 
             if (errorRate > 0.1) {
                 String errorMsg =
-                        "정책 수집 실패율 10% 초과 — 에러 건수: %d/%d (%.2f%%)"
+                        "정책 수집 실패율 10%% 초과 — 에러 건수: %d/%d (%.2f%%)"
                                 .formatted(
                                         writeResult.errorCount(), totalProcessed, errorRate * 100);
                 history.fail(errorMsg);
