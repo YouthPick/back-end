@@ -138,7 +138,7 @@ public class Policy extends BaseEntity {
     private String applicationPeriodType;
 
     /** aplyYmd 원문 */
-    @Column(name = "application_period_raw", length = 64)
+    @Column(name = "application_period_raw", length = 255)
     private String applicationPeriodRaw;
 
     /** [파생] 신청 시작일 */
@@ -158,7 +158,7 @@ public class Policy extends BaseEntity {
     private LocalDate businessPeriodEnd;
 
     /** bizPrdEtcCn */
-    @Column(name = "business_period_etc", length = 64)
+    @Column(name = "business_period_etc", columnDefinition = "TEXT")
     private String businessPeriodEtc;
 
     // ---- 규모 ----
@@ -174,15 +174,15 @@ public class Policy extends BaseEntity {
     // ---- 링크/신청 ----
 
     /** aplyUrlAddr */
-    @Column(name = "application_url", length = 500)
+    @Column(name = "application_url", length = 1000)
     private String applicationUrl;
 
     /** refUrlAddr1 */
-    @Column(name = "reference_url1", length = 500)
+    @Column(name = "reference_url1", length = 1000)
     private String referenceUrl1;
 
     /** refUrlAddr2 */
-    @Column(name = "reference_url2", length = 500)
+    @Column(name = "reference_url2", length = 1000)
     private String referenceUrl2;
 
     /** plcyAplyMthdCn */
