@@ -254,6 +254,55 @@ class PolicyRepositoryTest {
                 .containsExactly(normal.getPolicyNo(), nationwide.getPolicyNo());
     }
 
+    @Test
+    void 키워드가_지역명과_부분일치하면_제목에_없어도_그_지역_정책이_검색된다() {
+        Region seoul = regionRepository.save(Region.create("11000", "서울특별시", "서울특별시"));
+        Region busan = regionRepository.save(Region.create("26000", "부산광역시", "부산광역시"));
+        Policy seoulPolicy = saveLinked("P-SEOUL", false, seoul);
+        saveLinked("P-BUSAN", false, busan);
+
+        Page<Policy> page =
+                policyRepository.findCards(
+                        PolicyVisibility.VISIBLE,
+                        LocalDate.now(),
+                        null,
+                        "%서울%",
+                        null,
+                        null,
+                        null,
+                        null,
+                        PageRequest.of(0, 20));
+
+        assertThat(page.getContent())
+                .extracting(Policy::getPolicyNo)
+                .containsExactly(seoulPolicy.getPolicyNo());
+    }
+
+    @Test
+    void 키워드가_지역명과_매칭되면_전국_정책을_뒤로_밀어_그_지역_전용_정책이_먼저_나온다() {
+        Region seoul = regionRepository.save(Region.create("11000", "서울특별시", "서울특별시"));
+        // 전국 정책을 지역전용 정책보다 나중에(더 높은 id로) 저장해, id desc만 적용되면 전국 정책이
+        // 앞에 오게 만든다 — sidoName 필터와 달리 keyword 매칭에서는 이 demote가 빠져있었다(#199 후속).
+        Policy seoulOnly = saveLinked("P-SEOUL-ONLY", false, seoul);
+        Policy nationwide = saveLinked("P-ALL-LATER", true, seoul);
+
+        Page<Policy> page =
+                policyRepository.findCards(
+                        PolicyVisibility.VISIBLE,
+                        LocalDate.now(),
+                        null,
+                        "%서울%",
+                        null,
+                        null,
+                        null,
+                        null,
+                        PageRequest.of(0, 20));
+
+        assertThat(page.getContent())
+                .extracting(Policy::getPolicyNo)
+                .containsExactly(seoulOnly.getPolicyNo(), nationwide.getPolicyNo());
+    }
+
     private Policy saveLinked(String policyNo, boolean nationwide, Region... regions) {
         Policy policy = BeanUtils.instantiateClass(Policy.class);
         ReflectionTestUtils.setField(policy, "policyNo", policyNo);
