@@ -124,7 +124,7 @@ class PostControllerTest {
     @Test
     void 게시글_목록과_페이지_정보를_조회한다() throws Exception {
         PostSummaryResponse summary =
-                new PostSummaryResponse(3L, 1L, "작성자", null, null, "FREE", "제목", 0, null);
+                new PostSummaryResponse(3L, 1L, "작성자", null, null, "FREE", "제목", "내용", 0, null);
         when(postService.findAll(eq(null), eq(null), any()))
                 .thenReturn(new PageImpl<>(List.of(summary)));
 
@@ -137,7 +137,7 @@ class PostControllerTest {
     @Test
     void 카테고리와_검색어_파라미터를_그대로_서비스에_전달한다() throws Exception {
         PostSummaryResponse summary =
-                new PostSummaryResponse(3L, 1L, "작성자", null, null, "FREE", "잡담글", 0, null);
+                new PostSummaryResponse(3L, 1L, "작성자", null, null, "FREE", "잡담글", "내용", 0, null);
         when(postService.findAll(eq("FREE"), eq("잡담"), any()))
                 .thenReturn(new PageImpl<>(List.of(summary)));
 
