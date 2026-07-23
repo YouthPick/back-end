@@ -232,6 +232,30 @@ class PolicySyncServiceTest {
     }
 
     @Test
+    void 실패율_초과로_FAILED_처리돼도_실제_처리_건수를_이력에_남긴다() throws IOException {
+        // 신규 8건 저장 성공 + 2건 실패로, FAILED 이력에도 succeed()와 동등하게 실제 건수가 남는지 확인한다(#205).
+        // fail(message)만 호출하면 newCount/updatedCount/missingCount/errorCount가 기본값 0에 머무는 게 원래 버그였다.
+        String tooLongTitle = "가".repeat(301);
+        List<YouthPolicyItem> items = new java.util.ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            items.add(item("{\"plcyNo\":\"P-OK2-" + i + "\",\"plcyNm\":\"정상 정책 " + i + "\"}"));
+        }
+        for (int i = 0; i < 2; i++) {
+            items.add(
+                    item("{\"plcyNo\":\"P-BAD2-" + i + "\",\"plcyNm\":\"" + tooLongTitle + "\"}"));
+        }
+        when(policyApiClient.fetchAll()).thenReturn(items);
+
+        PolicyBatchHistory result = policySyncService.runFullSync();
+
+        assertThat(result.getStatus()).isEqualTo(BatchStatus.FAILED);
+        assertThat(result.getNewCount()).isEqualTo(8);
+        assertThat(result.getUpdatedCount()).isZero();
+        assertThat(result.getMissingCount()).isZero();
+        assertThat(result.getErrorCount()).isEqualTo(2);
+    }
+
+    @Test
     void 수동_실행은_락_거부시_409용_CustomException을_던지고_아무_작업도_하지_않는다() {
         when(policySyncLock.tryAcquire()).thenReturn(Optional.empty());
 

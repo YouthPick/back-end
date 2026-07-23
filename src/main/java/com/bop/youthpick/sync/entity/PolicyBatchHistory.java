@@ -93,9 +93,26 @@ public class PolicyBatchHistory {
         this.errorCount = errorCount;
     }
 
+    /** 처리를 시작하기도 전에(API fetch 자체 실패 등) 조기 종료된 경우 — 건수를 알 수 없으니 0으로 남긴다. */
     public void fail(String message) {
+        fail(message, 0, 0, 0, 0, 0);
+    }
+
+    /** 정책 처리는 끝냈지만 실패율 기준 초과로 회차 전체를 실패 처리하는 경우 — 이미 계산된 건수를 함께 남긴다. */
+    public void fail(
+            String message,
+            int newCount,
+            int updatedCount,
+            int unchangedCount,
+            int missingCount,
+            int errorCount) {
         this.status = BatchStatus.FAILED;
         this.finishedAt = LocalDateTime.now();
+        this.newCount = newCount;
+        this.updatedCount = updatedCount;
+        this.unchangedCount = unchangedCount;
+        this.missingCount = missingCount;
+        this.errorCount = errorCount;
         this.failureMessage =
                 message != null && message.length() > FAILURE_MESSAGE_MAX
                         ? message.substring(0, FAILURE_MESSAGE_MAX)
