@@ -38,9 +38,10 @@ public interface PolicyRepository
      * businessPeriodEnd(사업기간 종료일)가 있고 이미 지났다면 제외한다 — aplyPrdSeCd가 진짜 상시(0057002)가 아닌데도
      * aplyYmd(신청기간)가 비어 applicationEndDate만 null인 정책(예: 0057003 지역 단발성 모집)이 이미 끝났음에도 "상시"로 계속 노출되는
      * 문제를 막는다(#123). category는 표준 5분류(V8에서 정규화) exact match, null이면 전체. keyword는 5개 필드 LIKE
-     * 부분일치(escape '!'). sidoName은 시도명 EXISTS(같은 시도 내 다수 시군구여도 중복 반환 없음) — 전 시도를 커버하는 정책도 개별 시도 조회에
-     * 포함된다. age는 요청 구간과 정책 자격 구간의 겹침(overlap) 판정 — min/maxAge가 0 또는 NULL이면 제한없음으로 항상 통과. jobCode는
-     * 온통청년 취업상태 코드 하나로, 해당 코드를 가진 정책과 '제한없음'({@link Policy#JOB_CODE_UNRESTRICTED}) 정책을 함께 통과시킨다.
+     * 부분일치(escape '!')에 더해 정책 지역(시도명) 부분일치도 포함한다(#199) — 검색창에 "서울"처럼 지역명을 입력해도 그 지역 정책이 결과에 잡히게 하기
+     * 위함이다. sidoName은 시도명 EXISTS(같은 시도 내 다수 시군구여도 중복 반환 없음) — 전 시도를 커버하는 정책도 개별 시도 조회에 포함된다. age는
+     * 요청 구간과 정책 자격 구간의 겹침(overlap) 판정 — min/maxAge가 0 또는 NULL이면 제한없음으로 항상 통과. jobCode는 온통청년 취업상태 코드
+     * 하나로, 해당 코드를 가진 정책과 '제한없음'({@link Policy#JOB_CODE_UNRESTRICTED}) 정책을 함께 통과시킨다.
      *
      * <p>정렬은 Pageable이 아니라 이 쿼리가 고정한다. "조건 없는 정책을 뒤로"는 필터가 걸렸을 때만 적용해야 하는데, Spring Data {@code
      * Sort}로는 파라미터에 따라 달라지는 순서를 표현할 수 없기 때문이다. 호출자는 정렬 없는 Pageable을 넘긴다.
@@ -56,7 +57,9 @@ public interface PolicyRepository
                     + "     or p.keywords like :keyword escape '!'"
                     + "     or p.description like :keyword escape '!'"
                     + "     or p.supportContent like :keyword escape '!'"
-                    + "     or p.organizationName like :keyword escape '!')"
+                    + "     or p.organizationName like :keyword escape '!'"
+                    + "     or exists (select pr2 from PolicyRegion pr2"
+                    + "         where pr2.policy = p and pr2.region.sidoName like :keyword escape '!'))"
                     + " and (:sidoName is null or exists ("
                     + "     select pr from PolicyRegion pr"
                     + "     where pr.policy = p and pr.region.sidoName = :sidoName))"
