@@ -44,7 +44,9 @@ public interface PolicyRepository
      * 하나로, 해당 코드를 가진 정책과 '제한없음'({@link Policy#JOB_CODE_UNRESTRICTED}) 정책을 함께 통과시킨다.
      *
      * <p>정렬은 Pageable이 아니라 이 쿼리가 고정한다. "조건 없는 정책을 뒤로"는 필터가 걸렸을 때만 적용해야 하는데, Spring Data {@code
-     * Sort}로는 파라미터에 따라 달라지는 순서를 표현할 수 없기 때문이다. 호출자는 정렬 없는 Pageable을 넘긴다.
+     * Sort}로는 파라미터에 따라 달라지는 순서를 표현할 수 없기 때문이다. 호출자는 정렬 없는 Pageable을 넘긴다. 전국 정책 후순위 규칙은 sidoName 필터뿐
+     * 아니라 keyword가 지역명과 매칭된 경우에도 적용한다(#199 후속) — 전국 정책은 모든 시도에 지역 행이 걸려 있어 keyword="서울" 같은 검색에도 항상
+     * 걸리는데, 이 규칙이 없으면 지역 특화 정책보다 먼저 뜨는지 여부가 순전히 최신순 우연에 달리게 된다.
      */
     @Query(
             "select p from Policy p where p.visibility = :visibility and p.adminHidden = false and p.deletedAt is null"
@@ -71,7 +73,11 @@ public interface PolicyRepository
                     + Policy.JOB_CODE_UNRESTRICTED
                     + ",%')"
                     + " order by"
-                    + " case when :sidoName is not null and p.nationwide = true then 1 else 0 end,"
+                    + " case when p.nationwide = true and ("
+                    + "     :sidoName is not null"
+                    + "     or (:keyword is not null and exists (select pr3 from PolicyRegion pr3"
+                    + "         where pr3.policy = p and pr3.region.sidoName like :keyword escape '!')))"
+                    + "     then 1 else 0 end,"
                     + " case when :jobCode is not null and (p.jobCodes is null"
                     + "     or concat(',', p.jobCodes, ',') like '%,"
                     + Policy.JOB_CODE_UNRESTRICTED
