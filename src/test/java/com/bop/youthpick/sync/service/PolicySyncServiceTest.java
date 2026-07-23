@@ -212,6 +212,26 @@ class PolicySyncServiceTest {
     }
 
     @Test
+    void 실패율이_10퍼센트를_넘으면_크래시_없이_실패_사유를_기록한다() throws IOException {
+        // title(길이 300) 초과로 DB 저장이 실패하는 건을 섞어 실패율 10%를 넘긴다(#203) —
+        // 실패 메시지 포맷 문자열의 "10%"가 이스케이프 안 돼 있으면 여기서 UnknownFormatConversionException이 터진다.
+        String tooLongTitle = "가".repeat(301);
+        List<YouthPolicyItem> items = new java.util.ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            items.add(item("{\"plcyNo\":\"P-OK-" + i + "\",\"plcyNm\":\"정상 정책 " + i + "\"}"));
+        }
+        for (int i = 0; i < 2; i++) {
+            items.add(item("{\"plcyNo\":\"P-BAD-" + i + "\",\"plcyNm\":\"" + tooLongTitle + "\"}"));
+        }
+        when(policyApiClient.fetchAll()).thenReturn(items);
+
+        PolicyBatchHistory result = policySyncService.runFullSync();
+
+        assertThat(result.getStatus()).isEqualTo(BatchStatus.FAILED);
+        assertThat(result.getFailureMessage()).contains("정책 수집 실패율 10% 초과").contains("2/10");
+    }
+
+    @Test
     void 수동_실행은_락_거부시_409용_CustomException을_던지고_아무_작업도_하지_않는다() {
         when(policySyncLock.tryAcquire()).thenReturn(Optional.empty());
 
