@@ -48,9 +48,14 @@ class PolicyControllerTest {
                     "국토교통부",
                     19,
                     34,
+                    "0013010",
+                    "0043010",
                     null,
                     null,
                     null,
+                    "0055010",
+                    "0066010",
+                    "0077010",
                     null,
                     null,
                     null,
@@ -83,6 +88,11 @@ class PolicyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.title").value("청년 월세 지원"))
+                .andExpect(jsonPath("$.data.jobCodes").value("0013010"))
+                .andExpect(jsonPath("$.data.schoolCodes").value("0043010"))
+                .andExpect(jsonPath("$.data.maritalStatusCode").value("0055010"))
+                .andExpect(jsonPath("$.data.majorCodes").value("0066010"))
+                .andExpect(jsonPath("$.data.specializationCodes").value("0077010"))
                 .andExpect(jsonPath("$.data.regions[0].regionCode").value("11680"))
                 .andExpect(jsonPath("$.data.regions[0].provinceName").value("서울특별시"))
                 .andExpect(jsonPath("$.data.regions[0].districtName").value("강남구"));
