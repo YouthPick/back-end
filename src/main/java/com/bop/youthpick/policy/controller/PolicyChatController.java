@@ -4,6 +4,8 @@ import com.bop.youthpick.auth.service.CurrentUser;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.PolicyChatMessagesResponse;
 import com.bop.youthpick.policy.service.PolicyChatService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "정책 채팅")
 @RestController
 @RequestMapping("/api/v1/policies/{policyId}/chat/messages")
 @RequiredArgsConstructor
@@ -21,6 +24,9 @@ public class PolicyChatController {
 
     private final PolicyChatService policyChatService;
 
+    @Operation(
+            summary = "정책 채팅 메시지 조회",
+            description = "특정 정책 채팅방의 메시지 목록을 afterId 기준으로 이후 메시지만 조회한다(회원 전용).")
     @GetMapping
     public ApiResponse<PolicyChatMessagesResponse> getMessages(
             @CurrentUser Long userId,

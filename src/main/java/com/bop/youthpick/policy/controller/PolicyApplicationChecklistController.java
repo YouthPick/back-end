@@ -8,6 +8,8 @@ import com.bop.youthpick.policy.dto.PolicyApplicationCreateChecklistRequest;
 import com.bop.youthpick.policy.dto.PolicyApplicationUpdateChecklistRequest;
 import com.bop.youthpick.policy.entity.PolicyApplicationChecklist;
 import com.bop.youthpick.policy.service.PolicyApplicationChecklistService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code @Valid @RequestBody} DTO(Create/UpdateChecklistRequest)로만 이루어지고, {@code @RequestParam}에 직접
  * 붙는 제약(예: {@code @Pattern})이 없기 때문이다({@code @Validated}는 그 경우에만 필요하다).
  */
+@Tag(name = "정책 신청 체크리스트")
 @RestController
 @RequestMapping("/api/v1/policy-application-checklists")
 @RequiredArgsConstructor
@@ -48,6 +51,13 @@ public class PolicyApplicationChecklistController {
      * 넘어가고, 서비스 내부에서 {@code PolicyApplicationChecklist.create()}가 이걸 content 필드에 담는다 — DTO는
      * "message", 엔티티/리포지토리는 "content"로 이름이 다르니 헷갈리지 않도록 주의.
      */
+    @Operation(
+            summary = "체크리스트 항목 추가",
+            description =
+                    "POST /api/v1/policy-application-checklists — 특정 신청관리(applicationId)에 체크리스트 항목 추가."
+                            + " request.message()가 PolicyApplicationChecklistService.add의 message 인자로 그대로 넘어가고, 서비스"
+                            + " 내부에서 PolicyApplicationChecklist.create()가 이걸 content 필드에 담는다 — DTO는 \"message\","
+                            + " 엔티티/리포지토리는 \"content\"로 이름이 다르니 헷갈리지 않도록 주의.")
     @PostMapping
     public ResponseEntity<ApiResponse<PolicyApplicationChecklistResponse>> add(
             @CurrentUser Long userId,
@@ -63,6 +73,12 @@ public class PolicyApplicationChecklistController {
      * 체크리스트 목록. 서비스가 먼저 부모 신청관리의 존재/소유권을 확인한 뒤(쿼리 1회), 체크리스트 목록을 id 오름차순(등록 순서)으로 조회한다(쿼리 1회) — 총
      * 2쿼리.
      */
+    @Operation(
+            summary = "신청별 체크리스트 목록 조회",
+            description =
+                    "GET /api/v1/policy-application-checklists/application/{applicationId} — 특정 신청관리에 달린 체크리스트"
+                            + " 목록. 서비스가 먼저 부모 신청관리의 존재/소유권을 확인한 뒤(쿼리 1회), 체크리스트 목록을 id 오름차순(등록 순서)으로 조회한다(쿼리 1회) — 총"
+                            + " 2쿼리.")
     @GetMapping("/application/{applicationId}")
     public ApiResponse<List<PolicyApplicationChecklistResponse>> getByApplication(
             @CurrentUser Long userId,
@@ -74,6 +90,10 @@ public class PolicyApplicationChecklistController {
     }
 
     /** {@code PATCH /api/v1/policy-application-checklists/{id}} — 체크리스트 내용(content) 수정. */
+    @Operation(
+            summary = "체크리스트 내용 수정",
+            description =
+                    "PATCH /api/v1/policy-application-checklists/{id} — 체크리스트 내용(content) 수정.")
     @PatchMapping("/{id}")
     public ApiResponse<PolicyApplicationChecklistResponse> update(
             @CurrentUser Long userId,
@@ -90,6 +110,11 @@ public class PolicyApplicationChecklistController {
      * PolicyApplicationController#delete}가 {@code ApiResponse.ok(null)}로 데이터 없음을 표현하는 것과 다른 스타일 —
      * 여긴 메시지 body를 쓴다).
      */
+    @Operation(
+            summary = "체크리스트 항목 체크",
+            description =
+                    "PATCH /api/v1/policy-application-checklists/{id}/check — 체크 표시. body 없이 상태만 토글하므로 반환 데이터가"
+                            + " 없고, PolicyApplicationChecklistMessageResponse로 성공 메시지만 내려준다.")
     @PatchMapping("/{id}/check")
     public ApiResponse<PolicyApplicationChecklistMessageResponse> check(
             @CurrentUser Long userId, @PathVariable Long id) {
@@ -98,6 +123,10 @@ public class PolicyApplicationChecklistController {
     }
 
     /** {@code PATCH /api/v1/policy-application-checklists/{id}/uncheck} — {@link #check}의 반대. */
+    @Operation(
+            summary = "체크리스트 항목 체크 해제",
+            description =
+                    "PATCH /api/v1/policy-application-checklists/{id}/uncheck — check의 반대. 체크 표시를 해제한다.")
     @PatchMapping("/{id}/uncheck")
     public ApiResponse<PolicyApplicationChecklistMessageResponse> uncheck(
             @CurrentUser Long userId, @PathVariable Long id) {
@@ -111,6 +140,13 @@ public class PolicyApplicationChecklistController {
      * PolicyApplicationChecklistRepository.softDeleteAllByApplicationId()}이고, 그건 이 컨트롤러가 아니라 {@code
      * PolicyApplicationService.create()}의 reactivate 분기에서 호출된다(다른 도메인 흐름과의 연결점).
      */
+    @Operation(
+            summary = "체크리스트 항목 삭제",
+            description =
+                    "DELETE /api/v1/policy-application-checklists/{id} — 체크리스트 항목 하나만 소프트 삭제. 부모 신청관리 전체가"
+                            + " 삭제/재등록될 때 체크리스트를 한 번에 정리하는 경로는 여기가 아니라"
+                            + " PolicyApplicationChecklistRepository.softDeleteAllByApplicationId()이고, 그건 이 컨트롤러가 아니라"
+                            + " PolicyApplicationService.create()의 reactivate 분기에서 호출된다.")
     @DeleteMapping("/{id}")
     public ApiResponse<PolicyApplicationChecklistMessageResponse> delete(
             @CurrentUser Long userId, @PathVariable Long id) {
