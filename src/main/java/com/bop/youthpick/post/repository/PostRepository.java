@@ -1,6 +1,8 @@
 package com.bop.youthpick.post.repository;
 
 import com.bop.youthpick.post.entity.Post;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +18,15 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
 
     @EntityGraph(attributePaths = {"user", "policy"}) // jpql을 써서 구현하는 방법도 있음
     Optional<Post> findByIdAndDeletedAtIsNull(Long id); // 쿼리메서드
+
+    // sitemap.xml 생성 전용 — 목록/상세 API처럼 user/policy까지 끌고 올 필요가 없어 id/updatedAt만 projection한다.
+    List<PostSitemapView> findAllByDeletedAtIsNullOrderByUpdatedAtDesc();
+
+    interface PostSitemapView {
+        Long getId();
+
+        LocalDateTime getUpdatedAt();
+    }
 
     // JpaSpecificationExecutor의 기본 findAll(Specification, Pageable)을 재선언해
     // @EntityGraph로 목록 조회 시 user/policy N+1을 막는다(PostSummaryResponse가 둘 다 참조).
