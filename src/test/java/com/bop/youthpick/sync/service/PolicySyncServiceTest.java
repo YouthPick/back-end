@@ -231,6 +231,33 @@ class PolicySyncServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(BatchStatus.FAILED);
         assertThat(result.getFailureMessage()).contains("정책 수집 실패율 10% 초과").contains("2/10");
+        // #205: FAILED 처리돼도 실제 처리된 신규/변경/유지/누락/실패 건수는 버려지지 않고 그대로 남아야 한다.
+        assertThat(result.getNewCount()).isEqualTo(8);
+        assertThat(result.getUpdatedCount()).isZero();
+        assertThat(result.getUnchangedCount()).isZero();
+        assertThat(result.getMissingCount()).isZero();
+        assertThat(result.getErrorCount()).isEqualTo(2);
+    }
+
+    @Test
+    void 실패율_초과로_전량_실패해도_실패_건수가_이력에_그대로_기록된다() throws IOException {
+        // #205 재현: 모든 건이 저장 실패(예: 컬럼 길이 초과)해도 카운트가 0으로 버려지면 안 된다.
+        String tooLongTitle = "가".repeat(301);
+        List<YouthPolicyItem> items = new java.util.ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            items.add(item("{\"plcyNo\":\"P-BAD-" + i + "\",\"plcyNm\":\"" + tooLongTitle + "\"}"));
+        }
+        when(policyApiClient.fetchAll()).thenReturn(items);
+
+        PolicyBatchHistory result = policySyncService.runFullSync();
+
+        assertThat(result.getStatus()).isEqualTo(BatchStatus.FAILED);
+        assertThat(result.getFailureMessage()).contains("12/12");
+        assertThat(result.getNewCount()).isZero();
+        assertThat(result.getUpdatedCount()).isZero();
+        assertThat(result.getUnchangedCount()).isZero();
+        assertThat(result.getMissingCount()).isZero();
+        assertThat(result.getErrorCount()).isEqualTo(12);
     }
 
     @Test
