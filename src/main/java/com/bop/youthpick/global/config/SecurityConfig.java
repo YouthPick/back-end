@@ -76,6 +76,9 @@ public class SecurityConfig {
                                         "/api/v1/policies/**",
                                         "/api/v1/health")
                                 .permitAll()
+                                // 검색엔진 크롤러용 sitemap — 인증 없이 항상 열려 있어야 한다.
+                                .requestMatchers("/sitemap.xml")
+                                .permitAll()
                                 // 게시글 조회는 공개, 생성·수정·삭제는 회원 전용
                                 .requestMatchers(HttpMethod.GET, "/api/v1/posts/**")
                                 .permitAll()

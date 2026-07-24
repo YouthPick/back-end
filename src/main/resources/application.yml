@@ -33,6 +33,9 @@ spring:
 youthpick:
   cors:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:5174}
+  site:
+    # sitemap.xml에 절대 URL(<loc>)을 만들 때 쓰는 프론트엔드 배포 도메인.
+    frontend-url: ${FRONTEND_URL:https://youthpick.samchon.cloud}
   file:
     max-size: ${FILE_MAX_SIZE:10MB}
   minio:
