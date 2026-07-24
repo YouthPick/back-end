@@ -1,0 +1,59 @@
+# 테스트 전용 — Docker 없이 어디서든(CI 포함) 돌도록 H2 in-memory 사용.
+# 테스트 클래스패스의 이 파일이 main의 application.yaml을 대체한다.
+spring:
+  datasource:
+    url: jdbc:h2:mem:youthpick-test;MODE=MySQL;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+    web:
+      pageable:
+        one-indexed-parameters: true
+        max-page-size: 100
+
+youthpick:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:5173
+      - http://localhost:5174
+  file:
+    max-size: 10MB
+  minio:
+    endpoint: http://localhost:9000
+    access-key: test-access-key
+    secret-key: test-secret-key
+    bucket: youthpick-test-files
+    connect-timeout: 3s
+    write-timeout: 30s
+    read-timeout: 30s
+  jwt:
+    secret: test-secret-key-please-be-long-enough-for-hs256
+    access-token-expiration: 30m
+    refresh-token-expiration: 14d
+  auth:
+    refresh-cookie:
+      path: /api/v1/auth
+      secure: false
+      same-site: Lax
+  oauth:
+    frontend-callback-uri: http://localhost:3000/oauth/callback
+    providers:
+      google:
+        client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
+        client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
+      naver:
+        client-id: ${NAVER_OAUTH_CLIENT_ID:}
+        client-secret: ${NAVER_OAUTH_CLIENT_SECRET:}
+      kakao:
+        client-id: ${KAKAO_OAUTH_CLIENT_ID:}
+        client-secret: ${KAKAO_OAUTH_CLIENT_SECRET:}

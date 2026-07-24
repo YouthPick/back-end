@@ -1,0 +1,100 @@
+# CodeRabbit 설정 파일
+# 스키마: https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+# 문서: https://docs.coderabbit.ai/getting-started/configure-coderabbit
+#
+# 이 레포의 리뷰 기준은 docs/rules.md · docs/git-convention.md 를 따른다.
+
+language: "ko-KR"
+
+tone_instructions: >-
+  한국어로 정중하지만 간결하게 리뷰한다. docs/rules.md의 규칙 위반은 명확히 지적하고,
+  단순 취향 차이는 nitpick으로 구분한다.
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "dev"
+
+  path_filters:
+    - "!build/**"
+    - "!gradle/wrapper/**"
+    - "!**/*.jar"
+
+  path_instructions:
+    - path: "src/main/java/**"
+      instructions: >-
+        이 레포의 백엔드 구현 규칙(docs/rules.md)을 기준으로 리뷰한다.
+        패키지는 com.bop.youthpick.{domain}.controller/service/repository/dto/entity 의
+        도메인 우선 단순 구조를 유지해야 하며, DDD식 api/application/domain/infrastructure/external
+        패키지 생성은 규칙 위반이다.
+        Controller: 얇게 유지(파싱·검증·Service 호출·DTO 변환만), 생성자 주입(@RequiredArgsConstructor + final)만 허용,
+        필드 주입(@Autowired) 금지, JPA Entity를 API 응답으로 직접 반환 금지,
+        @RequestBody 파라미터에는 @Valid 필수, 성공 응답은 global.common.ApiResponse로 감싼다.
+        페이지네이션 등 부가정보는 data가 아닌 meta에 담고, 목록 API는 Spring Data Pageable/Page를 사용한다.
+        page/size를 @RequestParam으로 직접 받거나 totalPages를 직접 계산하는 코드는 규칙 위반이다.
+        예외: 비즈니스 예외는 global.error의 ErrorCode + CustomException(또는 ResourceNotFoundException,
+        ConflictException)으로 던진다. raw RuntimeException을 던지거나 Controller에서 try-catch로
+        에러 응답을 만드는 것은 금지. 에러 응답에 내부 예외 메시지/SQL/stack trace/secret 노출 금지.
+        ErrorCode 서비스 코드는 접두어(C/A/S/U/P/F/D) + 3자리 규칙을 따른다.
+
+    - path: "src/main/java/**/entity/**"
+      instructions: >-
+        JPA Entity 규칙: @NoArgsConstructor(access = AccessLevel.PROTECTED) 사용,
+        @Setter/@Data/@AllArgsConstructor(및 public all-args 생성자) 금지,
+        상태 변경은 setter 대신 의미 있는 메서드로 표현,
+        컬럼 제약은 @Column(nullable = false, length = ...)처럼 명시한다.
+        양방향 연관관계에서 무분별한 @ToString/@EqualsAndHashCode는 지적한다.
+
+    - path: "src/main/java/**/dto/**"
+      instructions: >-
+        DTO는 record를 우선 사용한다. 요청 DTO의 모든 사용자 입력 필드에는 Bean Validation
+        annotation(@NotBlank/@Size/@Pattern/@Min/@Max 등)이 있어야 하며 validation message는
+        한국어로 작성한다. 문자열 필수 필드는 @NotNull이 아닌 @NotBlank를 사용한다.
+        중첩 DTO 필드에는 @Valid를 붙인다. 응답 DTO는 Entity를 받는 정적 팩토리 메서드
+        from(...)으로 생성하고, Entity의 민감 필드/내부 상태/secret 값을 노출하지 않는다.
+
+    - path: "src/main/java/**/service/**"
+      instructions: >-
+        읽기 메서드는 @Transactional(readOnly = true), 생성/수정/삭제/외부 동기화는 명시적
+        @Transactional을 사용한다. secret, API key, OAuth token 값을 로그에 남기지 않는다.
+        비즈니스 예외를 raw RuntimeException으로 던지지 않는다.
+
+    - path: "src/test/java/**"
+      instructions: >-
+        Controller validation은 MockMvc 테스트, Service 비즈니스 규칙은 Service 테스트,
+        Repository/JPA 쿼리는 통합 테스트(H2 create-drop 프로파일)로 검증하는지 확인한다.
+        기능 변경 PR에 대응하는 테스트가 없으면 지적한다.
+
+    - path: "src/main/resources/**"
+      instructions: >-
+        설정 파일에 secret/OAuth client secret/token 값이 하드코딩되어 있으면 반드시 지적한다.
+        secret은 환경변수로 주입해야 한다. 운영 프로파일에서 ddl-auto가 create/update로
+        설정되어 있으면 지적한다.
+
+    - path: "docker-compose.yml"
+      instructions: >-
+        이 레포는 앱을 컨테이너화하지 않는다. compose는 로컬 인프라(Redis, 필요 시 MySQL)만
+        띄운다. 앱 서비스를 compose에 추가하는 변경은 규칙 위반이다.
+
+  labeling_instructions:
+    - label: "feat"
+      instructions: "신규 기능 추가 PR"
+    - label: "fix"
+      instructions: "버그 수정 PR"
+    - label: "docs"
+      instructions: "문서 변경 PR"
+    - label: "refac"
+      instructions: "동작 변경 없는 구조 정리 PR"
+
+chat:
+  auto_reply: true

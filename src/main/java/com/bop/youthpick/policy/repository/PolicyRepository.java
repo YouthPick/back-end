@@ -1,0 +1,96 @@
+package com.bop.youthpick.policy.repository;
+
+import com.bop.youthpick.policy.dto.PolicySyncSnapshot;
+import com.bop.youthpick.policy.entity.Policy;
+import com.bop.youthpick.policy.entity.PolicyVisibility;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface PolicyRepository
+        extends JpaRepository<Policy, Long>, JpaSpecificationExecutor<Policy> {
+
+    /** 배치 비교용 전체 스냅샷 — HIDDEN 포함 (제외 이유는 {@link PolicySyncSnapshot} 참고). */
+    @Query(
+            "select new com.bop.youthpick.policy.dto.PolicySyncSnapshot("
+                    + "p.policyNo, p.lastModifiedAt, p.visibility) from Policy p")
+    List<PolicySyncSnapshot> findSyncSnapshots();
+
+    List<Policy> findByPolicyNoIn(Collection<String> policyNos);
+
+    long countByVisibilityAndDeletedAtIsNull(PolicyVisibility visibility);
+
+    Optional<Policy> findByIdAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+            Long id, PolicyVisibility visibility);
+
+    List<Policy> findAllByIdInAndVisibilityAndAdminHiddenFalseAndDeletedAtIsNull(
+            Collection<Long> ids, PolicyVisibility visibility);
+
+    /**
+     * 목록 카드 조회 — 노출 중이고 신청 마감(applicationEndDate)이 지나지 않은 정책만. 마감일 없음(상시)은 포함하되,
+     * businessPeriodEnd(사업기간 종료일)가 있고 이미 지났다면 제외한다 — aplyPrdSeCd가 진짜 상시(0057002)가 아닌데도
+     * aplyYmd(신청기간)가 비어 applicationEndDate만 null인 정책(예: 0057003 지역 단발성 모집)이 이미 끝났음에도 "상시"로 계속 노출되는
+     * 문제를 막는다(#123). category는 표준 5분류(V8에서 정규화) exact match, null이면 전체. keyword는 5개 필드 LIKE
+     * 부분일치(escape '!')에 더해 정책 지역(시도명) 부분일치도 포함한다(#199) — 검색창에 "서울"처럼 지역명을 입력해도 그 지역 정책이 결과에 잡히게 하기
+     * 위함이다. sidoName은 시도명 EXISTS(같은 시도 내 다수 시군구여도 중복 반환 없음) — 전 시도를 커버하는 정책도 개별 시도 조회에 포함된다. age는
+     * 요청 구간과 정책 자격 구간의 겹침(overlap) 판정 — min/maxAge가 0 또는 NULL이면 제한없음으로 항상 통과. jobCode는 온통청년 취업상태 코드
+     * 하나로, 해당 코드를 가진 정책과 '제한없음'({@link Policy#JOB_CODE_UNRESTRICTED}) 정책을 함께 통과시킨다.
+     *
+     * <p>정렬은 Pageable이 아니라 이 쿼리가 고정한다. "조건 없는 정책을 뒤로"는 필터가 걸렸을 때만 적용해야 하는데, Spring Data {@code
+     * Sort}로는 파라미터에 따라 달라지는 순서를 표현할 수 없기 때문이다. 호출자는 정렬 없는 Pageable을 넘긴다. 전국 정책 후순위 규칙은 sidoName 필터뿐
+     * 아니라 keyword가 지역명과 매칭된 경우에도 적용한다(#199 후속) — 전국 정책은 모든 시도에 지역 행이 걸려 있어 keyword="서울" 같은 검색에도 항상
+     * 걸리는데, 이 규칙이 없으면 지역 특화 정책보다 먼저 뜨는지 여부가 순전히 최신순 우연에 달리게 된다.
+     */
+    @Query(
+            "select p from Policy p where p.visibility = :visibility and p.adminHidden = false and p.deletedAt is null"
+                    + " and (p.applicationEndDate is null or p.applicationEndDate >= :today)"
+                    + " and (p.applicationEndDate is not null"
+                    + "     or p.businessPeriodEnd is null or p.businessPeriodEnd >= :today)"
+                    + " and (:category is null or p.category = :category)"
+                    + " and (:keyword is null"
+                    + "     or p.title like :keyword escape '!'"
+                    + "     or p.keywords like :keyword escape '!'"
+                    + "     or p.description like :keyword escape '!'"
+                    + "     or p.supportContent like :keyword escape '!'"
+                    + "     or p.organizationName like :keyword escape '!'"
+                    + "     or exists (select pr2 from PolicyRegion pr2"
+                    + "         where pr2.policy = p and pr2.region.sidoName like :keyword escape '!'))"
+                    + " and (:sidoName is null or exists ("
+                    + "     select pr from PolicyRegion pr"
+                    + "     where pr.policy = p and pr.region.sidoName = :sidoName))"
+                    + " and (:ageMin is null or p.maxAge is null or p.maxAge = 0 or p.maxAge >= :ageMin)"
+                    + " and (:ageMax is null or p.minAge is null or p.minAge = 0 or p.minAge <= :ageMax)"
+                    + " and (:jobCode is null or p.jobCodes is null"
+                    + "     or concat(',', p.jobCodes, ',') like concat('%,', :jobCode, ',%')"
+                    + "     or concat(',', p.jobCodes, ',') like '%,"
+                    + Policy.JOB_CODE_UNRESTRICTED
+                    + ",%')"
+                    + " order by"
+                    + " case when p.nationwide = true and ("
+                    + "     :sidoName is not null"
+                    + "     or (:keyword is not null and exists (select pr3 from PolicyRegion pr3"
+                    + "         where pr3.policy = p and pr3.region.sidoName like :keyword escape '!')))"
+                    + "     then 1 else 0 end,"
+                    + " case when :jobCode is not null and (p.jobCodes is null"
+                    + "     or concat(',', p.jobCodes, ',') like '%,"
+                    + Policy.JOB_CODE_UNRESTRICTED
+                    + ",%') then 1 else 0 end,"
+                    + " p.id desc")
+    Page<Policy> findCards(
+            @Param("visibility") PolicyVisibility visibility,
+            @Param("today") LocalDate today,
+            @Param("category") String category,
+            @Param("keyword") String keyword,
+            @Param("sidoName") String sidoName,
+            @Param("ageMin") Integer ageMin,
+            @Param("ageMax") Integer ageMax,
+            @Param("jobCode") String jobCode,
+            Pageable pageable);
+}

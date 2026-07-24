@@ -1,0 +1,41 @@
+package com.bop.youthpick.admin.user.controller;
+
+import com.bop.youthpick.admin.user.dto.LoginHistoryResponse;
+import com.bop.youthpick.admin.user.service.AdminLoginHistoryService;
+import com.bop.youthpick.global.common.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.time.LocalDate;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@Tag(name = "관리자 - 로그인 이력")
+@RestController
+@RequestMapping("/api/v1/admin/login-histories")
+@RequiredArgsConstructor
+public class AdminLoginHistoryController {
+
+    private final AdminLoginHistoryService adminLoginHistoryService;
+
+    @Operation(summary = "로그인 이력 목록 조회", description = "회원과 기간으로 로그인 이력을 검색해 페이지 단위로 조회합니다.")
+    @GetMapping
+    public ApiResponse<List<LoginHistoryResponse>> list(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                    LocalDate endDate,
+            @PageableDefault(size = 20) Pageable pageable) {
+        Page<LoginHistoryResponse> page =
+                adminLoginHistoryService.search(userId, startDate, endDate, pageable);
+        return ApiResponse.ok(page.getContent(), page);
+    }
+}

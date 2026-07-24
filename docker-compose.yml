@@ -1,35 +1,38 @@
-# 로컬 개발용 인프라만 띄운다 (MySQL + Redis).
-# backend/front 는 컨테이너화하지 않고 각자 로컬(IDE)에서 실행한다.
+# 인프라(MySQL + Redis + MinIO) + 백엔드(Spring Boot) + 프론트(React, nginx) 를 한 번에 띄운다.
 #
-# 사용법: docker-compose.yml 파일과 같은 레벨의 패키지로 가서 아래 명령어 실행.
-#   docker compose up -d      # .env 를 자동으로 읽어 MySQL/Redis 기동
-#   docker compose ps         # 상태 확인
-#   docker compose down       # 중지 (데이터는 볼륨에 보존)
-#   docker compose down -v    # 중지 + 데이터 볼륨 삭제(초기화)
+# 사용법: back-end/.env 를 준비한 뒤(.env.example 참고, JWT_SECRET 필수),
+#   docker compose up -d --build   # 전체 기동 (최초 실행/코드 변경 후에는 --build 필요)
+#   docker compose ps              # 상태 확인
+#   docker compose logs -f backend # 백엔드 로그 확인
+#   docker compose down            # 중지 (데이터는 볼륨에 보존)
+#   docker compose down -v         # 중지 + 데이터 볼륨 삭제(초기화)
+#
+# 인프라만 띄우고 앱은 IDE/로컬에서 실행하고 싶다면:
+#   docker compose up -d mysql redis minio
 
 services:
-#  mysql:
-#    image: mysql:8.4
-#    container_name: youthpick-mysql
-#    environment:
-#      MYSQL_DATABASE: ${DB_NAME:-youthpick}
-#      MYSQL_USER: ${DB_USERNAME:-youthpick}
-#      MYSQL_PASSWORD: ${DB_PASSWORD:-youthpick}
-#      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
-#      TZ: Asia/Seoul
-#    command:
-#      - --character-set-server=utf8mb4
-#      - --collation-server=utf8mb4_unicode_ci
-#    ports:
-#      - "${DB_PORT:-3306}:3306"
-#    volumes:
-#      - youthpick-mysql-data:/var/lib/mysql
-#    healthcheck:
-#      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-root}"]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 10
-#      start_period: 20s
+  mysql:
+    image: mysql:8.4
+    container_name: youthpick-mysql
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-youthpick}
+      MYSQL_USER: ${DB_USERNAME:-youthpick}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-youthpick}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - youthpick-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   redis:
     image: redis:7-alpine
@@ -44,6 +47,59 @@ services:
       timeout: 5s
       retries: 10
 
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: youthpick-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - youthpick-minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: youthpick-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # 컨테이너 네트워크 안에서는 localhost 가 아니라 서비스명으로 붙는다 (.env 의 localhost 값을 덮어씀).
+      DB_URL: jdbc:mysql://mysql:3306/${DB_NAME:-youthpick}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MINIO_ENDPOINT: http://minio:9000
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ../front-end
+      dockerfile: Dockerfile
+    container_name: youthpick-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
 volumes:
-#  youthpick-mysql-data:
+  youthpick-mysql-data:
   youthpick-redis-data:
+  youthpick-minio-data:

@@ -1,0 +1,64 @@
+spring:
+  profiles:
+    active: local
+  flyway:
+    # 기본 비활성(안전 기본값) — MySQL을 쓰는 프로필(local, 추후 prod)이 각자 true로 켠다.
+    # test는 H2 + ddl-auto(create-drop)라 꺼진 기본값을 그대로 쓴다.
+    enabled: false
+    # DDL(migration)과 데이터 적재(seed)를 폴더로 분리. 버전(V{n})은 두 폴더에 걸쳐 하나의 순서를 공유한다.
+    locations:
+      - classpath:db/migration
+      - classpath:db/seed
+  http:
+    client:
+      # OAuthClient·PolicyApiClient 등 자동구성된 RestClient.Builder에 전역 적용. provider가 응답이 없을 때
+      # 스레드/DB 커넥션을 오래 붙잡지 않도록 한다.
+      # read-timeout은 "연속 무응답" 기준(소켓 SO_TIMEOUT)이라 배치의 대용량 페이지 수신도
+      # 스트림이 흐르는 한 걸리지 않는다 — 배치 실측(페이지당 ~2초)과도 여유 있음.
+      connect-timeout: 3s
+      read-timeout: 5s
+  data:
+    web:
+      pageable:
+        # 프론트가 페이지 번호를 1부터 쓰므로(page=1이 첫 페이지) 맞춘다.
+        # PageMeta.from()도 응답의 page를 +1해서 요청/응답 모두 1-based로 통일한다.
+        one-indexed-parameters: true
+        max-page-size: 100
+  servlet:
+    multipart:
+      max-file-size: ${FILE_MAX_SIZE:10MB}
+      # multipart boundary/header 오버헤드를 고려해 실제 파일 제한보다 여유를 둔다.
+      max-request-size: ${FILE_MAX_REQUEST_SIZE:11MB}
+
+youthpick:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:5174}
+  file:
+    max-size: ${FILE_MAX_SIZE:10MB}
+  minio:
+    endpoint: ${MINIO_ENDPOINT}
+    access-key: ${MINIO_ACCESS_KEY}
+    secret-key: ${MINIO_SECRET_KEY}
+    bucket: ${MINIO_BUCKET:youthpick-files}
+    connect-timeout: ${MINIO_CONNECT_TIMEOUT:3s}
+    write-timeout: ${MINIO_WRITE_TIMEOUT:30s}
+    read-timeout: ${MINIO_READ_TIMEOUT:30s}
+  auth:
+    refresh-cookie:
+      # 운영 안전 기본값: 프론트/백엔드가 서로 다른 도메인(크로스사이트)이라 SameSite=None + Secure가 필수.
+      # 로컬(application-local.yml)은 http라 secure=false, localhost 동일 사이트라 SameSite=Lax로 완화한다.
+      path: /api/v1/auth
+      secure: true
+      same-site: None
+  sync:
+    # 온통청년 API 키 — 코드/로그 노출 금지, .env.example 참고
+    api-key: ${YOUTH_API_KEY:}
+    scheduler:
+      # 기본 off(안전 기본값) — 실행하려는 환경(배포 prod 등)이 각자 true로 켠다. flyway.enabled와 같은 방식.
+      enabled: false
+      # 새벽 4시: 온통청년 갱신 반영 + 트래픽 최저 시간대
+      cron: "0 0 4 * * *"
+
+server:
+  forward-headers-strategy: framework
+

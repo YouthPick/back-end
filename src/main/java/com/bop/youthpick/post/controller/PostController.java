@@ -1,0 +1,83 @@
+package com.bop.youthpick.post.controller;
+
+import com.bop.youthpick.auth.service.CurrentUser;
+import com.bop.youthpick.global.common.ApiResponse;
+import com.bop.youthpick.post.dto.PostCreateRequest;
+import com.bop.youthpick.post.dto.PostDetailResponse;
+import com.bop.youthpick.post.dto.PostSummaryResponse;
+import com.bop.youthpick.post.dto.PostUpdateRequest;
+import com.bop.youthpick.post.entity.PostCategory;
+import com.bop.youthpick.post.service.PostService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+@Tag(name = "게시글")
+@RestController
+@RequestMapping("/api/v1/posts")
+@RequiredArgsConstructor
+// @RequestParam 제약(@Pattern 등)을 활성화한다. 없으면 잘못된 값이 서비스까지 내려가
+// PostCategory.valueOf에서 IllegalArgumentException → 500(S001)으로 터진다.
+@Validated
+public class PostController {
+
+    private final PostService postService;
+
+    @Operation(summary = "게시글 등록", description = "새로운 게시글을 작성하여 등록한다.")
+    @PostMapping
+    public ResponseEntity<ApiResponse<PostDetailResponse>> create(
+            @CurrentUser Long userId, @Valid @RequestBody PostCreateRequest request) {
+        PostDetailResponse response = postService.create(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(response)); // 성공했을때 http status 201
+    }
+
+    @Operation(summary = "게시글 목록 조회", description = "카테고리/검색어로 게시글 목록을 페이지 단위로 조회한다.")
+    @GetMapping // 리스폰스엔티티로 감싸야함 수정필요
+    public ApiResponse<List<PostSummaryResponse>> findAll(
+            @RequestParam(required = false) PostCategory category,
+            @RequestParam(required = false) String query,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+                    Pageable pageable) {
+
+        Page<PostSummaryResponse> page =
+                postService.findAll(category == null ? null : category.name(), query, pageable);
+        return ApiResponse.ok(page.getContent(), page);
+    }
+
+    @Operation(summary = "게시글 상세 조회", description = "게시글 ID로 상세 내용을 조회한다.")
+    @GetMapping("/{postId}")
+    public ApiResponse<PostDetailResponse> findById(
+            @PathVariable Long postId,
+            @CurrentUser(required = false) Long userId,
+            HttpServletRequest request) {
+        return ApiResponse.ok(postService.findById(postId, userId, request.getRemoteAddr()));
+    }
+
+    @Operation(summary = "게시글 수정", description = "게시글 ID로 대상 게시글의 내용을 수정한다.")
+    @PatchMapping("/{postId}")
+    public ApiResponse<PostDetailResponse> update(
+            @CurrentUser Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody PostUpdateRequest request) {
+        return ApiResponse.ok(postService.update(userId, postId, request));
+    }
+
+    @Operation(summary = "게시글 삭제", description = "게시글 ID로 대상 게시글을 삭제한다.")
+    @DeleteMapping("/{postId}")
+    public ApiResponse<Void> delete(@CurrentUser Long userId, @PathVariable Long postId) {
+        postService.delete(userId, postId);
+        return ApiResponse.ok(null);
+    }
+}

@@ -40,3 +40,13 @@ out/
 .env
 .env.*
 !.env.example
+
+### Claude Code local ###
+CLAUDE.local.md
+.claude/settings.local.json
+
+### Local run logs ###
+*.log
+
+### Local-only seed data (see comment in file) ###
+data-local.sql

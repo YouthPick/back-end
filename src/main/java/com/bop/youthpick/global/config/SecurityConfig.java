@@ -1,5 +1,8 @@
 package com.bop.youthpick.global.config;
 
+import com.bop.youthpick.auth.service.JwtAuthenticationFilter;
+import com.bop.youthpick.auth.service.JwtTokenProvider;
+import com.bop.youthpick.log.service.RequestLogContextFilter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -9,26 +12,23 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * 보안 기본 골격. REST API 기준으로 세션을 쓰지 않고(STATELESS), CSRF는 끄고, CORS만 켠다.
- * 인증 실패는 {@link RestAuthenticationEntryPoint}가 JSON 401로 응답하도록 미리 연결해 둔다.
+ * 보안 기본 골격. REST API 기준으로 세션을 쓰지 않고(STATELESS) CSRF는 끄고, CORS만 켠다. 인증은 JWT access token 기반이며 {@code
+ * JwtAuthenticationFilter}가 매 요청의 {@code Authorization: Bearer} 헤더를 해석해 SecurityContext를 채운다.
+ * refresh token은 XSS로부터 보호하기 위해 HttpOnly 쿠키로만 전달하며({@code RefreshTokenCookieSupport}), 이 때문에 CORS
+ * {@code allowCredentials}를 켜 둔다. 인증 실패는 {@link RestAuthenticationEntryPoint}가 JSON 401로, 권한 부족은
+ * {@link RestAccessDeniedHandler}가 JSON 403으로 응답하도록 미리 연결해 둔다.
  *
- * <h2>현재 상태: 개발용(모든 요청 허용)</h2>
- * 인증 기능(로그인)이 아직 없으므로, 팀원들이 각자 API를 개발·테스트할 수 있도록
- * {@code anyRequest().permitAll()}로 전부 열어 둔다. 보안 자체는 아래 절차로 언제든 켤 수 있다.
+ * <h2>인가 규칙: API 명세서(docs)의 권한 컬럼 기준</h2>
  *
- * <h2>인증 적용 절차 (팀원의 auth 코드가 준비되면)</h2>
- * <ol>
- *   <li>{@code com.bop.youthpick.auth} 패키지(JwtAuthenticationFilter 등)를 추가한다.
- *       JWT/Redis 관련 의존성(jjwt 등)과 설정(application.yml의 youthpick.auth.*)도 함께 채운다.</li>
- *   <li>아래 "AUTH ON" 주석 블록을 활성화하고, 현재 "DEV: 전부 허용" 블록을 제거한다.
- *       (JwtAuthenticationFilter 주입 필드 + addFilterBefore + 공개경로/authenticated)</li>
- * </ol>
- * 이렇게 두면 EntryPoint·CORS·STATELESS 골격은 그대로 재사용되고, 바뀌는 건 인가 규칙과 필터뿐이다.
+ * <p>관리자 전용은 {@code hasRole("ADMIN")}, 회원 전용은 {@code authenticated()}, 비회원/공통은 {@code permitAll()}로
+ * 매핑한다. 아직 컨트롤러가 없는 경로도 명세에 있으면 미리 규칙을 걸어 둔다(나중에 컨트롤러가 추가돼도 기본값이 열려 있지 않도록). 명세에 없는 나머지 경로는 여전히 개발
+ * 편의상 {@code anyRequest().permitAll()}로 열어 둔다.
  */
 @Configuration
 @EnableWebSecurity
@@ -36,41 +36,84 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
-
-    // [AUTH ON] 1단계: 팀원 auth 코드 추가 후 아래 주입을 활성화한다.
-    // private final com.bop.youthpick.auth.token.JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final CorsProperties corsProperties;
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
+        http.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(restAuthenticationEntryPoint));
+                .sessionManagement(
+                        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(
+                        exception ->
+                                exception
+                                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                                        .accessDeniedHandler(restAccessDeniedHandler));
 
-        // ===== DEV: 전부 허용 (로그인 기능 생기기 전까지 개발 편의용) =====
-        http.authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()
-        );
+        http.authorizeHttpRequests(
+                auth ->
+                        auth.requestMatchers(HttpMethod.OPTIONS, "/**")
+                                .permitAll()
+                                // 관리자(ADMIN) 전용 — 정책 수집 실행/이력 조회
+                                .requestMatchers("/api/v1/admin/**")
+                                .hasRole("ADMIN")
+                                // 브라우저 WebSocket handshake에는 Authorization 헤더를 넣을 수 없다.
+                                // 실제 인증/인가는 STOMP CONNECT/SEND/SUBSCRIBE interceptor가 수행한다.
+                                .requestMatchers("/api/ws")
+                                .permitAll()
+                                // 정책 상세/목록은 공개지만 정책별 채팅 이력 조회는 회원 전용
+                                .requestMatchers(HttpMethod.GET, "/api/v1/policies/*/chat/messages")
+                                .authenticated()
+                                // 비회원(공개) — 로그인 자체, 정책 탐색/비교/검색, 메타 조회, 헬스체크
+                                .requestMatchers(
+                                        "/api/v1/auth/oauth/**",
+                                        "/api/v1/auth/token/refresh",
+                                        "/api/v1/policy-comparisons/**",
+                                        "/api/v1/meta/profile-options",
+                                        "/api/v1/regions",
+                                        "/api/v1/policies/**",
+                                        "/api/v1/health")
+                                .permitAll()
+                                // 게시글 조회는 공개, 생성·수정·삭제는 회원 전용
+                                .requestMatchers(HttpMethod.GET, "/api/v1/posts/**")
+                                .permitAll()
+                                .requestMatchers("/api/v1/posts/**")
+                                .authenticated()
+                                // 파일 조회 URL은 img src에서 바로 사용하도록 공개하고, 업로드만 회원 전용으로 제한한다.
+                                .requestMatchers(HttpMethod.GET, "/api/v1/files/**")
+                                .permitAll()
+                                .requestMatchers(HttpMethod.POST, "/api/v1/files")
+                                .authenticated()
+                                // 회원 전용 — 로그인 상태 조회/로그아웃, 회원 탈퇴(컨트롤러 미구현, 경로만 선점),
+                                // 마이페이지(관심정책/추천/읽음/프로필), 최근 본 정책
+                                // 온보딩 프로필 제출도 회원 전용 — 컨트롤러에서 본인 여부를 추가 검증한다.
+                                .requestMatchers(HttpMethod.POST, "/api/v1/users/*/profile")
+                                .authenticated()
+                                .requestMatchers(
+                                        "/api/v1/auth/me",
+                                        "/api/v1/auth/logout",
+                                        "/api/v1/users",
+                                        // 온보딩 프로필 제출 — path userId 신뢰 금지, 컨트롤러에서 principal 대조
+                                        "/api/v1/users/*/profile",
+                                        "/api/v1/me/**",
+                                        "/api/v1/policy-recent-views",
+                                        "/api/v1/recommended-policies")
+                                .authenticated()
+                                // 회원 전용 — 정책 신청관리(관심정책 흡수) + 체크리스트.
+                                .requestMatchers(
+                                        "/api/v1/policy-applications/**",
+                                        "/api/v1/policy-application-checklists/**")
+                                .authenticated()
+                                // 명세에 없는 나머지 경로(구현 중인 다른 도메인 등)는 개발 편의상 열어 둔다.
+                                .anyRequest()
+                                .permitAll());
 
-        // ===== [AUTH ON] 2단계: 위 DEV 블록을 지우고 아래를 활성화한다 =====
-        // http.authorizeHttpRequests(auth -> auth
-        //         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-        //         .requestMatchers(
-        //                 "/actuator/health",
-        //                 "/error",
-        //                 // 인증 없이 접근 가능한 공개 엔드포인트 (팀원 auth/정책 API 기준)
-        //                 "/api/v1/auth/oauth/*/authorization-url",
-        //                 "/api/v1/auth/oauth/*/callback",
-        //                 "/api/v1/auth/token/refresh",
-        //                 "/api/v1/auth/logout",
-        //                 "/api/v1/policies",
-        //                 "/api/v1/policies/**"
-        //         ).permitAll()
-        //         .anyRequest().authenticated()
-        // );
-        // http.addFilterBefore(jwtAuthenticationFilter,
-        //         org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(
+                new JwtAuthenticationFilter(jwtTokenProvider),
+                UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(new RequestLogContextFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
     }
@@ -78,15 +121,14 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 프론트엔드 개발 서버 주소. 실제 배포 도메인에 맞게 조정한다.
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "http://localhost:5173"
-        ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedOrigins(corsProperties.allowedOrigins());
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
         configuration.setExposedHeaders(List.of("Location"));
-        configuration.setAllowCredentials(false);
+        // refresh token을 HttpOnly 쿠키로 내려주므로 브라우저가 쿠키를 담아 보내려면 credentials 허용이 필수.
+        // allowedOrigins가 명시적 목록(와일드카드 아님)이라 credentials=true와 함께 써도 안전하다.
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -1,0 +1,136 @@
+package com.bop.youthpick.post.service;
+
+import com.bop.youthpick.global.error.CustomException;
+import com.bop.youthpick.policy.entity.Policy;
+import com.bop.youthpick.policy.exception.PolicyErrorCode;
+import com.bop.youthpick.policy.repository.PolicyRepository;
+import com.bop.youthpick.post.dto.PostCreateRequest;
+import com.bop.youthpick.post.dto.PostDetailResponse;
+import com.bop.youthpick.post.dto.PostSummaryResponse;
+import com.bop.youthpick.post.dto.PostUpdateRequest;
+import com.bop.youthpick.post.entity.Attachment;
+import com.bop.youthpick.post.entity.Post;
+import com.bop.youthpick.post.entity.PostCategory;
+import com.bop.youthpick.post.exception.BoardErrorCode;
+import com.bop.youthpick.post.exception.BoardException;
+import com.bop.youthpick.post.repository.AttachmentRepository;
+import com.bop.youthpick.post.repository.PostRepository;
+import com.bop.youthpick.post.repository.PostSpecifications;
+import com.bop.youthpick.user.entity.User;
+import com.bop.youthpick.user.exception.UserError;
+import com.bop.youthpick.user.exception.UserException;
+import com.bop.youthpick.user.repository.UserRepository;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class PostService {
+
+    private final PostRepository postRepository;
+    private final AttachmentRepository attachmentRepository;
+    private final UserRepository userRepository;
+    private final PolicyRepository policyRepository;
+    private final PostViewLogStore postViewLogStore;
+
+    @Transactional
+    public PostDetailResponse create(Long userId, PostCreateRequest request) {
+        User user = findUser(userId); // userId는 그냥 맘대로 정한 변수명? 아니면 컬럼명을 카멜케이스로 쓴거? findUser는 쿼리메서드?
+        PostCategory category = PostCategory.valueOf(request.category());
+        // valueOf()는 모든 enum이 제공받는 정적 메서드. 문자열과 이름이 일치하는 enum 값을 찾아줌
+
+        Policy policy = resolvePolicy(category, request.policyId());
+        Post post =
+                postRepository.save(
+                        Post.create(user, policy, category, request.title(), request.content()));
+        saveAttachments(post, request.attachmentUrls());
+        return PostDetailResponse.from(post);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PostSummaryResponse> findAll(String category, String query, Pageable pageable) {
+        Specification<Post> spec = PostSpecifications.search(category, query);
+        return postRepository.findAll(spec, pageable).map(PostSummaryResponse::from);
+    }
+
+    @Transactional
+    public PostDetailResponse findById(Long postId, Long userId, String ipAddress) {
+        Post post = findPost(postId);
+        String identifier = userId != null ? "user:" + userId : "ip:" + ipAddress;
+        if (postViewLogStore.isFirstView(postId, identifier)) {
+            postRepository.incrementViewCount(postId);
+            post.incrementViewCount();
+        }
+        return PostDetailResponse.from(post);
+    }
+
+    @Transactional
+    public PostDetailResponse update(Long userId, Long postId, PostUpdateRequest request) {
+        Post post = findPost(postId);
+        validateAuthor(post, userId);
+        PostCategory category = PostCategory.valueOf(request.category());
+        Policy policy = resolvePolicy(category, request.policyId());
+        post.update(policy, category, request.title(), request.content());
+        attachmentRepository.deleteByPostId(postId);
+        saveAttachments(post, request.attachmentUrls());
+        return PostDetailResponse.from(post);
+    } // PostDetailRequest가 record라면 Java가 이 메서드들(category() 등)을 자동으로 만듦
+
+    @Transactional
+    public void delete(Long userId, Long postId) {
+        Post post = findPost(postId);
+        validateAuthor(post, userId);
+        post.softDelete();
+    }
+
+    private void saveAttachments(Post post, List<String> attachmentUrls) {
+        if (attachmentUrls == null || attachmentUrls.isEmpty()) {
+            return;
+        }
+        attachmentRepository.saveAll(
+                attachmentUrls.stream()
+                        .distinct()
+                        .map(url -> Attachment.create(post, url))
+                        .toList());
+    }
+
+    private User findUser(Long userId) {
+        return userRepository
+                .findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new UserException(UserError.USER_NOT_FOUND));
+    }
+
+    private Post findPost(Long postId) {
+        return postRepository
+                .findByIdAndDeletedAtIsNull(postId)
+                .orElseThrow(() -> new BoardException(BoardErrorCode.POST_NOT_FOUND));
+    }
+
+    private Policy resolvePolicy(PostCategory category, Long policyId) {
+        if (category == PostCategory.FREE) {
+            // 도메인 계약: policy가 NULL이면 자유글. 정책이 연결된 자유글을 허용하면
+            // 목록/상세 응답에 policyTitle이 붙어 프론트 분류가 깨지므로 명시적으로 거부한다.
+            if (policyId != null) {
+                throw new BoardException(BoardErrorCode.FREE_POST_POLICY_NOT_ALLOWED);
+            }
+            return null;
+        }
+        if (policyId == null) {
+            throw new BoardException(BoardErrorCode.POLICY_REQUIRED);
+        }
+        return policyRepository
+                .findById(policyId)
+                .orElseThrow(() -> new CustomException(PolicyErrorCode.POLICY_NOT_FOUND));
+    }
+
+    private void validateAuthor(Post post, Long userId) {
+        if (!post.getUser().getId().equals(userId)) {
+            throw new BoardException(BoardErrorCode.POST_ACCESS_DENIED);
+        }
+    }
+}
