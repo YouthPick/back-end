@@ -213,15 +213,17 @@ class PolicySyncServiceTest {
 
     @Test
     void 실패율이_10퍼센트를_넘으면_크래시_없이_실패_사유를_기록한다() throws IOException {
-        // title(길이 300) 초과로 DB 저장이 실패하는 건을 섞어 실패율 10%를 넘긴다(#203) —
+        // title(NOT NULL) 없이 저장을 시도해 DB 저장이 실패하는 건을 섞어 실패율 10%를 넘긴다 —
+        // (#208 이전엔 title 길이(300) 초과로 이 실패를 유발했으나, PolicyMapper가 길이 초과를 절단해 저장하도록
+        // 바뀌면서 더는 DB 저장 실패로 이어지지 않는다. plcyNm 누락 → title NOT NULL 위반으로 트리거를 바꿔 같은
+        // 실패율 계산·기록 시나리오를 계속 검증한다.)
         // 실패 메시지 포맷 문자열의 "10%"가 이스케이프 안 돼 있으면 여기서 UnknownFormatConversionException이 터진다.
-        String tooLongTitle = "가".repeat(301);
         List<YouthPolicyItem> items = new java.util.ArrayList<>();
         for (int i = 0; i < 8; i++) {
             items.add(item("{\"plcyNo\":\"P-OK-" + i + "\",\"plcyNm\":\"정상 정책 " + i + "\"}"));
         }
         for (int i = 0; i < 2; i++) {
-            items.add(item("{\"plcyNo\":\"P-BAD-" + i + "\",\"plcyNm\":\"" + tooLongTitle + "\"}"));
+            items.add(item("{\"plcyNo\":\"P-BAD-" + i + "\"}")); // plcyNm 없음 → title NOT NULL 위반
         }
         when(policyApiClient.fetchAll()).thenReturn(items);
 
