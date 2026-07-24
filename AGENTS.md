@@ -25,7 +25,7 @@
 .\gradlew.bat test
 ```
 
-로컬 인프라(Redis, 필요 시 MySQL)는 `docker compose up -d`로 띄운다. 앱 자체는 컨테이너화하지 않고 IDE/Gradle로 실행한다.
+로컬 인프라(Redis, 필요 시 MySQL, MinIO)는 `docker compose up -d`로 띄운다. 앱(백엔드/프론트)까지 한 번에 띄우려면 `docker compose up -d --build`를 사용한다(`Dockerfile` 기반, [`infra.md`](./.claude/rules/infra.md) 참고). 평소 개발은 인프라만 compose로 띄우고 앱은 IDE/Gradle로 실행하는 쪽을 권장한다.
 
 ## Non-negotiable rules (요약)
 
