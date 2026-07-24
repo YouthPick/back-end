@@ -241,11 +241,13 @@ class PolicySyncServiceTest {
 
     @Test
     void 실패율_초과로_전량_실패해도_실패_건수가_이력에_그대로_기록된다() throws IOException {
-        // #205 재현: 모든 건이 저장 실패(예: 컬럼 길이 초과)해도 카운트가 0으로 버려지면 안 된다.
-        String tooLongTitle = "가".repeat(301);
+        // #205 재현: 모든 건이 저장 실패해도 카운트가 0으로 버려지면 안 된다.
+        // (#208 이전엔 title 길이(300) 초과로 이 실패를 유발했으나, PolicyMapper가 길이 초과를 절단해 저장하도록
+        // 바뀌면서 더는 DB 저장 실패로 이어지지 않는다. plcyNm 누락 → title NOT NULL 위반으로 트리거를 바꿔 같은
+        // 전량 실패 시나리오를 계속 검증한다.)
         List<YouthPolicyItem> items = new java.util.ArrayList<>();
         for (int i = 0; i < 12; i++) {
-            items.add(item("{\"plcyNo\":\"P-BAD-" + i + "\",\"plcyNm\":\"" + tooLongTitle + "\"}"));
+            items.add(item("{\"plcyNo\":\"P-BAD-" + i + "\"}")); // plcyNm 없음 → title NOT NULL 위반
         }
         when(policyApiClient.fetchAll()).thenReturn(items);
 
