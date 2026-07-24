@@ -15,8 +15,14 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.appender.AbstractAppender;
+import org.apache.logging.log4j.core.config.Property;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -299,5 +305,129 @@ class PolicyMapperTest {
         assertThat(mapper.resolveRegions("R5", "", regions)).isEmpty();
         assertThat(mapper.resolveRegions("R5", "   ", regions)).isEmpty();
         assertThat(mapper.resolveRegions("R5", null, regions)).isEmpty();
+    }
+
+    // ---- 컬럼 길이 상한 절단 (#208) — Data truncation으로 정책 1건이 통째로 버려지는 문제 ----
+
+    @Test
+    @DisplayName("E: 컬럼 길이를 넘는 필드는 예외 없이 상한까지 잘려서 저장된다 (#208)")
+    void truncatesFieldsThatExceedColumnLength() throws IOException {
+        String longPolicyNo = "N".repeat(PolicyMapper.POLICY_NO_MAX_LENGTH + 5);
+        String longTitle = "가".repeat(PolicyMapper.TITLE_MAX_LENGTH + 50);
+        String longDescription = "나".repeat(PolicyMapper.DESCRIPTION_MAX_LENGTH + 10);
+        String longUrl =
+                "https://example.com/" + "a".repeat(PolicyMapper.APPLICATION_URL_MAX_LENGTH);
+
+        Policy policy =
+                mapper.toEntity(
+                        item(
+                                objectMapper.writeValueAsString(
+                                        Map.of(
+                                                "plcyNo", longPolicyNo,
+                                                "plcyNm", longTitle,
+                                                "plcyExplnCn", longDescription,
+                                                "aplyUrlAddr", longUrl))));
+
+        assertThat(policy.getPolicyNo())
+                .hasSize(PolicyMapper.POLICY_NO_MAX_LENGTH)
+                .isEqualTo(longPolicyNo.substring(0, PolicyMapper.POLICY_NO_MAX_LENGTH));
+        assertThat(policy.getTitle())
+                .hasSize(PolicyMapper.TITLE_MAX_LENGTH)
+                .isEqualTo(longTitle.substring(0, PolicyMapper.TITLE_MAX_LENGTH));
+        assertThat(policy.getDescription())
+                .hasSize(PolicyMapper.DESCRIPTION_MAX_LENGTH)
+                .isEqualTo(longDescription.substring(0, PolicyMapper.DESCRIPTION_MAX_LENGTH));
+        assertThat(policy.getApplicationUrl())
+                .hasSize(PolicyMapper.APPLICATION_URL_MAX_LENGTH)
+                .isEqualTo(longUrl.substring(0, PolicyMapper.APPLICATION_URL_MAX_LENGTH));
+    }
+
+    @Test
+    @DisplayName("X: 상한과 정확히 같은 길이는 잘리지 않는다 (경계)")
+    void doesNotTruncateWhenExactlyAtLimit() throws IOException {
+        String exactTitle = "다".repeat(PolicyMapper.TITLE_MAX_LENGTH);
+
+        Policy policy =
+                mapper.toEntity(
+                        item(
+                                objectMapper.writeValueAsString(
+                                        Map.of("plcyNo", "EXACT1", "plcyNm", exactTitle))));
+
+        assertThat(policy.getTitle()).hasSize(PolicyMapper.TITLE_MAX_LENGTH).isEqualTo(exactTitle);
+    }
+
+    @Test
+    @DisplayName("E: 길이 초과 절단은 경고 로그에 정책번호·필드명·실제 길이·상한을 남긴다 (#208)")
+    void logsWarningWithPolicyNoFieldLengthAndLimitOnTruncation() throws IOException {
+        String longTitle = "라".repeat(PolicyMapper.TITLE_MAX_LENGTH + 7);
+        CapturingAppender appender = CapturingAppender.attachTo(PolicyMapper.class);
+        try {
+            mapper.toEntity(
+                    item(
+                            objectMapper.writeValueAsString(
+                                    Map.of("plcyNo", "WARN1", "plcyNm", longTitle))));
+
+            assertThat(appender.warnMessages())
+                    .anySatisfy(
+                            message -> {
+                                assertThat(message).contains("WARN1");
+                                assertThat(message).contains("plcyNm");
+                                assertThat(message).contains(String.valueOf(longTitle.length()));
+                                assertThat(message)
+                                        .contains(String.valueOf(PolicyMapper.TITLE_MAX_LENGTH));
+                            });
+        } finally {
+            appender.detach();
+        }
+    }
+
+    @Test
+    @DisplayName("X: 길이 상한 내 정상 값은 절단 경고 로그를 남기지 않는다")
+    void doesNotLogWarningWhenWithinLimit() throws IOException {
+        CapturingAppender appender = CapturingAppender.attachTo(PolicyMapper.class);
+        try {
+            mapper.toEntity(fixtureItem(0));
+
+            assertThat(appender.warnMessages()).noneMatch(message -> message.contains("길이 초과"));
+        } finally {
+            appender.detach();
+        }
+    }
+
+    /** PolicyMapper가 SLF4J로 남기는 WARN 로그를 잡아내는 테스트 전용 Log4j2 Appender. */
+    private static final class CapturingAppender extends AbstractAppender {
+
+        private final List<String> messages = new CopyOnWriteArrayList<>();
+        private final org.apache.logging.log4j.core.Logger targetLogger;
+
+        private CapturingAppender(org.apache.logging.log4j.core.Logger targetLogger) {
+            super("PolicyMapperTest-capturing-appender", null, null, false, Property.EMPTY_ARRAY);
+            this.targetLogger = targetLogger;
+        }
+
+        static CapturingAppender attachTo(Class<?> loggerClass) {
+            org.apache.logging.log4j.core.Logger logger =
+                    (org.apache.logging.log4j.core.Logger) LogManager.getLogger(loggerClass);
+            CapturingAppender appender = new CapturingAppender(logger);
+            appender.start();
+            logger.addAppender(appender);
+            return appender;
+        }
+
+        void detach() {
+            targetLogger.removeAppender(this);
+            stop();
+        }
+
+        List<String> warnMessages() {
+            return messages;
+        }
+
+        @Override
+        public void append(LogEvent event) {
+            if (event.getLevel().equals(Level.WARN)) {
+                messages.add(event.getMessage().getFormattedMessage());
+            }
+        }
     }
 }

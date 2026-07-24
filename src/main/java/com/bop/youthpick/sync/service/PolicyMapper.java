@@ -27,6 +27,10 @@ import org.springframework.stereotype.Component;
  *
  * <p>파싱 실패는 예외로 안 터뜨린다 — 해당 필드만 null + 경고 로그(plcyNo, 필드, 원문). 필드 하나 깨졌다고 정책 1건 전체(나머지 40여 필드)를 버리는
  * 게 더 큰 손실이기 때문(설계 §5 실패 격리: 전처리 실패 단위 = 필드).
+ *
+ * <p>컬럼 길이 초과도 같은 원칙이다 — 예외 대신 절단 + 경고 로그(plcyNo, 필드, 실제 길이, 상한)로 처리한다(#208). 길이 상한 상수는 {@link
+ * com.bop.youthpick.policy.entity.Policy}의 {@code @Column(length = ...)}와 반드시 일치해야 하며,
+ * PolicyMapperLengthLimitsTest가 리플렉션으로 드리프트를 검증한다.
  */
 @Component
 @RequiredArgsConstructor
@@ -36,6 +40,32 @@ public class PolicyMapper {
 
     /** aplyPrdSeCd 상시 코드 — 신청기간 파싱 대상 아님 */
     private static final String ALWAYS_OPEN_CODE = "0057002";
+
+    /**
+     * 컬럼 길이 상한 — {@link com.bop.youthpick.policy.entity.Policy}의 {@code @Column(length = ...)}와 반드시
+     * 같은 값이어야 한다(PolicyMapperLengthLimitsTest가 드리프트를 검증). TEXT/LONGTEXT 컬럼(길이 제한 없음)은 대상 아님.
+     */
+    static final int POLICY_NO_MAX_LENGTH = 32;
+
+    static final int TITLE_MAX_LENGTH = 300;
+    static final int DESCRIPTION_MAX_LENGTH = 2000;
+    static final int KEYWORDS_MAX_LENGTH = 500;
+    static final int CATEGORY_MAX_LENGTH = 64;
+    static final int MIDDLE_CATEGORY_MAX_LENGTH = 64;
+    static final int ORGANIZATION_NAME_MAX_LENGTH = 255;
+    static final int JOB_CODES_MAX_LENGTH = 255;
+    static final int SCHOOL_CODES_MAX_LENGTH = 255;
+    static final int INCOME_CONDITION_CODE_MAX_LENGTH = 16;
+    static final int MARITAL_STATUS_CODE_MAX_LENGTH = 16;
+    static final int MAJOR_CODES_MAX_LENGTH = 255;
+    static final int SPECIALIZATION_CODES_MAX_LENGTH = 255;
+    static final int APPLICATION_PERIOD_TYPE_MAX_LENGTH = 16;
+    static final int APPLICATION_PERIOD_RAW_MAX_LENGTH = 255;
+    static final int APPLICATION_URL_MAX_LENGTH = 1000;
+    static final int REFERENCE_URL_MAX_LENGTH = 1000;
+    static final int AGE_LIMIT_FLAG_MAX_LENGTH = 4;
+    static final int OPERATING_INSTITUTION_NAME_MAX_LENGTH = 255;
+    static final int APPROVAL_STATUS_CODE_MAX_LENGTH = 16;
 
     /**
      * 대분류(lclsfNm) 표준 5분류 매핑 — 키는 가운뎃점(·・･) 제거 기준 (#80). 원본에는 반각점(U+FF65) 구분자, 콤마 다중값('일자리,일자리'),
@@ -60,7 +90,8 @@ public class PolicyMapper {
 
     /** 신규/변경 정책 1건 전처리. Policy.create 파라미터 순서 = Policy 필드 선언 순서. */
     public Policy toEntity(YouthPolicyItem item) {
-        String plcyNo = trimToNull(item.plcyNo());
+        String rawPlcyNo = trimToNull(item.plcyNo());
+        String plcyNo = truncate(rawPlcyNo, "plcyNo", rawPlcyNo, POLICY_NO_MAX_LENGTH);
         LocalDate businessBegin = toDate(plcyNo, "bizPrdBgngYmd", item.bizPrdBgngYmd());
         LocalDate businessEnd = toDate(plcyNo, "bizPrdEndYmd", item.bizPrdEndYmd());
         ApplyPeriod applyPeriod =
@@ -68,27 +99,63 @@ public class PolicyMapper {
                         plcyNo, item.aplyPrdSeCd(), item.aplyYmd(), businessBegin, businessEnd);
         return Policy.create(
                 plcyNo,
-                trimToNull(item.plcyNm()),
-                trimToNull(item.plcyExplnCn()),
+                truncate(plcyNo, "plcyNm", trimToNull(item.plcyNm()), TITLE_MAX_LENGTH),
+                truncate(
+                        plcyNo,
+                        "plcyExplnCn",
+                        trimToNull(item.plcyExplnCn()),
+                        DESCRIPTION_MAX_LENGTH),
                 trimToNull(item.plcySprtCn()),
-                trimToNull(item.plcyKywdNm()),
-                normalizeCategory(plcyNo, item.lclsfNm()),
-                trimToNull(item.mclsfNm()),
-                organizationName(item),
+                truncate(plcyNo, "plcyKywdNm", trimToNull(item.plcyKywdNm()), KEYWORDS_MAX_LENGTH),
+                truncate(
+                        plcyNo,
+                        "lclsfNm",
+                        normalizeCategory(plcyNo, item.lclsfNm()),
+                        CATEGORY_MAX_LENGTH),
+                truncate(plcyNo, "mclsfNm", trimToNull(item.mclsfNm()), MIDDLE_CATEGORY_MAX_LENGTH),
+                truncate(
+                        plcyNo,
+                        "sprvsnInstCdNm/operInstCdNm",
+                        organizationName(item),
+                        ORGANIZATION_NAME_MAX_LENGTH),
                 toInt(plcyNo, "sprtTrgtMinAge", item.sprtTrgtMinAge()),
                 toInt(plcyNo, "sprtTrgtMaxAge", item.sprtTrgtMaxAge()),
-                trimToNull(item.jobCd()),
-                trimToNull(item.schoolCd()),
-                trimToNull(item.earnCndSeCd()),
+                truncate(plcyNo, "jobCd", trimToNull(item.jobCd()), JOB_CODES_MAX_LENGTH),
+                truncate(plcyNo, "schoolCd", trimToNull(item.schoolCd()), SCHOOL_CODES_MAX_LENGTH),
+                truncate(
+                        plcyNo,
+                        "earnCndSeCd",
+                        trimToNull(item.earnCndSeCd()),
+                        INCOME_CONDITION_CODE_MAX_LENGTH),
                 toInt(plcyNo, "earnMaxAmt", item.earnMaxAmt()),
                 trimToNull(item.earnEtcCn()),
-                trimToNull(item.mrgSttsCd()),
-                trimToNull(item.plcyMajorCd()),
-                trimToNull(item.sbizCd()),
+                truncate(
+                        plcyNo,
+                        "mrgSttsCd",
+                        trimToNull(item.mrgSttsCd()),
+                        MARITAL_STATUS_CODE_MAX_LENGTH),
+                truncate(
+                        plcyNo,
+                        "plcyMajorCd",
+                        trimToNull(item.plcyMajorCd()),
+                        MAJOR_CODES_MAX_LENGTH),
+                truncate(
+                        plcyNo,
+                        "sbizCd",
+                        trimToNull(item.sbizCd()),
+                        SPECIALIZATION_CODES_MAX_LENGTH),
                 trimToNull(item.addAplyQlfcCndCn()),
                 trimToNull(item.ptcpPrpTrgtCn()),
-                trimToNull(item.aplyPrdSeCd()),
-                trimToNull(item.aplyYmd()),
+                truncate(
+                        plcyNo,
+                        "aplyPrdSeCd",
+                        trimToNull(item.aplyPrdSeCd()),
+                        APPLICATION_PERIOD_TYPE_MAX_LENGTH),
+                truncate(
+                        plcyNo,
+                        "aplyYmd",
+                        trimToNull(item.aplyYmd()),
+                        APPLICATION_PERIOD_RAW_MAX_LENGTH),
                 applyPeriod.start(),
                 applyPeriod.end(),
                 businessBegin,
@@ -96,17 +163,41 @@ public class PolicyMapper {
                 trimToNull(item.bizPrdEtcCn()),
                 toInt(plcyNo, "sprtSclCnt", item.sprtSclCnt()),
                 toBoolean(item.sprtArvlSeqYn()),
-                normalizeUrl(plcyNo, "aplyUrlAddr", item.aplyUrlAddr()),
-                normalizeUrl(plcyNo, "refUrlAddr1", item.refUrlAddr1()),
-                normalizeUrl(plcyNo, "refUrlAddr2", item.refUrlAddr2()),
+                truncate(
+                        plcyNo,
+                        "aplyUrlAddr",
+                        normalizeUrl(plcyNo, "aplyUrlAddr", item.aplyUrlAddr()),
+                        APPLICATION_URL_MAX_LENGTH),
+                truncate(
+                        plcyNo,
+                        "refUrlAddr1",
+                        normalizeUrl(plcyNo, "refUrlAddr1", item.refUrlAddr1()),
+                        REFERENCE_URL_MAX_LENGTH),
+                truncate(
+                        plcyNo,
+                        "refUrlAddr2",
+                        normalizeUrl(plcyNo, "refUrlAddr2", item.refUrlAddr2()),
+                        REFERENCE_URL_MAX_LENGTH),
                 trimToNull(item.plcyAplyMthdCn()),
                 trimToNull(item.sbmsnDcmntCn()),
                 trimToNull(item.srngMthdCn()),
-                trimToNull(item.sprtTrgtAgeLmtYn()),
+                truncate(
+                        plcyNo,
+                        "sprtTrgtAgeLmtYn",
+                        trimToNull(item.sprtTrgtAgeLmtYn()),
+                        AGE_LIMIT_FLAG_MAX_LENGTH),
                 toInt(plcyNo, "earnMinAmt", item.earnMinAmt()),
                 toBoolean(item.sprtSclLmtYn()),
-                trimToNull(item.operInstCdNm()),
-                trimToNull(item.plcyAprvSttsCd()),
+                truncate(
+                        plcyNo,
+                        "operInstCdNm",
+                        trimToNull(item.operInstCdNm()),
+                        OPERATING_INSTITUTION_NAME_MAX_LENGTH),
+                truncate(
+                        plcyNo,
+                        "plcyAprvSttsCd",
+                        trimToNull(item.plcyAprvSttsCd()),
+                        APPROVAL_STATUS_CODE_MAX_LENGTH),
                 trimToNull(item.etcMttrCn()),
                 toViewCount(plcyNo, item.inqCnt()),
                 toDateTime(plcyNo, "frstRegDt", item.frstRegDt()),
@@ -230,6 +321,23 @@ public class PolicyMapper {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /**
+     * 컬럼 길이 상한 절단(#208). 초과분은 예외 대신 경고 로그(plcyNo, 필드, 실제 길이, 상한) 후 잘라서 저장한다 — 필드 하나의 길이 초과 때문에 정책
+     * 1건(나머지 필드)을 통째로 버리지 않기 위함(클래스 javadoc 실패 격리 원칙과 동일).
+     */
+    private static String truncate(String plcyNo, String field, String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        log.warn(
+                "정책 {} 필드 {} 길이 초과 — 실제 {}자 > 상한 {}자, 잘라서 저장",
+                plcyNo,
+                field,
+                value.length(),
+                maxLength);
+        return value.substring(0, maxLength);
     }
 
     private static Integer toInt(String plcyNo, String field, String value) {
