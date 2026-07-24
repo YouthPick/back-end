@@ -75,6 +75,12 @@ class PolicyServiceTest {
         assertThat(response.id()).isEqualTo(1L);
         assertThat(response.title()).isEqualTo("청년 월세 지원");
         assertThat(response.regions()).containsExactly(new RegionResponse("11680", "서울특별시", "강남구"));
+        // #92: 자격 판정용 내부 코드도 상세 응답에 노출해 프론트 추천 하드필터를 복구할 수 있게 한다.
+        assertThat(response.jobCodes()).isEqualTo("0013010");
+        assertThat(response.schoolCodes()).isEqualTo("0043010");
+        assertThat(response.maritalStatusCode()).isEqualTo("0055010");
+        assertThat(response.majorCodes()).isEqualTo("0066010");
+        assertThat(response.specializationCodes()).isEqualTo("0077010");
     }
 
     @Test
@@ -175,6 +181,12 @@ class PolicyServiceTest {
         assertThat(card.id()).isEqualTo(1L);
         assertThat(card.title()).isEqualTo("한 시도 정책");
         assertThat(card.category()).isEqualTo("주거");
+        // #92: 목록(카드) 응답도 상세와 동일하게 자격 판정용 내부 코드를 노출해 프론트 추천 하드필터를 복구할 수 있게 한다.
+        assertThat(card.jobCodes()).isEqualTo("0013010");
+        assertThat(card.schoolCodes()).isEqualTo("0043010");
+        assertThat(card.maritalStatusCode()).isEqualTo("0055010");
+        assertThat(card.majorCodes()).isEqualTo("0066010");
+        assertThat(card.specializationCodes()).isEqualTo("0077010");
         assertThat(page.getContent())
                 .extracting(PolicyCardResponse::provinces)
                 .containsExactly(
@@ -312,6 +324,11 @@ class PolicyServiceTest {
         ReflectionTestUtils.setField(policy, "id", id);
         ReflectionTestUtils.setField(policy, "policyNo", "R2026" + id);
         ReflectionTestUtils.setField(policy, "title", title);
+        ReflectionTestUtils.setField(policy, "jobCodes", "0013010");
+        ReflectionTestUtils.setField(policy, "schoolCodes", "0043010");
+        ReflectionTestUtils.setField(policy, "maritalStatusCode", "0055010");
+        ReflectionTestUtils.setField(policy, "majorCodes", "0066010");
+        ReflectionTestUtils.setField(policy, "specializationCodes", "0077010");
         return policy;
     }
 
