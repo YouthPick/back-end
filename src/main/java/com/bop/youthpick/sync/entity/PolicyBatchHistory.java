@@ -93,12 +93,34 @@ public class PolicyBatchHistory {
         this.errorCount = errorCount;
     }
 
+    /** 원인 불명 조기 실패용(예: API fetch 자체가 실패해 아무것도 처리 못 한 경우) — 카운트는 전부 0으로 남는다. */
     public void fail(String message) {
         this.status = BatchStatus.FAILED;
         this.finishedAt = LocalDateTime.now();
-        this.failureMessage =
-                message != null && message.length() > FAILURE_MESSAGE_MAX
-                        ? message.substring(0, FAILURE_MESSAGE_MAX)
-                        : message;
+        this.failureMessage = truncate(message);
+    }
+
+    /** 실패율 초과 등 일부라도 처리된 뒤 실패 처리하는 경우 — succeed와 동일한 카운트를 함께 남긴다. */
+    public void fail(
+            String message,
+            int newCount,
+            int updatedCount,
+            int unchangedCount,
+            int missingCount,
+            int errorCount) {
+        this.status = BatchStatus.FAILED;
+        this.finishedAt = LocalDateTime.now();
+        this.failureMessage = truncate(message);
+        this.newCount = newCount;
+        this.updatedCount = updatedCount;
+        this.unchangedCount = unchangedCount;
+        this.missingCount = missingCount;
+        this.errorCount = errorCount;
+    }
+
+    private static String truncate(String message) {
+        return message != null && message.length() > FAILURE_MESSAGE_MAX
+                ? message.substring(0, FAILURE_MESSAGE_MAX)
+                : message;
     }
 }
