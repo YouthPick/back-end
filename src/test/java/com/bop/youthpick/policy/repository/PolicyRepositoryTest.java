@@ -303,6 +303,23 @@ class PolicyRepositoryTest {
                 .containsExactly(seoulOnly.getPolicyNo(), nationwide.getPolicyNo());
     }
 
+    @Test
+    void 사업기간_기타내용과_URL은_원본이_길어도_잘리지_않고_저장된다() {
+        // 온통청년 원본에는 64자를 넘는 사업기간 설명과 500자를 넘는 URL이 실제로 있고,
+        // 예전 상한(각 64/500자)에서는 이 정책들이 매 회차 통째로 저장 실패했다(#207).
+        String longEtc = "사업 기간 관련 상세 안내 ".repeat(30);
+        String longUrl = "https://www.example.go.kr/apply?" + "param=value&".repeat(60);
+        Policy policy = newPolicy("P-LONG", PolicyVisibility.VISIBLE, null);
+        ReflectionTestUtils.setField(policy, "businessPeriodEtc", longEtc);
+        ReflectionTestUtils.setField(policy, "referenceUrl1", longUrl);
+
+        policyRepository.saveAndFlush(policy);
+
+        Policy saved = policyRepository.findByPolicyNoIn(List.of("P-LONG")).getFirst();
+        assertThat(saved.getBusinessPeriodEtc()).isEqualTo(longEtc);
+        assertThat(saved.getReferenceUrl1()).isEqualTo(longUrl);
+    }
+
     private Policy saveLinked(String policyNo, boolean nationwide, Region... regions) {
         Policy policy = BeanUtils.instantiateClass(Policy.class);
         ReflectionTestUtils.setField(policy, "policyNo", policyNo);
