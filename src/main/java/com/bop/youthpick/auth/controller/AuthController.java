@@ -13,6 +13,8 @@ import com.bop.youthpick.auth.service.RefreshTokenCookieSupport;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.global.config.CorsProperties;
 import com.bop.youthpick.user.entity.User;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "인증")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -38,6 +41,9 @@ public class AuthController {
     private final RefreshTokenCookieSupport refreshTokenCookieSupport;
     private final CorsProperties corsProperties;
 
+    @Operation(
+            summary = "소셜 로그인 URL 발급",
+            description = "지정한 OAuth provider(google/naver/kakao)의 인가 URL을 생성해 반환한다.")
     @GetMapping("/oauth/{provider}/authorization-url")
     public ApiResponse<OAuthAuthorizationUrlResponse> authorizationUrl(
             @PathVariable String provider) {
@@ -45,6 +51,10 @@ public class AuthController {
         return ApiResponse.ok(new OAuthAuthorizationUrlResponse(url));
     }
 
+    @Operation(
+            summary = "소셜 로그인 콜백",
+            description =
+                    "OAuth provider의 인가 코드로 로그인을 처리하고, access token은 응답 body로, refresh token은 HttpOnly 쿠키로 내려준다.")
     @PostMapping("/oauth/{provider}/callback")
     public ResponseEntity<ApiResponse<AccessTokenResponse>> callback(
             @PathVariable String provider, @Valid @RequestBody OAuthCallbackRequest request) {
@@ -58,6 +68,10 @@ public class AuthController {
      * refresh token 자체는 재발급(rotate)하지 않고 발급 시점의 만료 기간까지 그대로 재사용하므로, access token만 새로 내려주고 쿠키는 다시
      * 설정하지 않는다.
      */
+    @Operation(
+            summary = "액세스 토큰 재발급",
+            description =
+                    "refresh token은 body가 아니라 HttpOnly 쿠키로 전달받는다. Origin 헤더가 있으면 허용 목록에 포함되는지 검증하고, refresh token 자체는 재발급(rotate)하지 않은 채 access token만 새로 내려준다.")
     @PostMapping("/token/refresh")
     public ApiResponse<AccessTokenResponse> refresh(
             @CookieValue(name = RefreshTokenCookieSupport.COOKIE_NAME, required = false)
@@ -71,6 +85,10 @@ public class AuthController {
         return ApiResponse.ok(AccessTokenResponse.from(tokens));
     }
 
+    @Operation(
+            summary = "로그아웃",
+            description =
+                    "인증된 사용자의 refresh token을 Redis에서 삭제하고, HttpOnly 쿠키로 전달되던 refresh token 쿠키도 함께 만료시킨다.")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@CurrentUser Long userId, HttpServletResponse response) {
         authService.logout(userId);
@@ -78,6 +96,7 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "내 정보 조회", description = "인증된 사용자의 기본 정보를 조회해 반환한다.")
     @GetMapping("/me")
     public ApiResponse<AuthUserResponse> me(@CurrentUser Long userId) {
         User user = authService.getCurrentUser(userId);

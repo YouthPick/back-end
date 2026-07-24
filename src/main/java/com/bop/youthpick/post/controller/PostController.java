@@ -8,6 +8,8 @@ import com.bop.youthpick.post.dto.PostSummaryResponse;
 import com.bop.youthpick.post.dto.PostUpdateRequest;
 import com.bop.youthpick.post.entity.PostCategory;
 import com.bop.youthpick.post.service.PostService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -21,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "게시글")
 @RestController
 @RequestMapping("/api/v1/posts")
 @RequiredArgsConstructor
@@ -31,6 +34,7 @@ public class PostController {
 
     private final PostService postService;
 
+    @Operation(summary = "게시글 등록", description = "새로운 게시글을 작성하여 등록한다.")
     @PostMapping
     public ResponseEntity<ApiResponse<PostDetailResponse>> create(
             @CurrentUser Long userId, @Valid @RequestBody PostCreateRequest request) {
@@ -39,6 +43,7 @@ public class PostController {
                 .body(ApiResponse.ok(response)); // 성공했을때 http status 201
     }
 
+    @Operation(summary = "게시글 목록 조회", description = "카테고리/검색어로 게시글 목록을 페이지 단위로 조회한다.")
     @GetMapping // 리스폰스엔티티로 감싸야함 수정필요
     public ApiResponse<List<PostSummaryResponse>> findAll(
             @RequestParam(required = false) PostCategory category,
@@ -51,6 +56,7 @@ public class PostController {
         return ApiResponse.ok(page.getContent(), page);
     }
 
+    @Operation(summary = "게시글 상세 조회", description = "게시글 ID로 상세 내용을 조회한다.")
     @GetMapping("/{postId}")
     public ApiResponse<PostDetailResponse> findById(
             @PathVariable Long postId,
@@ -59,6 +65,7 @@ public class PostController {
         return ApiResponse.ok(postService.findById(postId, userId, request.getRemoteAddr()));
     }
 
+    @Operation(summary = "게시글 수정", description = "게시글 ID로 대상 게시글의 내용을 수정한다.")
     @PatchMapping("/{postId}")
     public ApiResponse<PostDetailResponse> update(
             @CurrentUser Long userId,
@@ -67,6 +74,7 @@ public class PostController {
         return ApiResponse.ok(postService.update(userId, postId, request));
     }
 
+    @Operation(summary = "게시글 삭제", description = "게시글 ID로 대상 게시글을 삭제한다.")
     @DeleteMapping("/{postId}")
     public ApiResponse<Void> delete(@CurrentUser Long userId, @PathVariable Long postId) {
         postService.delete(userId, postId);

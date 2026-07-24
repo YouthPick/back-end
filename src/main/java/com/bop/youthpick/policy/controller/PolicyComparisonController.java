@@ -3,6 +3,8 @@ package com.bop.youthpick.policy.controller;
 import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.PolicyComparisonItemResponse;
 import com.bop.youthpick.policy.service.PolicyComparisonService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 정책 비교 (비회원 허용). 비교 결과는 저장하지 않고 요청받은 정책들을 그때그때 조회해 내려주는 순수 조회다 — 그래서 생성(POST) + 식별자 재조회가 아니라 쿼리
  * 파라미터를 받는 단일 GET이다. 공유가 필요하면 이 요청 URL 자체가 공유 링크가 된다.
  */
+@Tag(name = "정책 비교")
 @Validated
 @RestController
 @RequestMapping("/api/v1/policy-comparisons")
@@ -25,6 +28,11 @@ public class PolicyComparisonController {
 
     private final PolicyComparisonService policyComparisonService;
 
+    @Operation(
+            summary = "정책 비교 조회",
+            description =
+                    "정책 비교(비회원 허용). 비교 결과는 저장하지 않고 요청받은 정책들을 그때그때 조회해 내려주는 순수 조회다 — 그래서 생성(POST) + 식별자"
+                            + " 재조회가 아니라 쿼리 파라미터를 받는 단일 GET이다. 공유가 필요하면 이 요청 URL 자체가 공유 링크가 된다.")
     @GetMapping
     public ApiResponse<List<PolicyComparisonItemResponse>> compare(
             @RequestParam

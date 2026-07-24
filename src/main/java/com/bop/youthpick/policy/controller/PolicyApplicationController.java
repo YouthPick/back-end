@@ -11,6 +11,8 @@ import com.bop.youthpick.policy.entity.ApplicationStatus;
 import com.bop.youthpick.policy.entity.PolicyApplication;
 import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.service.PolicyApplicationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -38,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
  * "Controller는 얇게" 규칙).
  */
 @Validated
+@Tag(name = "정책 신청관리")
 @RestController
 @RequestMapping("/api/v1/policy-applications")
 @RequiredArgsConstructor
@@ -52,6 +55,13 @@ public class PolicyApplicationController {
      * 대신 깔끔한 400(P007)으로 막아준다. 신규 등록 vs soft-delete 재활성화 vs 중복 예외 판단은 {@link
      * PolicyApplicationService#create}가 전담한다.
      */
+    @Operation(
+            summary = "정책 신청 관심 등록",
+            description =
+                    "POST /api/v1/policy-applications — \"관심 등록\" 액션의 진입점. status 문자열 → ApplicationStatus 변환은"
+                            + " parseStatus를 거친다 — 평소엔 DTO의 @Pattern(=ApplicationStatus.VALUES_PATTERN)이 걸러준 값만 들어오지만, 만에 하나"
+                            + " 어긋날 경우를 대비해 parseStatus가 500 대신 깔끔한 400(P007)으로 막아준다. 신규 등록 vs soft-delete 재활성화 vs 중복 예외"
+                            + " 판단은 PolicyApplicationService.create가 전담한다.")
     @PostMapping
     public ResponseEntity<ApiResponse<PolicyApplicationResponse>> create(
             @CurrentUser Long userId, @Valid @RequestBody PolicyApplicationCreateRequest request) {
@@ -72,6 +82,12 @@ public class PolicyApplicationController {
      * PolicyApplicationResponse}로 변환된 {@code Page}를 돌려주므로, 여기선 그 Page를 (content, meta) 형태로 {@link
      * ApiResponse}에 담기만 한다(api-design.md의 Pageable 규칙).
      */
+    @Operation(
+            summary = "정책 신청 목록 조회",
+            description =
+                    "GET /api/v1/policy-applications — 내 정책 신청 목록 페이지 조회. page/size/totalPages는 컨트롤러가 직접"
+                            + " 계산하지 않는다 — PolicyApplicationService.getApplications가 이미 PolicyApplicationResponse로 변환된"
+                            + " Page를 돌려주므로, 여기선 그 Page를 (content, meta) 형태로 ApiResponse에 담기만 한다.")
     @GetMapping
     public ApiResponse<List<PolicyApplicationResponse>> getApplications(
             @CurrentUser Long userId, @PageableDefault(size = 20) Pageable pageable) {
@@ -86,6 +102,13 @@ public class PolicyApplicationController {
      * 동일하게 유지). 소유권 검증은 여기가 아니라 {@link PolicyApplicationService#changeStatus} 안의 {@code
      * verifyOwner()}에서 한다 — id로 조회한 신청이 진짜 이 userId 소유인지는 서비스 계층 책임이다.
      */
+    @Operation(
+            summary = "정책 신청 상태 변경",
+            description =
+                    "PATCH /api/v1/policy-applications/{id}/status — 상태만 단독으로 바꾸는 엔드포인트. create의 DTO와 같은"
+                            + " ApplicationStatus.VALUES_PATTERN 화이트리스트를 공유한다(parseStatus가 방어선 역할은 동일하게 유지). 소유권 검증은 여기가"
+                            + " 아니라 PolicyApplicationService.changeStatus 안의 verifyOwner()에서 한다 — id로 조회한 신청이 진짜 이 userId"
+                            + " 소유인지는 서비스 계층 책임이다.")
     @PatchMapping("/{id}/status")
     public ApiResponse<PolicyApplicationResponse> changeStatus(
             @CurrentUser Long userId,
@@ -103,6 +126,11 @@ public class PolicyApplicationController {
      * {@code PATCH /api/v1/policy-applications/{id}/memo} — 메모만 단독 수정. 컨트롤러는 {@code @Size}로 DTO 필드
      * 길이를 검증하고, 빈 문자열/공백을 null로 통일하는 정규화는 서비스 계층이 담당한다.
      */
+    @Operation(
+            summary = "정책 신청 메모 수정",
+            description =
+                    "PATCH /api/v1/policy-applications/{id}/memo — 메모만 단독 수정. 컨트롤러는 @Size로 DTO 필드 길이를"
+                            + " 검증하고, 빈 문자열/공백을 null로 통일하는 정규화는 서비스 계층이 담당한다.")
     @PatchMapping("/{id}/memo")
     public ApiResponse<PolicyApplicationResponse> updateMemo(
             @CurrentUser Long userId,
@@ -114,6 +142,9 @@ public class PolicyApplicationController {
     }
 
     /** {@code PATCH /api/v1/policy-applications/{id}/end-at} — 마감일 단독 수정. */
+    @Operation(
+            summary = "정책 신청 마감일 수정",
+            description = "PATCH /api/v1/policy-applications/{id}/end-at — 마감일 단독 수정.")
     @PatchMapping("/{id}/end-at")
     public ApiResponse<PolicyApplicationResponse> updateEndAt(
             @CurrentUser Long userId,
@@ -129,6 +160,11 @@ public class PolicyApplicationController {
      * deletedAt}만 세팅한다(재등록 시 reactivate로 되살아남). 반환할 데이터가 없어 {@code ApiResponse.ok(null)} — data는
      * null, meta 없음.
      */
+    @Operation(
+            summary = "정책 신청 관심 해제",
+            description =
+                    "DELETE /api/v1/policy-applications/{id} — 소프트 삭제(관심 해제). 물리 삭제가 아니라 deletedAt만 세팅한다(재등록"
+                            + " 시 reactivate로 되살아남). 반환할 데이터가 없어 ApiResponse.ok(null) — data는 null, meta 없음.")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@CurrentUser Long userId, @PathVariable Long id) {
         policyApplicationService.delete(id, userId);
