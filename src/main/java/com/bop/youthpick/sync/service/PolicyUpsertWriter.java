@@ -5,8 +5,10 @@ import com.bop.youthpick.policy.entity.PolicyRegion;
 import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
+import com.bop.youthpick.search.dto.PolicyChangedEvent;
 import com.bop.youthpick.sync.dto.PolicyUpsertItem;
 import com.bop.youthpick.sync.dto.PolicyWriteResult;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -28,6 +31,8 @@ public class PolicyUpsertWriter {
     private final PolicyRepository policyRepository;
     private final PolicyRegionRepository policyRegionRepository;
     private final TransactionTemplate transactionTemplate;
+    // 커밋된 뒤 검색 색인을 갱신하기 위한 이벤트 발행(PolicySearchSyncListener 가 받는다).
+    private final ApplicationEventPublisher eventPublisher;
 
     public PolicyWriteResult upsertAll(List<PolicyUpsertItem> items) {
         int newCount = 0;
@@ -87,13 +92,16 @@ public class PolicyUpsertWriter {
                                                     .stream()
                                                     .findFirst()
                                                     .orElse(null);
-                                    return writeOne(
-                                            freshItem,
-                                            existing,
-                                            regionCodesByPolicyId(
-                                                    existing == null
-                                                            ? List.of()
-                                                            : List.of(existing)));
+                                    Policy saved =
+                                            writeOne(
+                                                    freshItem,
+                                                    existing,
+                                                    regionCodesByPolicyId(
+                                                            existing == null
+                                                                    ? List.of()
+                                                                    : List.of(existing)));
+                                    publishChanged(List.of(saved.getId()));
+                                    return existing == null;
                                 });
                 if (isNew) {
                     newCount++;
@@ -118,14 +126,17 @@ public class PolicyUpsertWriter {
         Map<Long, Set<String>> regionCodesByPolicyId = regionCodesByPolicyId(existingByNo.values());
         int newCount = 0;
         int updatedCount = 0;
+        List<Long> savedIds = new ArrayList<>();
         for (PolicyUpsertItem item : chunk) {
-            if (writeOne(
-                    item, existingByNo.get(item.policy().getPolicyNo()), regionCodesByPolicyId)) {
+            Policy existing = existingByNo.get(item.policy().getPolicyNo());
+            savedIds.add(writeOne(item, existing, regionCodesByPolicyId).getId());
+            if (existing == null) {
                 newCount++;
             } else {
                 updatedCount++;
             }
         }
+        publishChanged(savedIds);
         return new ChunkResult(newCount, updatedCount, 0);
     }
 
@@ -147,12 +158,11 @@ public class PolicyUpsertWriter {
                                         Collectors.toSet())));
     }
 
-    /** 1건 저장. 신규면 true, 변경이면 false. */
-    private boolean writeOne(
+    /** 1건 저장. 색인 갱신에 쓰도록 저장된 엔티티를 돌려준다(신규 여부는 호출부가 existing 으로 판단). */
+    private Policy writeOne(
             PolicyUpsertItem item, Policy existing, Map<Long, Set<String>> regionCodesByPolicyId) {
         Policy target;
-        boolean isNew = existing == null;
-        if (isNew) {
+        if (existing == null) {
             target = policyRepository.save(item.policy());
             saveRegions(target, item.regions());
         } else {
@@ -174,12 +184,24 @@ public class PolicyUpsertWriter {
         }
         // 지역 행과 같은 트랜잭션에서 갱신한다 — 따로 두면 둘이 어긋나 정렬이 조용히 틀린다(#120).
         target.applyRegionCoverage(item.nationwide());
-        return isNew;
+        return target;
     }
 
     private void saveRegions(Policy policy, List<Region> regions) {
         for (Region region : regions) {
             policyRegionRepository.save(PolicyRegion.create(policy, region));
+        }
+    }
+
+    /**
+     * 저장된 정책들의 색인 갱신을 요청한다. 트랜잭션 <b>안에서</b> 발행해야 리스너가 커밋 직후에 받는다 — 커밋 전에 색인하면 롤백 시 ES 에만
+     * 남고, 커밋 밖에서 발행하면 AFTER_COMMIT 리스너가 아예 호출되지 않는다.
+     *
+     * <p>건별이 아니라 청크 단위로 묶어 던져, 색인 요청이 정책 건수만큼 늘어나지 않게 한다.
+     */
+    private void publishChanged(List<Long> policyIds) {
+        if (!policyIds.isEmpty()) {
+            eventPublisher.publishEvent(PolicyChangedEvent.updated(policyIds));
         }
     }
 
@@ -197,6 +219,8 @@ public class PolicyUpsertWriter {
                             status -> {
                                 List<Policy> found = policyRepository.findByPolicyNoIn(chunk);
                                 found.forEach(Policy::markMissing);
+                                // 누락 3회로 HIDDEN이 되면 검색에서 빠져야 하므로 색인도 갱신한다.
+                                publishChanged(found.stream().map(Policy::getId).toList());
                                 return found.size();
                             });
         }

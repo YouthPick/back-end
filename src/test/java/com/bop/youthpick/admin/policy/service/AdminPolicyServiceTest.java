@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +39,7 @@ class AdminPolicyServiceTest {
     @Mock private PolicyRegionRepository policyRegionRepository;
 
     @Mock private RegionRepository regionRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private AdminPolicyService adminPolicyService;
 
@@ -59,7 +61,11 @@ class AdminPolicyServiceTest {
     void setUp() {
 
         adminPolicyService =
-                new AdminPolicyService(policyRepository, policyRegionRepository, regionRepository);
+                new AdminPolicyService(
+                        policyRepository,
+                        policyRegionRepository,
+                        regionRepository,
+                        eventPublisher);
     }
 
     @Test

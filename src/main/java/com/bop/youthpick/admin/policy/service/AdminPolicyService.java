@@ -12,11 +12,13 @@ import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.policy.repository.RegionRepository;
+import com.bop.youthpick.search.dto.PolicyChangedEvent;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,8 @@ public class AdminPolicyService {
     private final PolicyRepository policyRepository;
     private final PolicyRegionRepository policyRegionRepository;
     private final RegionRepository regionRepository;
+    // 커밋된 뒤 검색 색인을 갱신하기 위한 이벤트 발행(PolicySearchSyncListener 가 받는다).
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public Page<AdminPolicyResponse> search(
@@ -71,6 +75,7 @@ public class AdminPolicyService {
                 regions.stream().map(region -> PolicyRegion.create(policy, region)).toList();
         policyRegionRepository.saveAll(policyRegions);
 
+        eventPublisher.publishEvent(PolicyChangedEvent.updated(policyId));
         return AdminPolicyResponse.from(policy, request.regionCodes());
     }
 
@@ -82,6 +87,7 @@ public class AdminPolicyService {
         } else {
             policy.unhideByAdmin();
         }
+        eventPublisher.publishEvent(PolicyChangedEvent.updated(policyId));
         return AdminPolicyResponse.from(policy, regionCodesOf(policyId));
     }
 
@@ -89,6 +95,7 @@ public class AdminPolicyService {
     public AdminPolicyResponse softDelete(Long policyId) {
         Policy policy = findPolicy(policyId);
         policy.softDelete();
+        eventPublisher.publishEvent(PolicyChangedEvent.removed(policyId));
         return AdminPolicyResponse.from(policy, regionCodesOf(policyId));
     }
 
