@@ -72,16 +72,23 @@ public class PolicySyncService {
                 policySyncLock
                         .tryAcquire()
                         .orElseThrow(() -> new CustomException(SyncErrorCode.SYNC_ALREADY_RUNNING));
-        batchTaskExecutor.execute(
-                () -> {
-                    try {
-                        doRunFullSync();
-                    } catch (RuntimeException e) {
-                        log.error("정책 수집 수동 실행 실패 — 상세는 policy_batch_history 참조", e);
-                    } finally {
-                        policySyncLock.release(lockToken);
-                    }
-                });
+        try {
+            batchTaskExecutor.execute(
+                    () -> {
+                        try {
+                            doRunFullSync();
+                        } catch (RuntimeException e) {
+                            log.error("정책 수집 수동 실행 실패 — 상세는 policy_batch_history 참조", e);
+                        } finally {
+                            policySyncLock.release(lockToken);
+                        }
+                    });
+        } catch (RuntimeException e) {
+            // 큐가 꽉 차 execute가 거부되면 실행 본체가 시작되지 않아 finally도 돌지 않는다 —
+            // 락을 여기서 풀어주지 않으면 아무도 안 도는 채로 TTL(10분) 동안 409만 나간다.
+            policySyncLock.release(lockToken);
+            throw e;
+        }
     }
 
     private PolicyBatchHistory doRunFullSync() {
