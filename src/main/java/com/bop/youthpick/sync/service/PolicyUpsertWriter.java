@@ -2,12 +2,15 @@ package com.bop.youthpick.sync.service;
 
 import com.bop.youthpick.policy.entity.Policy;
 import com.bop.youthpick.policy.entity.PolicyRegion;
+import com.bop.youthpick.policy.entity.Region;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.sync.dto.PolicyUpsertItem;
 import com.bop.youthpick.sync.dto.PolicyWriteResult;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,20 +33,36 @@ public class PolicyUpsertWriter {
         int newCount = 0;
         int updatedCount = 0;
         int errorCount = 0;
-        for (int from = 0; from < items.size(); from += CHUNK_SIZE) {
-            List<PolicyUpsertItem> chunk =
-                    items.subList(from, Math.min(from + CHUNK_SIZE, items.size()));
-            ChunkResult result;
-            try {
-                result = transactionTemplate.execute(status -> writeChunk(chunk));
-            } catch (RuntimeException e) {
-                // 청크에 깨진 건이 섞임 — 건별 재시도로 범인만 제외하고 나머지는 살린다.
-                log.warn("정책 청크 저장 실패({}건) — 건별 재시도", chunk.size(), e);
-                result = retryOneByOne(chunk);
+        int processed = 0;
+        try {
+            for (int from = 0; from < items.size(); from += CHUNK_SIZE) {
+                List<PolicyUpsertItem> chunk =
+                        items.subList(from, Math.min(from + CHUNK_SIZE, items.size()));
+                ChunkResult result;
+                try {
+                    result = transactionTemplate.execute(status -> writeChunk(chunk));
+                } catch (RuntimeException e) {
+                    // 청크에 깨진 건이 섞임 — 건별 재시도로 범인만 제외하고 나머지는 살린다.
+                    log.warn("정책 청크 저장 실패({}건) — 건별 재시도", chunk.size(), e);
+                    result = retryOneByOne(chunk);
+                }
+                newCount += result.newCount();
+                updatedCount += result.updatedCount();
+                errorCount += result.errorCount();
+                processed += chunk.size();
             }
-            newCount += result.newCount();
-            updatedCount += result.updatedCount();
-            errorCount += result.errorCount();
+        } catch (RuntimeException e) {
+            // 건별 재시도까지 뚫고 올라온 예외 = DB 장애급. 앞선 청크는 이미 커밋됐는데 이력에는
+            // 카운트 0으로 남으므로(PolicySyncService의 catch), 어디까지 갔는지는 여기서만 알 수 있다.
+            // ponytail: 로그만 — 실제로 발생하면 부분 결과를 예외에 실어 이력까지 옮긴다.
+            log.error(
+                    "정책 저장 중단 — {}/{}건 처리 후 실패 (신규 {} / 변경 {} / 건별실패 {})",
+                    processed,
+                    items.size(),
+                    newCount,
+                    updatedCount,
+                    errorCount);
+            throw e;
         }
         return new PolicyWriteResult(newCount, updatedCount, errorCount);
     }
@@ -61,14 +80,21 @@ public class PolicyUpsertWriter {
             try {
                 boolean isNew =
                         transactionTemplate.execute(
-                                status ->
-                                        writeOne(
-                                                freshItem,
-                                                policyRepository
-                                                        .findByPolicyNoIn(List.of(policyNo))
-                                                        .stream()
-                                                        .findFirst()
-                                                        .orElse(null)));
+                                status -> {
+                                    Policy existing =
+                                            policyRepository
+                                                    .findByPolicyNoIn(List.of(policyNo))
+                                                    .stream()
+                                                    .findFirst()
+                                                    .orElse(null);
+                                    return writeOne(
+                                            freshItem,
+                                            existing,
+                                            regionCodesByPolicyId(
+                                                    existing == null
+                                                            ? List.of()
+                                                            : List.of(existing)));
+                                });
                 if (isNew) {
                     newCount++;
                 } else {
@@ -89,10 +115,12 @@ public class PolicyUpsertWriter {
                                 chunk.stream().map(i -> i.policy().getPolicyNo()).toList())
                         .stream()
                         .collect(Collectors.toMap(Policy::getPolicyNo, p -> p));
+        Map<Long, Set<String>> regionCodesByPolicyId = regionCodesByPolicyId(existingByNo.values());
         int newCount = 0;
         int updatedCount = 0;
         for (PolicyUpsertItem item : chunk) {
-            if (writeOne(item, existingByNo.get(item.policy().getPolicyNo()))) {
+            if (writeOne(
+                    item, existingByNo.get(item.policy().getPolicyNo()), regionCodesByPolicyId)) {
                 newCount++;
             } else {
                 updatedCount++;
@@ -101,26 +129,58 @@ public class PolicyUpsertWriter {
         return new ChunkResult(newCount, updatedCount, 0);
     }
 
+    /**
+     * 기존 정책들이 현재 갖고 있는 지역 코드 집합 (policyId → codes). 쿼리 1회로 청크 전체를 떠서 {@link #writeOne}이 지역 변경 여부를
+     * 판정하는 데 쓴다.
+     */
+    private Map<Long, Set<String>> regionCodesByPolicyId(Collection<Policy> existingPolicies) {
+        List<Long> policyIds = existingPolicies.stream().map(Policy::getId).toList();
+        if (policyIds.isEmpty()) {
+            return Map.of();
+        }
+        return policyRegionRepository.findWithRegionByPolicyIdIn(policyIds).stream()
+                .collect(
+                        Collectors.groupingBy(
+                                policyRegion -> policyRegion.getPolicy().getId(),
+                                Collectors.mapping(
+                                        policyRegion -> policyRegion.getRegion().getCode(),
+                                        Collectors.toSet())));
+    }
+
     /** 1건 저장. 신규면 true, 변경이면 false. */
-    private boolean writeOne(PolicyUpsertItem item, Policy existing) {
+    private boolean writeOne(
+            PolicyUpsertItem item, Policy existing, Map<Long, Set<String>> regionCodesByPolicyId) {
         Policy target;
         boolean isNew = existing == null;
         if (isNew) {
             target = policyRepository.save(item.policy());
+            saveRegions(target, item.regions());
         } else {
             existing.updateFrom(item.policy());
-            // Hibernate는 flush 시 INSERT를 DELETE보다 먼저 실행하므로, 같은 지역이 유지되는
-            // 정책에서 (policy_id, region_code) 유니크 충돌이 난다 — 삭제를 먼저 flush한다.
-            policyRegionRepository.deleteByPolicy(existing);
-            policyRegionRepository.flush();
             target = existing;
-        }
-        for (var region : item.regions()) {
-            policyRegionRepository.save(PolicyRegion.create(target, region));
+            // 지역 집합이 그대로면 손대지 않는다 — 정책 본문만 바뀐 회차에서 전국 정책 1건당
+            // DELETE 256 + INSERT 256이 그대로 나가던 것을 없앤다.
+            Set<String> currentCodes =
+                    regionCodesByPolicyId.getOrDefault(existing.getId(), Set.of());
+            Set<String> nextCodes =
+                    item.regions().stream().map(Region::getCode).collect(Collectors.toSet());
+            if (!currentCodes.equals(nextCodes)) {
+                // Hibernate는 flush 시 INSERT를 DELETE보다 먼저 실행하므로, 같은 지역이 유지되는
+                // 정책에서 (policy_id, region_code) 유니크 충돌이 난다 — 삭제를 먼저 flush한다.
+                policyRegionRepository.deleteByPolicy(existing);
+                policyRegionRepository.flush();
+                saveRegions(target, item.regions());
+            }
         }
         // 지역 행과 같은 트랜잭션에서 갱신한다 — 따로 두면 둘이 어긋나 정렬이 조용히 틀린다(#120).
         target.applyRegionCoverage(item.nationwide());
         return isNew;
+    }
+
+    private void saveRegions(Policy policy, List<Region> regions) {
+        for (Region region : regions) {
+            policyRegionRepository.save(PolicyRegion.create(policy, region));
+        }
     }
 
     private record ChunkResult(int newCount, int updatedCount, int errorCount) {}
