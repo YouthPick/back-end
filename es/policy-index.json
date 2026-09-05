@@ -87,7 +87,16 @@
       },
 
       "category": { "type": "keyword" },
-      "sidoNames": { "type": "keyword" },
+      "sidoNames": {
+        "type": "keyword",
+        "fields": {
+          "text": {
+            "type": "text",
+            "analyzer": "ko_index",
+            "search_analyzer": "ko_search"
+          }
+        }
+      },
       "jobCodes": { "type": "keyword" },
       "visibility": { "type": "keyword" },
 

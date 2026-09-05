@@ -1,21 +1,48 @@
 package com.bop.youthpick.search.service;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import com.bop.youthpick.policy.entity.Policy;
+import com.bop.youthpick.policy.entity.PolicyVisibility;
 import com.bop.youthpick.search.config.PolicySearchProperties;
+import com.bop.youthpick.search.dto.PolicySearchQuery;
+import com.bop.youthpick.search.dto.PolicySearchResult;
+import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-/** 정책 검색. 지금은 색인 건수 조회만 있고, 실제 검색 질의는 7단계에서 채운다. */
+/**
+ * 정책 검색 질의. 색인에서 <b>조건에 맞는 정책 id</b>만 뽑아 온다.
+ *
+ * <p>여기서 나는 예외는 삼키지 않고 그대로 올린다 — 폴백 여부는 호출부({@code PolicyService})가 판단하고, 이 클래스는 검색만 책임진다.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PolicySearchService {
 
+    /** 검색어가 걸릴 필드와 가중치. 제목 일치를 본문 일치보다 크게 본다 — LIKE 에는 없던 개념이다. */
+    private static final List<String> SEARCH_FIELDS =
+            List.of(
+                    "title^3",
+                    "keywords^2",
+                    "organizationName^2",
+                    "description",
+                    "supportContent",
+                    // 지역명으로도 검색되게 한다(#199). keyword 필드는 정확 일치라 형태소 분석된 하위 필드를 쓴다.
+                    "sidoNames.text");
+
     private final ElasticsearchClient client;
     private final PolicySearchProperties properties;
 
-    /** 현재 색인된 문서 수. 인덱스가 아직 없거나 ES가 죽어 있으면 0을 돌려준다(재색인 판단용). */
+    /** 현재 색인된 문서 수. 인덱스가 아직 없거나 ES 가 죽어 있으면 0 을 돌려준다(재색인 판단용). */
     public long count() {
         try {
             return client.count(c -> c.index(properties.alias())).count();
@@ -23,5 +50,140 @@ public class PolicySearchService {
             log.warn("색인 건수 조회 실패 — 0건으로 간주", e);
             return 0;
         }
+    }
+
+    public PolicySearchResult search(PolicySearchQuery query) throws Exception {
+        BoolQuery bool = bool(query);
+        SearchResponse<Void> response =
+                client.search(
+                        request ->
+                                request.index(properties.alias())
+                                        .query(q -> q.bool(bool))
+                                        // 카드 내용은 MySQL 에서 읽으므로 _source 는 받지 않는다(전송량 절감).
+                                        .source(s -> s.fetch(false))
+                                        .from(query.page() * query.size())
+                                        .size(query.size())
+                                        // 기본값은 10,000건에서 집계를 멈춘다 — 페이징에 쓸 정확한 총건수가 필요하다.
+                                        .trackTotalHits(t -> t.enabled(true))
+                                        .sort(s -> s.score(sc -> sc.order(SortOrder.Desc)))
+                                        // 점수가 같으면(검색어 없는 목록 조회 등) 최신순으로 안정 정렬한다.
+                                        .sort(
+                                                s ->
+                                                        s.field(
+                                                                f ->
+                                                                        f.field("policyId")
+                                                                                .order(
+                                                                                        SortOrder
+                                                                                                .Desc))),
+                        Void.class);
+
+        List<Long> policyIds =
+                response.hits().hits().stream().map(hit -> Long.valueOf(hit.id())).toList();
+        long total = response.hits().total() == null ? 0 : response.hits().total().value();
+        return new PolicySearchResult(policyIds, total);
+    }
+
+    /**
+     * 질의 조립. filter 절은 점수에 영향을 주지 않고 걸러내기만 하고, should 절은 걸러내지 않고 점수만 올린다 — MySQL 이
+     * {@code case when ... then 1 else 0} 정렬로 "후순위"를 표현했던 것을 ES 에서는 "가산점"으로 뒤집어 표현한다.
+     */
+    private BoolQuery bool(PolicySearchQuery query) {
+        BoolQuery.Builder bool = new BoolQuery.Builder();
+
+        // ── 노출 조건 ── 삭제된 정책은 애초에 색인되지 않으므로 조건이 없다.
+        bool.filter(f -> f.term(t -> t.field("visibility").value(PolicyVisibility.VISIBLE.name())));
+        bool.filter(f -> f.term(t -> t.field("adminHidden").value(false)));
+
+        // ── 마감 조건 ── 신청 마감일이 없으면(상시) 통과, 있으면 오늘 이후여야 한다.
+        bool.filter(anyMatch(missing("applicationEndDate"), onOrAfter("applicationEndDate", query.today())));
+        // 신청 마감일이 아예 없는 정책은 사업기간 종료일로 한 번 더 거른다(#123).
+        bool.filter(
+                anyMatch(
+                        exists("applicationEndDate"),
+                        missing("businessPeriodEnd"),
+                        onOrAfter("businessPeriodEnd", query.today())));
+
+        if (query.category() != null) {
+            bool.filter(f -> f.term(t -> t.field("category").value(query.category())));
+        }
+        if (query.sidoName() != null) {
+            // MySQL 의 EXISTS 서브쿼리가 배열 필드 term 하나로 줄었다.
+            bool.filter(f -> f.term(t -> t.field("sidoNames").value(query.sidoName())));
+            // 전국 정책은 모든 시도에 걸려 있어 지역 검색에 항상 잡힌다. 지역 특화 정책을 위로 올린다.
+            bool.should(s -> s.term(t -> t.field("nationwide").value(false)));
+        }
+        // ── 나이 ── 요청 구간과 정책 자격 구간의 겹침. 값이 없거나 0이면 '제한 없음'이라 통과시킨다.
+        if (query.ageMin() != null) {
+            bool.filter(
+                    anyMatch(
+                            missing("maxAge"),
+                            isZero("maxAge"),
+                            atLeast("maxAge", query.ageMin())));
+        }
+        if (query.ageMax() != null) {
+            bool.filter(
+                    anyMatch(missing("minAge"), isZero("minAge"), atMost("minAge", query.ageMax())));
+        }
+        if (query.jobCode() != null) {
+            bool.filter(
+                    anyMatch(
+                            missing("jobCodes"),
+                            anyOf(
+                                    "jobCodes",
+                                    List.of(query.jobCode(), Policy.JOB_CODE_UNRESTRICTED))));
+            // '제한없음'으로 걸린 정책보다 해당 코드를 실제로 가진 정책을 위로 올린다.
+            bool.should(s -> s.term(t -> t.field("jobCodes").value(query.jobCode())));
+        }
+
+        if (query.keyword() != null) {
+            bool.must(
+                    m ->
+                            m.multiMatch(
+                                    mm ->
+                                            mm.query(query.keyword())
+                                                    .fields(SEARCH_FIELDS)
+                                                    // best_fields: 한 필드에 몰려 맞은 문서를 여러 필드에 흩어져
+                                                    // 맞은 문서보다 높게 본다.
+                                                    .type(TextQueryType.BestFields)
+                                                    // 단어가 3개 이상이면 70% 이상 맞아야 한다. 기본값(OR)은
+                                                    // '청년'처럼 흔한 한 단어만 맞아도 전부 걸려 필터 구실을 못 한다.
+                                                    .minimumShouldMatch("2<70%")));
+        }
+        return bool.build();
+    }
+
+    /** 여러 조건 중 하나만 맞으면 통과하는 filter 절(SQL 의 OR). */
+    private static Query anyMatch(Query... alternatives) {
+        return Query.of(
+                q -> q.bool(b -> b.should(List.of(alternatives)).minimumShouldMatch("1")));
+    }
+
+    private static Query missing(String field) {
+        return Query.of(q -> q.bool(b -> b.mustNot(mn -> mn.exists(e -> e.field(field)))));
+    }
+
+    private static Query exists(String field) {
+        return Query.of(q -> q.exists(e -> e.field(field)));
+    }
+
+    private static Query isZero(String field) {
+        return Query.of(q -> q.term(t -> t.field(field).value(0)));
+    }
+
+    private static Query onOrAfter(String field, LocalDate date) {
+        return Query.of(q -> q.range(r -> r.date(d -> d.field(field).gte(date.toString()))));
+    }
+
+    private static Query atLeast(String field, int value) {
+        return Query.of(q -> q.range(r -> r.number(n -> n.field(field).gte((double) value))));
+    }
+
+    private static Query atMost(String field, int value) {
+        return Query.of(q -> q.range(r -> r.number(n -> n.field(field).lte((double) value))));
+    }
+
+    private static Query anyOf(String field, List<String> values) {
+        List<FieldValue> fieldValues = values.stream().map(FieldValue::of).toList();
+        return Query.of(q -> q.terms(t -> t.field(field).terms(tv -> tv.value(fieldValues))));
     }
 }
