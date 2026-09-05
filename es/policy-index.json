@@ -1,0 +1,105 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "tokenizer": {
+        "nori_user": {
+          "type": "nori_tokenizer",
+          "decompound_mode": "mixed",
+          "user_dictionary": "analysis/userdict_ko.txt"
+        }
+      },
+      "filter": {
+        "ko_pos": {
+          "type": "nori_part_of_speech",
+          "stoptags": [
+            "E",
+            "IC",
+            "J",
+            "MAJ",
+            "MM",
+            "SP",
+            "SSC",
+            "SSO",
+            "SC",
+            "SE",
+            "XPN",
+            "XSA",
+            "XSN",
+            "XSV",
+            "UNA",
+            "NA",
+            "VSV",
+            "VCP",
+            "VCN"
+          ]
+        },
+        "ko_synonym": {
+          "type": "synonym_graph",
+          "synonyms_path": "analysis/synonym_ko.txt",
+          "updateable": true
+        }
+      },
+      "analyzer": {
+        "ko_index": {
+          "type": "custom",
+          "tokenizer": "nori_user",
+          "filter": ["ko_pos", "nori_readingform", "lowercase"]
+        },
+        "ko_search": {
+          "type": "custom",
+          "tokenizer": "nori_user",
+          "filter": ["ko_pos", "nori_readingform", "lowercase", "ko_synonym"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "policyId": { "type": "long" },
+
+      "title": {
+        "type": "text",
+        "analyzer": "ko_index",
+        "search_analyzer": "ko_search"
+      },
+      "keywords": {
+        "type": "text",
+        "analyzer": "ko_index",
+        "search_analyzer": "ko_search"
+      },
+      "description": {
+        "type": "text",
+        "analyzer": "ko_index",
+        "search_analyzer": "ko_search"
+      },
+      "supportContent": {
+        "type": "text",
+        "analyzer": "ko_index",
+        "search_analyzer": "ko_search"
+      },
+      "organizationName": {
+        "type": "text",
+        "analyzer": "ko_index",
+        "search_analyzer": "ko_search"
+      },
+
+      "category": { "type": "keyword" },
+      "sidoNames": { "type": "keyword" },
+      "jobCodes": { "type": "keyword" },
+      "visibility": { "type": "keyword" },
+
+      "minAge": { "type": "integer" },
+      "maxAge": { "type": "integer" },
+
+      "applicationEndDate": { "type": "date" },
+      "businessPeriodEnd": { "type": "date" },
+      "firstRegisteredAt": { "type": "date" },
+
+      "nationwide": { "type": "boolean" },
+      "adminHidden": { "type": "boolean" }
+    }
+  }
+}

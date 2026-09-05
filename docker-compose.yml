@@ -65,7 +65,24 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-
+  elasticsearch:
+    build: ./es
+    container_name: youthpick-es
+    environment:
+      - discovery.type=single-node       # 단일 노드 (클러스터 구성 안 함)
+      - xpack.security.enabled=false     # 로컬이라 인증 끔
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m   # 안 주면 시스템 메모리의 절반을 먹는다
+    ports:
+      - "${ES_PORT:-9200}:9200"
+    volumes:
+      - youthpick-es-data:/usr/share/elasticsearch/data
+      - ./es/config:/usr/share/elasticsearch/config/analysis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
   backend:
     build:
       context: .
@@ -103,3 +120,4 @@ volumes:
   youthpick-mysql-data:
   youthpick-redis-data:
   youthpick-minio-data:
+  youthpick-es-data:
