@@ -39,6 +39,9 @@ public class PolicySearchService {
                     // 지역명으로도 검색되게 한다(#199). keyword 필드는 정확 일치라 형태소 분석된 하위 필드를 쓴다.
                     "sidoNames.text");
 
+    /** 검색어가 지역명과 맞을 때 그 지역 전용 정책에 주는 가산점. 실측으로 고른 값이다. */
+    private static final float REGION_SPECIFIC_BOOST = 5.0f;
+
     private final ElasticsearchClient client;
     private final PolicySearchProperties properties;
 
@@ -142,12 +145,41 @@ public class PolicySearchService {
                                     mm ->
                                             mm.query(query.keyword())
                                                     .fields(SEARCH_FIELDS)
-                                                    // best_fields: 한 필드에 몰려 맞은 문서를 여러 필드에 흩어져
-                                                    // 맞은 문서보다 높게 본다.
-                                                    .type(TextQueryType.BestFields)
+                                                    // cross_fields: 여러 필드를 한 덩어리처럼 본다.
+                                                    // best_fields 는 "한 필드 안에서" 조건을 세기 때문에,
+                                                    // "서울 청년 취업"처럼 지역(sidoNames)과 제목에 단어가
+                                                    // 나뉘어 있으면 어떤 필드도 전부 갖지 못해 걸러졌다.
+                                                    .type(TextQueryType.CrossFields)
                                                     // 단어가 3개 이상이면 70% 이상 맞아야 한다. 기본값(OR)은
                                                     // '청년'처럼 흔한 한 단어만 맞아도 전부 걸려 필터 구실을 못 한다.
                                                     .minimumShouldMatch("2<70%")));
+            // 검색어에 지역명이 들어 있으면 그 지역 전용 정책을 전국 정책보다 위로 올린다(#199 후속).
+            // 전국 정책은 모든 시도에 지역 행이 걸려 있어 지역명 검색에 항상 잡히는데, 이 규칙이 없으면
+            // "서울 청년 취업" 상위가 전부 전국 정책으로 채워진다.
+            // 가산점 5는 실측으로 정했다 — 없으면 전국이 상위를 독점하고, 15면 여러 시도를 걸친 정책이
+            // 해당 지역 전용 정책보다 앞선다(es/helper 로 상위 결과를 비교).
+            bool.should(
+                    s ->
+                            s.bool(
+                                    b ->
+                                            b.must(
+                                                            m ->
+                                                                    m.match(
+                                                                            mt ->
+                                                                                    mt.field(
+                                                                                                    "sidoNames.text")
+                                                                                            .query(
+                                                                                                    query
+                                                                                                            .keyword())))
+                                                    .must(
+                                                            m ->
+                                                                    m.term(
+                                                                            t ->
+                                                                                    t.field(
+                                                                                                    "nationwide")
+                                                                                            .value(
+                                                                                                    false)))
+                                                    .boost(REGION_SPECIFIC_BOOST)));
         }
         return bool.build();
     }
