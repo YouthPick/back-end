@@ -32,6 +32,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.bop.youthpick.search.config.PolicySearchProperties;
+import com.bop.youthpick.search.service.PolicySearchService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.data.domain.Page;
@@ -48,6 +50,7 @@ class PolicyServiceTest {
     @Mock private PolicyRegionRepository policyRegionRepository;
     @Mock private PolicyRecentViewService policyRecentViewService;
     @Mock private SearchLogService searchLogService;
+    @Mock private PolicySearchService policySearchService;
 
     private PolicyService policyService;
 
@@ -58,7 +61,10 @@ class PolicyServiceTest {
                         policyRepository,
                         policyRegionRepository,
                         policyRecentViewService,
-                        searchLogService);
+                        searchLogService,
+                        policySearchService,
+                        // 이 테스트는 기존 MySQL 경로를 검증한다 — 검색 전환은 enabled=false 로 끈다.
+                        new PolicySearchProperties(false, "policy"));
     }
 
     @Test

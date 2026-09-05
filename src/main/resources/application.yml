@@ -29,10 +29,24 @@ spring:
       max-file-size: ${FILE_MAX_SIZE:10MB}
       # multipart boundary/header 오버헤드를 고려해 실제 파일 제한보다 여유를 둔다.
       max-request-size: ${FILE_MAX_REQUEST_SIZE:11MB}
+  elasticsearch:
+    # 접속 주소(uris)는 환경마다 달라 각 프로필이 정한다(redis와 같은 방식).
+    # 여기엔 환경과 무관한 동작 규칙만 둔다 — ES가 느려질 때 기본값(30s)을 기다리면
+    # 폴백이 있어도 사용자는 이미 떠난 뒤다. 짧게 끊고 LIKE 경로로 넘긴다(PolicyService).
+    connection-timeout: ${ES_CONNECT_TIMEOUT:1s}
+    socket-timeout: ${ES_SOCKET_TIMEOUT:3s}
 
 youthpick:
   cors:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:5174}
+  search:
+    # 기본 off(안전 기본값) — sync.scheduler와 같은 방식. ES 없이도 앱이 뜨고 LIKE로 검색된다.
+    enabled: ${SEARCH_ES_ENABLED:false}
+    # 코드가 보는 이름. 실제 인덱스는 policy_v1 이고 이 alias가 가리킨다.
+    alias: ${SEARCH_ES_ALIAS:policy}
+    # 인덱스가 비어 있을 때만 앱 시작 시 전체 색인 1회. sync.startup-on-empty와 같은 방식.
+    # 매핑을 바꾸면 새 인덱스(policy_v2)가 비어 있으므로 자동으로 다시 채워진다.
+    reindex-on-empty: ${SEARCH_ES_REINDEX_ON_EMPTY:false}
   site:
     # sitemap.xml에 절대 URL(<loc>)을 만들 때 쓰는 프론트엔드 배포 도메인.
     frontend-url: ${FRONTEND_URL:https://youthpick.samchon.cloud}
