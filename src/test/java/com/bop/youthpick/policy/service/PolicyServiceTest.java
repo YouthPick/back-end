@@ -33,6 +33,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.bop.youthpick.search.config.PolicySearchProperties;
+import com.bop.youthpick.search.dto.PolicyFacets;
 import com.bop.youthpick.search.service.PolicySearchService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -323,6 +324,34 @@ class PolicyServiceTest {
 
         assertThat(ageMinCaptor.getValue()).isEqualTo(19);
         assertThat(ageMaxCaptor.getValue()).isEqualTo(34);
+    }
+
+    @Test
+    void 검색_전환이_꺼져_있으면_패싯은_ES를_부르지_않고_빈_결과다() throws Exception {
+        PolicyFacets facets = policyService.getFacets(null, null, null, null, null, null);
+
+        assertThat(facets.categories()).isEmpty();
+        assertThat(facets.regions()).isEmpty();
+        verify(policySearchService, never()).facets(any());
+    }
+
+    @Test
+    void 패싯_집계가_실패해도_예외를_던지지_않고_빈_결과를_준다() throws Exception {
+        // 건수 배지는 부가 정보다. 여기서 예외가 새면 목록까지 못 그리게 되므로 삼키고 빈 결과를 준다.
+        PolicyService esEnabled =
+                new PolicyService(
+                        policyRepository,
+                        policyRegionRepository,
+                        policyRecentViewService,
+                        searchLogService,
+                        policySearchService,
+                        new PolicySearchProperties(true, "policy"));
+        when(policySearchService.facets(any())).thenThrow(new java.io.IOException("ES down"));
+
+        PolicyFacets facets = esEnabled.getFacets("주거", null, null, null, null, null);
+
+        assertThat(facets.categories()).isEmpty();
+        assertThat(facets.regions()).isEmpty();
     }
 
     private Policy newPolicy(Long id, String title) {

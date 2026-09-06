@@ -5,6 +5,7 @@ import com.bop.youthpick.global.common.ApiResponse;
 import com.bop.youthpick.policy.dto.PolicyCardResponse;
 import com.bop.youthpick.policy.dto.PolicyDetailResponse;
 import com.bop.youthpick.policy.service.PolicyService;
+import com.bop.youthpick.search.dto.PolicyFacets;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -52,6 +53,29 @@ public class PolicyController {
                 policyService.getCards(
                         category, keyword, region, ageMin, ageMax, jobCode, pageable);
         return ApiResponse.ok(page.getContent(), page);
+    }
+
+    /**
+     * 필터 UI 에 붙일 카테고리·지역별 건수. 목록 조회와 같은 파라미터를 그대로 받는다(page/size 만 없다).
+     *
+     * <p>각 목록은 자기 자신의 필터를 뺀 조건에서 센 값이라, 카테고리를 고른 상태에서도 다른 분류의 건수가 보인다.
+     */
+    @Operation(
+            summary = "정책 필터 건수 조회",
+            description =
+                    "필터 UI 에 붙일 카테고리·지역별 건수(비회원 허용). 목록 조회와 같은 파라미터를 받는다. 각 목록은 자기 자신의 필터를 뺀"
+                            + " 조건에서 세므로 카테고리를 고른 상태에서도 다른 분류의 건수가 보인다. 빈 목록은 0건이 아니라 집계 불가(ES 미사용/장애)를"
+                            + " 뜻한다.")
+    @GetMapping("/facets")
+    public ApiResponse<PolicyFacets> getFacets(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) Integer ageMin,
+            @RequestParam(required = false) Integer ageMax,
+            @RequestParam(required = false) String jobCode) {
+        return ApiResponse.ok(
+                policyService.getFacets(category, keyword, region, ageMin, ageMax, jobCode));
     }
 
     /** 정책 상세 조회 (비회원 허용). 로그인 사용자의 조회는 최근 본 정책으로 기록된다. */

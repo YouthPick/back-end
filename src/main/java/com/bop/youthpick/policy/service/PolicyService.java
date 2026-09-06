@@ -11,6 +11,7 @@ import com.bop.youthpick.policy.exception.PolicyErrorCode;
 import com.bop.youthpick.policy.repository.PolicyRegionRepository;
 import com.bop.youthpick.policy.repository.PolicyRepository;
 import com.bop.youthpick.search.config.PolicySearchProperties;
+import com.bop.youthpick.search.dto.PolicyFacets;
 import com.bop.youthpick.search.dto.PolicySearchQuery;
 import com.bop.youthpick.search.dto.PolicySearchResult;
 import com.bop.youthpick.search.service.PolicySearchService;
@@ -92,17 +93,15 @@ public class PolicyService {
             Pageable pageable)
             throws Exception {
         String searchKeyword = trimToNull(keyword);
-        String regionFilter = trimToNull(region);
         PolicySearchResult result =
                 policySearchService.search(
-                        new PolicySearchQuery(
-                                searchKeyword,
-                                trimToNull(category),
-                                NATIONWIDE_REGION.equals(regionFilter) ? null : regionFilter,
+                        toSearchQuery(
+                                category,
+                                keyword,
+                                region,
                                 ageMin,
                                 ageMax,
-                                trimToNull(jobCode),
-                                LocalDate.now(),
+                                jobCode,
                                 pageable.getPageNumber(),
                                 pageable.getPageSize()));
 
@@ -121,6 +120,57 @@ public class PolicyService {
                 result.policyIds().stream().map(policiesById::get).filter(Objects::nonNull).toList();
 
         return new PageImpl<>(toCards(policies), pageable, result.total());
+    }
+
+    /**
+     * 필터 UI 에 붙일 카테고리·지역별 건수. 목록과 <b>같은 파라미터</b>를 받아 같은 조건에서 센다.
+     *
+     * <p>목록 응답에 끼워 넣지 않고 따로 뺀 이유: 이미 쓰이고 있는 응답 형태를 바꾸지 않고, 필터 바를 다시 그릴 때만 부르면 되기 때문이다.
+     *
+     * <p>ES 가 죽으면 빈 결과를 준다. MySQL 로 같은 집계를 하려면 8개 조건이 걸린 {@code GROUP BY} 를 두 벌 더 만들어야 하는데,
+     * 목록은 폴백으로 계속 뜨고 건수 배지만 사라지는 정도라 그 값을 하지 않는다.
+     */
+    @Transactional(readOnly = true)
+    public PolicyFacets getFacets(
+            @Nullable String category,
+            @Nullable String keyword,
+            @Nullable String region,
+            @Nullable Integer ageMin,
+            @Nullable Integer ageMax,
+            @Nullable String jobCode) {
+        if (!searchProperties.enabled()) {
+            return PolicyFacets.empty();
+        }
+        try {
+            return policySearchService.facets(
+                    toSearchQuery(category, keyword, region, ageMin, ageMax, jobCode, 0, 0));
+        } catch (Exception e) {
+            log.warn("ES 패싯 집계 실패 — 건수 없이 응답합니다", e);
+            return PolicyFacets.empty();
+        }
+    }
+
+    /** 컨트롤러 파라미터를 검색 조건으로 옮긴다. 목록과 패싯이 같은 조건에서 돌아야 해서 한 곳에서만 만든다. */
+    private PolicySearchQuery toSearchQuery(
+            @Nullable String category,
+            @Nullable String keyword,
+            @Nullable String region,
+            @Nullable Integer ageMin,
+            @Nullable Integer ageMax,
+            @Nullable String jobCode,
+            int page,
+            int size) {
+        String regionFilter = trimToNull(region);
+        return new PolicySearchQuery(
+                trimToNull(keyword),
+                trimToNull(category),
+                NATIONWIDE_REGION.equals(regionFilter) ? null : regionFilter,
+                ageMin,
+                ageMax,
+                trimToNull(jobCode),
+                LocalDate.now(),
+                page,
+                size);
     }
 
     private Page<PolicyCardResponse> searchViaMysql(
